@@ -1,0 +1,60 @@
+═══════════════════════════════════════════════════════════
+  ONDE ADICIONAR VARIÁVEIS NO VERCEL - GUIA RÁPIDO
+═══════════════════════════════════════════════════════════
+
+📍 LOCALIZAÇÃO:
+   vercel.com → Seu Projeto → Settings → Environment Variables
+
+
+🔑 ADICIONAR ESTAS 2 VARIÁVEIS:
+
+   1) NEXT_PUBLIC_SUPABASE_URL
+      Valor: https://xxxxx.supabase.co
+
+   2) NEXT_PUBLIC_SUPABASE_ANON_KEY
+      Valor: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+
+📋 ONDE PEGAR OS VALORES:
+
+   supabase.com → Seu Projeto → Settings → API
+
+   Copiar:
+   - Project URL → NEXT_PUBLIC_SUPABASE_URL
+   - anon public → NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+
+✅ PASSO A PASSO:
+
+   1. Abrir vercel.com
+   2. Clicar no seu projeto
+   3. Clicar em "Settings" (menu lateral esquerdo)
+   4. Scroll down até "Environment Variables"
+   5. Clicar em "Add New"
+   6. Adicionar primeira variável:
+      Key: NEXT_PUBLIC_SUPABASE_URL
+      Value: [colar URL do Supabase]
+      Marcar: Production, Preview, Development
+      Clicar em "Add"
+   7. Adicionar segunda variável:
+      Key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+      Value: [colar chave do Supabase]
+      Marcar: Production, Preview, Development
+      Clicar em "Add"
+   8. Ir em "Deployments"
+   9. Clicar nos 3 pontinhos do último deploy
+   10. Clicar em "Redeploy"
+   11. Desmarcar "Use existing Build Cache"
+   12. Clicar em "Redeploy"
+   13. Aguardar 2-3 minutos
+   14. ✅ Pronto!
+
+
+⏱️ TEMPO TOTAL: 3-5 minutos
+
+
+🎯 ATALHO DIRETO:
+   https://vercel.com/[seu-usuario]/[seu-projeto]/settings/environment-variables
+
+
+═══════════════════════════════════════════════════════════

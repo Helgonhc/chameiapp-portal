@@ -3,22 +3,93 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { UserPlus, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react'
+import { UserPlus, ArrowLeft, AlertCircle, CheckCircle, Search, Loader2, Building2, User } from 'lucide-react'
 
 export default function RegisterPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [cnpjLoading, setCnpjLoading] = useState(false)
+  const [cepLoading, setCepLoading] = useState(false)
 
   // Form fields
+  const [type, setType] = useState<'PF' | 'PJ'>('PJ')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [phone, setPhone] = useState('')
-  const [address, setAddress] = useState('')
   const [companyName, setCompanyName] = useState('')
+  
+  // Documento
+  const [cnpjCpf, setCnpjCpf] = useState('')
+  const [ieRg, setIeRg] = useState('')
+  
+  // Endereço completo
+  const [cep, setCep] = useState('')
+  const [street, setStreet] = useState('')
+  const [number, setNumber] = useState('')
+  const [complement, setComplement] = useState('')
+  const [neighborhood, setNeighborhood] = useState('')
+  const [city, setCity] = useState('')
+  const [state, setState] = useState('')
+
+  // Buscar dados do CNPJ
+  async function handleCnpjBlur() {
+    if (type === 'PF') return
+    
+    const cleanCnpj = cnpjCpf.replace(/\D/g, '')
+    if (cleanCnpj.length !== 14) return
+
+    setCnpjLoading(true)
+    try {
+      const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`)
+      const data = await response.json()
+
+      if (!data.message) {
+        setCompanyName(data.razao_social || data.nome_fantasia)
+        if (data.ddd_telefone_1) setPhone(`(${data.ddd_telefone_1}) ${data.telefone_1}`)
+        if (data.email) setEmail(data.email)
+        
+        // Endereço
+        if (data.cep) setCep(data.cep.replace(/\D/g, ''))
+        if (data.logradouro) setStreet(data.logradouro)
+        if (data.numero) setNumber(data.numero)
+        if (data.complemento) setComplement(data.complemento)
+        if (data.bairro) setNeighborhood(data.bairro)
+        if (data.municipio) setCity(data.municipio)
+        if (data.uf) setState(data.uf)
+      }
+    } catch (error) {
+      console.error('Erro ao buscar CNPJ:', error)
+    } finally {
+      setCnpjLoading(false)
+    }
+  }
+
+  // Buscar endereço pelo CEP
+  async function handleCepBlur() {
+    const cleanCep = cep.replace(/\D/g, '')
+    if (cleanCep.length !== 8) return
+
+    setCepLoading(true)
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`)
+      const data = await response.json()
+      
+      if (!data.erro) {
+        setStreet(data.logradouro || '')
+        setNeighborhood(data.bairro || '')
+        setCity(data.localidade || '')
+        setState(data.uf || '')
+      }
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error)
+    } finally {
+      setCepLoading(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -54,15 +125,28 @@ export default function RegisterPage() {
       await new Promise(resolve => setTimeout(resolve, 1000))
 
       // 3. Criar cliente na carteira
+      const fullAddress = street && city 
+        ? `${street}, ${number} - ${neighborhood}, ${city}/${state}${cep ? ` - CEP ${cep}` : ''}`
+        : ''
+
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
         .insert({
           name: companyName.trim() || fullName.trim(),
-          responsible_name: fullName.trim(),
+          responsible_name: type === 'PJ' ? fullName.trim() : null,
           email: email.trim(),
           phone: phone.trim(),
-          address: address.trim() || null,
-          type: 'PF' // Pessoa Física por padrão
+          cnpj_cpf: cnpjCpf.trim() || null,
+          ie_rg: ieRg.trim() || null,
+          type: type,
+          zip_code: cep.trim() || null,
+          street: street.trim() || null,
+          number: number.trim() || null,
+          complement: complement.trim() || null,
+          neighborhood: neighborhood.trim() || null,
+          city: city.trim() || null,
+          state: state.trim() || null,
+          address: fullAddress || null
         })
         .select()
         .single()
@@ -144,10 +228,88 @@ export default function RegisterPage() {
               </div>
             )}
 
+            {/* Tipo de Pessoa */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Tipo de Cadastro *
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setType('PF')}
+                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                    type === 'PF'
+                      ? 'border-blue-600 bg-blue-50 text-blue-700'
+                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  <User className="w-5 h-5" />
+                  <span className="font-medium">Pessoa Física</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType('PJ')}
+                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                    type === 'PJ'
+                      ? 'border-blue-600 bg-blue-50 text-blue-700'
+                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  <Building2 className="w-5 h-5" />
+                  <span className="font-medium">Pessoa Jurídica</span>
+                </button>
+              </div>
+            </div>
+
+            {/* CNPJ/CPF e IE/RG */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="cnpjCpf" className="block text-sm font-medium text-gray-700 mb-2">
+                  {type === 'PJ' ? 'CNPJ (Busca Automática)' : 'CPF'} *
+                </label>
+                <div className="relative">
+                  <input
+                    id="cnpjCpf"
+                    type="text"
+                    value={cnpjCpf}
+                    onChange={(e) => setCnpjCpf(e.target.value)}
+                    onBlur={handleCnpjBlur}
+                    required
+                    className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder={type === 'PJ' ? '00.000.000/0000-00' : '000.000.000-00'}
+                  />
+                  {cnpjLoading && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                    </div>
+                  )}
+                  {!cnpjLoading && type === 'PJ' && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <Search className="w-5 h-5 text-blue-600" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="ieRg" className="block text-sm font-medium text-gray-700 mb-2">
+                  {type === 'PJ' ? 'IE' : 'RG'}
+                </label>
+                <input
+                  id="ieRg"
+                  type="text"
+                  value={ieRg}
+                  onChange={(e) => setIeRg(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder={type === 'PJ' ? 'Inscrição Estadual' : 'RG'}
+                />
+              </div>
+            </div>
+
             {/* Nome Completo */}
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
-                Nome Completo *
+                {type === 'PJ' ? 'Nome do Responsável' : 'Nome Completo'} *
               </label>
               <input
                 id="fullName"
@@ -160,20 +322,23 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* Nome da Empresa */}
-            <div>
-              <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
-                Nome da Empresa (opcional)
-              </label>
-              <input
-                id="companyName"
-                type="text"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Empresa LTDA"
-              />
-            </div>
+            {/* Nome da Empresa (apenas PJ) */}
+            {type === 'PJ' && (
+              <div>
+                <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Razão Social / Nome Fantasia *
+                </label>
+                <input
+                  id="companyName"
+                  type="text"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  required={type === 'PJ'}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Empresa LTDA"
+                />
+              </div>
+            )}
 
             {/* Email e Telefone */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -208,19 +373,132 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Endereço */}
-            <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
-                Endereço (opcional)
-              </label>
-              <input
-                id="address"
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Rua, número, bairro, cidade"
-              />
+            {/* Seção de Endereço */}
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Endereço</h3>
+              
+              {/* CEP e Cidade */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label htmlFor="cep" className="block text-sm font-medium text-gray-700 mb-2">
+                    CEP (Busca Automática)
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="cep"
+                      type="text"
+                      value={cep}
+                      onChange={(e) => setCep(e.target.value)}
+                      onBlur={handleCepBlur}
+                      maxLength={9}
+                      className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="00000-000"
+                    />
+                    {cepLoading && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                      </div>
+                    )}
+                    {!cepLoading && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <Search className="w-5 h-5 text-blue-600" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                    Cidade
+                  </label>
+                  <input
+                    id="city"
+                    type="text"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                    placeholder="São Paulo"
+                  />
+                </div>
+              </div>
+
+              {/* Rua e Número */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="md:col-span-2">
+                  <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-2">
+                    Rua
+                  </label>
+                  <input
+                    id="street"
+                    type="text"
+                    value={street}
+                    onChange={(e) => setStreet(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Rua das Flores"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="number" className="block text-sm font-medium text-gray-700 mb-2">
+                    Número
+                  </label>
+                  <input
+                    id="number"
+                    type="text"
+                    value={number}
+                    onChange={(e) => setNumber(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="123"
+                  />
+                </div>
+              </div>
+
+              {/* Bairro e Estado */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="md:col-span-2">
+                  <label htmlFor="neighborhood" className="block text-sm font-medium text-gray-700 mb-2">
+                    Bairro
+                  </label>
+                  <input
+                    id="neighborhood"
+                    type="text"
+                    value={neighborhood}
+                    onChange={(e) => setNeighborhood(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Centro"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
+                    UF
+                  </label>
+                  <input
+                    id="state"
+                    type="text"
+                    value={state}
+                    onChange={(e) => setState(e.target.value.toUpperCase())}
+                    maxLength={2}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="SP"
+                  />
+                </div>
+              </div>
+
+              {/* Complemento */}
+              <div>
+                <label htmlFor="complement" className="block text-sm font-medium text-gray-700 mb-2">
+                  Complemento
+                </label>
+                <input
+                  id="complement"
+                  type="text"
+                  value={complement}
+                  onChange={(e) => setComplement(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Apto 101, Bloco A"
+                />
+              </div>
             </div>
 
             {/* Senha e Confirmar Senha */}
