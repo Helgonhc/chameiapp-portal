@@ -1,4 +1,4 @@
-// File: D:\Projeto\chameiapp\client-portal\app\order\[id]\page.tsx
+// File: D:\Projeto\client-portal\app\order\[id]\page.tsx
 import * as entry from '../../../../../app/order/[id]/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

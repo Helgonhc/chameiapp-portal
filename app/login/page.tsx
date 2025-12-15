@@ -57,37 +57,6 @@ export default function LoginPage() {
     }
   }
 
-  async function loadClientBranding() {
-    try {
-      // Buscar o primeiro cliente ativo (ou você pode usar subdomain/env var)
-      const { data, error } = await supabase
-        .from('clients')
-        .select('name, company_name, logo_url, primary_color, portal_welcome_message')
-        .eq('is_active', true)
-        .eq('portal_enabled', true)
-        .limit(1)
-        .single()
-
-      if (error) {
-        console.error('Erro ao carregar branding:', error)
-        // Usar valores padrão do .env.local se falhar
-        setBranding({
-          name: process.env.NEXT_PUBLIC_CLIENT_NAME || 'Portal do Cliente',
-          company_name: process.env.NEXT_PUBLIC_CLIENT_NAME || 'Portal do Cliente',
-          logo_url: `/logos/${process.env.NEXT_PUBLIC_CLIENT_LOGO || 'client-logo.png'}`,
-          primary_color: `#${process.env.NEXT_PUBLIC_CLIENT_COLOR || '0066cc'}`,
-          portal_welcome_message: null
-        })
-      } else {
-        setBranding(data)
-      }
-    } catch (error) {
-      console.error('Erro ao carregar branding:', error)
-    } finally {
-      setLoadingBranding(false)
-    }
-  }
-
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)

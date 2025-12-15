@@ -30,6 +30,7 @@ interface QuoteDetails {
   notes: string
   terms: string
   created_at: string
+  rejection_reason?: string
   items: QuoteItem[]
 }
 

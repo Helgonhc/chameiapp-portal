@@ -254,7 +254,7 @@ export default function QuotesPage() {
                       currency: 'BRL'
                     }).format(quote.total)}
                   </p>
-                  {quote.items_count > 0 && (
+                  {quote.items_count && quote.items_count > 0 && (
                     <p className="text-xs text-slate-500 mt-1">
                       {quote.items_count} {quote.items_count === 1 ? 'item' : 'itens'}
                     </p>

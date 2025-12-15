@@ -1,4 +1,4 @@
-// File: D:\Projeto\chameiapp\client-portal\app\layout.tsx
+// File: D:\Projeto\client-portal\app\layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

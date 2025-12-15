@@ -1,4 +1,4 @@
-// File: D:\Projeto\chameiapp\client-portal\app\notifications\page.tsx
+// File: D:\Projeto\client-portal\app\notifications\page.tsx
 import * as entry from '../../../../app/notifications/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
