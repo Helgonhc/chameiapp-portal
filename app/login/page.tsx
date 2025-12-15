@@ -70,16 +70,37 @@ export default function LoginPage() {
 
       if (error) throw error
 
-      // Verificar se é cliente
+      // Verificar se é cliente e se está bloqueado
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, client_id, is_active')
         .eq('id', data.user.id)
         .single()
 
       if (profile?.role !== 'client') {
         await supabase.auth.signOut()
         throw new Error('Acesso negado. Este portal é apenas para clientes.')
+      }
+
+      // Verificar se o perfil está ativo
+      if (profile.is_active === false) {
+        await supabase.auth.signOut()
+        throw new Error('Sua conta está desativada. Entre em contato com o suporte.')
+      }
+
+      // Verificar se o cliente está bloqueado
+      if (profile.client_id) {
+        const { data: client } = await supabase
+          .from('clients')
+          .select('portal_blocked, portal_blocked_reason')
+          .eq('id', profile.client_id)
+          .single()
+
+        if (client?.portal_blocked) {
+          await supabase.auth.signOut()
+          const reason = client.portal_blocked_reason || 'Seu acesso ao portal foi bloqueado.'
+          throw new Error(`🔒 Acesso Bloqueado\n\n${reason}\n\nEntre em contato com o suporte para mais informações.`)
+        }
       }
 
       router.push('/dashboard')
