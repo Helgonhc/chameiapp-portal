@@ -50,35 +50,43 @@ export default function RegisterPage() {
       if (authError) throw authError
       if (!authData.user) throw new Error('Erro ao criar usuário')
 
-      // 2. Criar cliente
+      // 2. Aguardar um pouco para o trigger criar o profile
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      // 3. Criar cliente na carteira
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
         .insert({
           name: companyName.trim() || fullName.trim(),
+          responsible_name: fullName.trim(),
           email: email.trim(),
           phone: phone.trim(),
           address: address.trim() || null,
-          portal_enabled: true,
-          portal_user_id: authData.user.id
+          type: 'PF' // Pessoa Física por padrão
         })
         .select()
         .single()
 
-      if (clientError) throw clientError
+      if (clientError) {
+        console.error('Erro ao criar cliente:', clientError)
+        throw new Error('Erro ao criar cliente na carteira')
+      }
 
-      // 3. Criar profile
+      // 4. Atualizar profile com client_id
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert({
-          id: authData.user.id,
+        .update({
           full_name: fullName.trim(),
-          email: email.trim(),
           role: 'client',
           client_id: clientData.id,
-          is_active: true
+          phone: phone.trim()
         })
+        .eq('id', authData.user.id)
 
-      if (profileError) throw profileError
+      if (profileError) {
+        console.error('Erro ao atualizar profile:', profileError)
+        throw new Error('Erro ao vincular conta ao cliente')
+      }
 
       setSuccess(true)
       
