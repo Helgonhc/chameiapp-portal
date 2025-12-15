@@ -172,9 +172,9 @@ export default function DashboardPage() {
     router.push('/login')
   }
 
-  const pendingOrders = orders.filter(o => o.status === 'aberto' || o.status === 'em_analise').length
-  const inProgressOrders = orders.filter(o => o.status === 'aprovado').length
-  const completedOrders = orders.filter(o => o.status === 'convertido').length
+  const pendingOrders = orders.filter(o => o.status === 'pending').length
+  const inProgressOrders = orders.filter(o => o.status === 'in_progress').length
+  const completedOrders = orders.filter(o => o.status === 'completed').length
 
   function clearFilters() {
     setSearchTerm('')
@@ -477,7 +477,7 @@ export default function DashboardPage() {
                   {new Date(order.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </span>
                 <span className="text-lg">
-                  {order.priority === 'alta' ? '🔴' : order.priority === 'media' ? '🟡' : '🟢'}
+                  {order.priority === 'urgent' || order.priority === 'high' ? '🔴' : order.priority === 'medium' ? '🟡' : '🟢'}
                 </span>
               </div>
             </div>

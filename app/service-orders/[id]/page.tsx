@@ -221,9 +221,9 @@ export default function ServiceOrderDetailsPage() {
               <div>
                 <p className="text-sm text-slate-500">Prioridade</p>
                 <p className="font-bold text-slate-900">
-                  {order.priority === 'baixa' ? '🟢 Baixa' : 
-                   order.priority === 'media' ? '🟡 Média' : 
-                   order.priority === 'alta' ? '🟠 Alta' : '🔴 Urgente'}
+                  {order.priority === 'low' ? '🟢 Baixa' : 
+                   order.priority === 'medium' ? '🟡 Média' : 
+                   order.priority === 'high' ? '🟠 Alta' : '🔴 Urgente'}
                 </p>
               </div>
             </div>

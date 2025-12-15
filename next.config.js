@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   images: {
     remotePatterns: [
       {
@@ -8,6 +9,8 @@ const nextConfig = {
       },
     ],
   },
+  // Desabilitar telemetria para builds mais rápidos
+  telemetry: false,
 }
 
 module.exports = nextConfig

@@ -278,9 +278,9 @@ export default function ServiceOrdersPage() {
                   </div>
 
                   <div className={`text-sm font-semibold ${getPriorityColor(order.priority)}`}>
-                    {order.priority === 'baixa' ? '🟢 Baixa' : 
-                     order.priority === 'media' ? '🟡 Média' : 
-                     order.priority === 'alta' ? '🟠 Alta' : '🔴 Urgente'}
+                    {order.priority === 'low' ? '🟢 Baixa' : 
+                     order.priority === 'medium' ? '🟡 Média' : 
+                     order.priority === 'high' ? '🟠 Alta' : '🔴 Urgente'}
                   </div>
                 </div>
               </div>
