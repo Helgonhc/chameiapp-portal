@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { UserPlus, ArrowLeft, AlertCircle, CheckCircle, Search, Loader2, Building2, User } from 'lucide-react'
+import { UserPlus, ArrowLeft, AlertCircle, CheckCircle, Search, Loader2, Building2, User, Camera, Upload, X } from 'lucide-react'
+import Image from 'next/image'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -12,6 +13,7 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false)
   const [cnpjLoading, setCnpjLoading] = useState(false)
   const [cepLoading, setCepLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   // Form fields
   const [type, setType] = useState<'PF' | 'PJ'>('PJ')
@@ -21,6 +23,10 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [phone, setPhone] = useState('')
   const [companyName, setCompanyName] = useState('')
+  
+  // Logo/Foto
+  const [logoUrl, setLogoUrl] = useState('')
+  const [logoPreview, setLogoPreview] = useState('')
   
   // Documento
   const [cnpjCpf, setCnpjCpf] = useState('')
@@ -34,6 +40,68 @@ export default function RegisterPage() {
   const [neighborhood, setNeighborhood] = useState('')
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
+
+  // Upload de logo/foto
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validar tipo de arquivo
+    if (!file.type.startsWith('image/')) {
+      setError('Por favor, selecione uma imagem válida')
+      return
+    }
+
+    // Validar tamanho (máx 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('A imagem deve ter no máximo 5MB')
+      return
+    }
+
+    setUploading(true)
+    setError('')
+
+    try {
+      // Criar preview local
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+
+      // Upload para Supabase Storage
+      const fileExt = file.name.split('.').pop()
+      const fileName = `clients/${Date.now()}.${fileExt}`
+      
+      const { error: uploadError } = await supabase.storage
+        .from('os-photos')
+        .upload(fileName, file, {
+          contentType: file.type,
+          upsert: false
+        })
+
+      if (uploadError) throw uploadError
+
+      // Obter URL pública
+      const { data } = supabase.storage
+        .from('os-photos')
+        .getPublicUrl(fileName)
+
+      setLogoUrl(data.publicUrl)
+    } catch (error: any) {
+      console.error('Erro ao fazer upload:', error)
+      setError('Erro ao fazer upload da imagem. Tente novamente.')
+      setLogoPreview('')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  // Remover logo/foto
+  function handleRemoveImage() {
+    setLogoUrl('')
+    setLogoPreview('')
+  }
 
   // Buscar dados do CNPJ
   async function handleCnpjBlur() {
@@ -139,6 +207,7 @@ export default function RegisterPage() {
           cnpj_cpf: cnpjCpf.trim() || null,
           ie_rg: ieRg.trim() || null,
           type: type,
+          client_logo_url: logoUrl || null,
           zip_code: cep.trim() || null,
           street: street.trim() || null,
           number: number.trim() || null,
@@ -258,6 +327,72 @@ export default function RegisterPage() {
                   <Building2 className="w-5 h-5" />
                   <span className="font-medium">Pessoa Jurídica</span>
                 </button>
+              </div>
+            </div>
+
+            {/* Upload de Logo/Foto */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                {type === 'PJ' ? 'Logo da Empresa' : 'Foto de Perfil'} (opcional)
+              </label>
+              <div className="flex items-center gap-4">
+                {/* Preview da Imagem */}
+                <div className="relative">
+                  {logoPreview || logoUrl ? (
+                    <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-blue-100">
+                      <Image
+                        src={logoPreview || logoUrl}
+                        alt="Preview"
+                        fill
+                        className="object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
+                      <Camera className="w-8 h-8 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Botão de Upload */}
+                <div className="flex-1">
+                  <label
+                    htmlFor="logo-upload"
+                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-gray-300 bg-white text-gray-700 hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer ${
+                      uploading ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Enviando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-5 h-5" />
+                        <span>Escolher Imagem</span>
+                      </>
+                    )}
+                  </label>
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploading}
+                    className="hidden"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    PNG, JPG ou JPEG. Máximo 5MB.
+                  </p>
+                </div>
               </div>
             </div>
 
