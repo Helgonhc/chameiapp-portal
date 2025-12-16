@@ -75,151 +75,192 @@ export async function generateServiceOrderPDF(order: any) {
     // Texto do relatório
     const reportContent = order.execution_report || '<i>Nenhuma observação registrada.</i>'
 
-    // 3. HTML PROFISSIONAL V2.0 - EXATAMENTE IGUAL AO APP
+    // 3. HTML PROFISSIONAL V3.0 - DESIGN PREMIUM
     const html = `
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <style>
-@page { margin: 30px; }
+@page { margin: 25px 30px; }
+* { box-sizing: border-box; }
 body {
   font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 10px;
-  color: #333;
-  line-height: 1.4;
+  color: #2d3748;
+  line-height: 1.5;
   -webkit-print-color-adjust: exact;
+  background: #fff;
+  margin: 0;
+  padding: 0;
 }
 
-/* HEADER */
+/* HEADER PREMIUM */
 .header-container {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 2px solid ${company.color};
-  padding-bottom: 15px;
+  background: linear-gradient(135deg, ${company.color}08 0%, ${company.color}15 100%);
+  border-radius: 12px;
+  padding: 20px;
   margin-bottom: 25px;
+  border: 1px solid ${company.color}30;
 }
-.header-logo { width: 20%; }
-.header-logo img { width: 100%; max-height: 70px; object-fit: contain; }
-.header-info { width: 55%; padding: 0 15px; }
+.header-logo { width: 18%; }
+.header-logo img { width: 100%; max-height: 75px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+.header-info { width: 52%; padding: 0 20px; }
 .header-info h1 {
-  margin: 0;
-  font-size: 16px;
+  margin: 0 0 8px 0;
+  font-size: 18px;
   color: ${company.color};
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+.header-info p { margin: 3px 0; font-size: 9px; color: #4a5568; }
+.header-info p b { color: #2d3748; }
+.header-meta { width: 30%; text-align: right; }
+.os-badge {
+  background: linear-gradient(135deg, ${company.color} 0%, ${company.color}dd 100%);
+  color: #FFF;
+  padding: 12px 18px;
+  border-radius: 10px;
+  display: inline-block;
+  text-align: center;
+  box-shadow: 0 4px 15px ${company.color}40;
+}
+.os-number { font-size: 18px; font-weight: 800; display: block; letter-spacing: 1px; }
+.os-label { font-size: 8px; text-transform: uppercase; opacity: 0.9; letter-spacing: 1px; }
+.os-date { font-size: 10px; margin-top: 8px; color: #4a5568; font-weight: 600; }
+
+/* SEÇÕES PREMIUM */
+.section { margin-bottom: 22px; break-inside: avoid; }
+.section-title {
+  background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%);
+  border-left: 4px solid ${company.color};
+  border-radius: 0 8px 8px 0;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #1e293b;
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  letter-spacing: 0.5px;
+}
+.section-content {
+  background: #fafbfc;
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+/* TABELAS PREMIUM */
+.info-table { width: 100%; border-collapse: collapse; }
+.info-table tr { border-bottom: 1px solid #f1f5f9; }
+.info-table tr:last-child { border-bottom: none; }
+.info-table td { padding: 8px 6px; vertical-align: middle; }
+.lbl {
+  font-weight: 600;
+  color: #64748b;
+  width: 120px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.val { color: #1e293b; font-weight: 500; font-size: 10px; }
+
+/* CHECKLIST PREMIUM */
+.checklist-container {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 14px;
+  margin: 14px 0;
+  border: 1px solid #e2e8f0;
+}
+.checklist-header {
+  font-size: 10px;
+  font-weight: 700;
+  color: #475569;
+  border-bottom: 2px solid ${company.color}30;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-.header-info p { margin: 2px 0; font-size: 9px; color: #555; }
-.header-meta { width: 25%; text-align: right; }
-.os-badge {
-  background-color: ${company.color};
-  color: #FFF;
-  padding: 5px 10px;
-  border-radius: 4px;
-  display: inline-block;
-  text-align: center;
-}
-.os-number { font-size: 14px; font-weight: bold; display: block; }
-.os-label { font-size: 8px; text-transform: uppercase; opacity: 0.9; }
-.os-date { font-size: 9px; margin-top: 5px; color: #666; font-weight: bold; }
-
-/* SEÇÕES */
-.section { margin-bottom: 20px; break-inside: avoid; }
-.section-title {
-  background-color: #f4f4f4;
-  border-left: 5px solid ${company.color};
-  padding: 6px 10px;
-  font-size: 11px;
-  font-weight: bold;
-  text-transform: uppercase;
-  color: #333;
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-}
-
-/* TABELAS */
-.info-table { width: 100%; border-collapse: collapse; }
-.info-table td { padding: 4px; vertical-align: top; }
-.lbl {
-  font-weight: bold;
-  color: #666;
-  width: 110px;
-  font-size: 9px;
-  text-transform: uppercase;
-}
-.val { color: #000; font-weight: 500; }
-
-/* CHECKLIST */
-.task-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-.task-row { border-bottom: 1px solid #eee; }
-.task-row td { padding: 6px 4px; }
+.task-table { width: 100%; border-collapse: collapse; }
+.task-row { border-bottom: 1px solid #e2e8f0; transition: background 0.2s; }
+.task-row:last-child { border-bottom: none; }
+.task-row td { padding: 10px 8px; }
 .check-icon {
-  width: 14px;
-  height: 14px;
-  border: 1px solid #ccc;
-  border-radius: 3px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cbd5e1;
+  border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 11px;
   color: transparent;
+  background: #fff;
 }
 .is-checked .check-icon {
-  background-color: #10B981;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
   border-color: #10B981;
   color: #FFF;
+  box-shadow: 0 2px 6px rgba(16,185,129,0.3);
 }
-.task-text { font-size: 10px; }
-.is-checked .task-text { color: #000; font-weight: 600; }
+.task-text { font-size: 10px; color: #64748b; }
+.is-checked .task-text { color: #1e293b; font-weight: 600; }
 
-/* RELATÓRIO E OBS */
+/* RELATÓRIO PREMIUM */
 .report-box {
-  border: 1px solid #ccc;
-  background-color: #fff;
-  padding: 12px;
-  border-radius: 4px;
-  min-height: 80px;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  padding: 16px;
+  border-radius: 10px;
+  min-height: 90px;
   white-space: pre-wrap;
   word-wrap: break-word;
   font-family: 'Segoe UI', 'Roboto', Helvetica, Arial, sans-serif;
   font-size: 11px;
-  line-height: 1.5;
-  color: #222;
+  line-height: 1.6;
+  color: #334155;
   text-align: left;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);
 }
 
-/* FOTOS */
+/* FOTOS PREMIUM */
 .photos-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 15px;
-  margin-top: 12px;
+  gap: 18px;
+  margin-top: 14px;
   page-break-inside: avoid;
 }
 .photos-single {
   grid-template-columns: 1fr;
-  max-width: 65%;
+  max-width: 60%;
   margin-left: auto;
   margin-right: auto;
 }
 .photo-card {
   width: 100%;
-  height: 240px;
-  border: 3px solid #e8e8e8;
-  border-radius: 10px;
+  height: 250px;
+  border: none;
+  border-radius: 14px;
   overflow: hidden;
   position: relative;
-  background: #fafafa;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.12), 0 4px 10px rgba(0,0,0,0.08);
   page-break-inside: avoid;
 }
 .photo-card-single {
-  height: 350px;
-  border-width: 4px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  height: 380px;
+  box-shadow: 0 12px 35px rgba(0,0,0,0.15), 0 6px 15px rgba(0,0,0,0.1);
 }
 .photo-card img {
   width: 100%;
@@ -232,46 +273,67 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 70%, transparent 100%);
+  background: linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.7) 60%, transparent 100%);
   color: white;
-  padding: 10px 12px;
+  padding: 14px 16px;
   font-size: 10px;
   font-weight: 700;
   text-align: center;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 
-/* ASSINATURAS */
+/* ASSINATURAS PREMIUM */
 .signatures-section {
-  margin-top: 40px;
+  margin-top: 45px;
   display: flex;
   justify-content: space-between;
   page-break-inside: avoid;
+  gap: 30px;
 }
-.sig-box { width: 45%; text-align: center; }
+.sig-box {
+  width: 45%;
+  text-align: center;
+  background: linear-gradient(180deg, #fafbfc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  padding: 20px 15px 15px;
+  border: 1px solid #e2e8f0;
+}
 .sig-img {
-  height: 50px;
+  height: 55px;
   object-fit: contain;
-  margin-bottom: -15px;
+  margin-bottom: -10px;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
 }
-.sig-line { border-top: 1px solid #333; margin: 5px 0; }
+.sig-line {
+  border-top: 2px solid #334155;
+  margin: 8px 20px;
+  border-radius: 1px;
+}
 .sig-name {
-  font-weight: bold;
-  font-size: 10px;
+  font-weight: 700;
+  font-size: 11px;
   text-transform: uppercase;
+  color: #1e293b;
+  letter-spacing: 0.5px;
 }
-.sig-role { font-size: 8px; color: #666; }
-.sig-doc { font-size: 8px; color: #888; margin-top: 3px; font-style: italic; }
+.sig-role { font-size: 9px; color: #64748b; margin-top: 2px; }
+.sig-doc { font-size: 8px; color: #94a3b8; margin-top: 4px; font-style: italic; }
 
+/* FOOTER PREMIUM */
 .footer {
-  margin-top: 30px;
-  padding-top: 10px;
-  border-top: 1px solid #eee;
+  margin-top: 35px;
+  padding: 15px 20px;
+  background: linear-gradient(90deg, ${company.color}08 0%, ${company.color}12 50%, ${company.color}08 100%);
+  border-radius: 10px;
   text-align: center;
   font-size: 8px;
-  color: #999;
+  color: #64748b;
+  border: 1px solid ${company.color}20;
+}
+.footer-brand {
+  font-weight: 700;
+  color: ${company.color};
 }
 </style>
 </head>
@@ -298,74 +360,76 @@ body {
 </div>
 
 <div class="section">
-  <div class="section-title">Dados do Cliente</div>
-  <table class="info-table">
-    <tr>
-      <td class="lbl">Cliente/Razão:</td>
-      <td class="val"><b>${order.clients?.name || 'Não informado'}</b></td>
-    </tr>
-    <tr>
-      <td class="lbl">Endereço:</td>
-      <td class="val">${order.clients?.address || 'Não informado'}</td>
-    </tr>
-    <tr>
-      <td class="lbl">Documento:</td>
-      <td class="val">${order.clients?.cnpj_cpf || '-'}</td>
-    </tr>
-    <tr>
-      <td class="lbl">Contato:</td>
-      <td class="val">${order.clients?.phone || ''}</td>
-    </tr>
-  </table>
+  <div class="section-title">👤 Dados do Cliente</div>
+  <div class="section-content">
+    <table class="info-table">
+      <tr>
+        <td class="lbl">Cliente/Razão:</td>
+        <td class="val"><b>${order.clients?.name || 'Não informado'}</b></td>
+      </tr>
+      <tr>
+        <td class="lbl">Endereço:</td>
+        <td class="val">${order.clients?.address || 'Não informado'}</td>
+      </tr>
+      <tr>
+        <td class="lbl">Documento:</td>
+        <td class="val">${order.clients?.cnpj_cpf || '-'}</td>
+      </tr>
+      <tr>
+        <td class="lbl">Contato:</td>
+        <td class="val">${order.clients?.phone || ''}</td>
+      </tr>
+    </table>
+  </div>
 </div>
 
 <div class="section">
   <div class="section-title">
-    <span>Detalhes da Execução</span>
-    <span style="font-size:9px; font-weight:normal; text-transform:none;">
-      ${formatDateTime(order.checkin_at)} até ${formatDateTime(order.completed_at)}
+    <span>🔧 Detalhes da Execução</span>
+    <span style="font-size:9px; font-weight:normal; text-transform:none; color:#64748b;">
+      ${formatDateTime(order.checkin_at)} → ${formatDateTime(order.completed_at)}
     </span>
   </div>
-  <div style="margin-bottom: 10px; padding: 0 4px;">
-    <span class="lbl">SERVIÇO REALIZADO:</span>
-    <span class="val"><b>${order.title}</b></span>
-  </div>
-
-  ${tasks && tasks.length > 0 ? `
-  <div style="margin-top: 15px; margin-bottom: 15px;">
-    <div style="font-size: 10px; font-weight: bold; color: #555; border-bottom: 1px solid #ddd; padding-bottom: 2px; margin-bottom: 5px;">
-      CHECKLIST DE VERIFICAÇÃO
+  <div class="section-content">
+    <div style="margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px dashed #e2e8f0;">
+      <span class="lbl">SERVIÇO REALIZADO:</span>
+      <span class="val" style="font-size: 12px;"><b>${order.title}</b></span>
     </div>
-    <table class="task-table">
-      ${tasks.map((t: any) => `
-      <tr class="task-row ${t.is_completed ? 'is-checked' : ''}">
-        <td width="20"><div class="check-icon">✓</div></td>
-        <td class="task-text">${t.title}</td>
-      </tr>
-      `).join('')}
-    </table>
-  </div>
-  ` : ''}
 
-  <div style="font-size: 10px; font-weight: bold; color: #555; margin-bottom: 5px;">
-    RELATÓRIO TÉCNICO / OBSERVAÇÕES
+    ${tasks && tasks.length > 0 ? `
+    <div class="checklist-container">
+      <div class="checklist-header">✅ Checklist de Verificação</div>
+      <table class="task-table">
+        ${tasks.map((t: any) => `
+        <tr class="task-row ${t.is_completed ? 'is-checked' : ''}">
+          <td width="28"><div class="check-icon">✓</div></td>
+          <td class="task-text">${t.title}</td>
+        </tr>
+        `).join('')}
+      </table>
+    </div>
+    ` : ''}
+
+    <div style="font-size: 10px; font-weight: 700; color: #475569; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+      📝 Relatório Técnico / Observações
+    </div>
+    <div class="report-box">${reportContent}</div>
   </div>
-  <div class="report-box">${reportContent}</div>
 </div>
 
 ${(order.photos_url && order.photos_url.length > 0) || (order.photos && order.photos.length > 0) ? `
 <div class="section">
   <div class="section-title">
     <span>📸 Registro Fotográfico</span>
-    <span style="font-size:9px; font-weight:normal; text-transform:none;">
-      ${(order.photos_url || order.photos).length} ${(order.photos_url || order.photos).length === 1 ? 'foto anexada' : 'fotos anexadas'}
+    <span style="font-size:9px; font-weight:normal; text-transform:none; color:#64748b;">
+      ${(order.photos_url || order.photos).length} ${(order.photos_url || order.photos).length === 1 ? 'evidência anexada' : 'evidências anexadas'}
     </span>
   </div>
   <div class="photos-container ${(order.photos_url || order.photos).length === 1 ? 'photos-single' : ''}">
     ${(order.photos_url || order.photos).map((u: string, index: number) => `
     <div class="photo-card ${(order.photos_url || order.photos).length === 1 ? 'photo-card-single' : ''}">
-      <img src="${u}" alt="Foto ${index + 1}" />
-      <div class="photo-label">Foto ${index + 1} de ${(order.photos_url || order.photos).length}</div>
+      <img src="${u}" alt="Evidência ${index + 1}" />
+      <div class="photo-label">Evidência ${index + 1} de ${(order.photos_url || order.photos).length}</div>
     </div>
     `).join('')}
   </div>
@@ -390,7 +454,7 @@ ${(order.photos_url && order.photos_url.length > 0) || (order.photos && order.ph
 </div>
 
 <div class="footer">
-  Documento gerado digitalmente através do Portal Chamei em ${new Date().toLocaleString('pt-BR')}<br/>
+  Documento gerado digitalmente através do <span class="footer-brand">Portal Chamei</span> em ${new Date().toLocaleString('pt-BR')}<br/>
   A autenticidade deste documento pode ser verificada junto ao prestador de serviços.
 </div>
 
