@@ -272,6 +272,7 @@ export default function NewAppointmentPage() {
           </button>
         </form>
       </main>
+      </div>
     </DashboardLayout>
   )
 }
