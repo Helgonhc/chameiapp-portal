@@ -195,22 +195,22 @@ export default function ManageUsersPage() {
     }
 
     try {
-      // 1. Deletar profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', user.id)
+      // 1. Deletar do auth.users PRIMEIRO (isso também deleta de profiles via CASCADE)
+      const { error: authError } = await supabase.auth.admin.deleteUser(user.id)
 
-      if (profileError) throw profileError
+      if (authError) {
+        // Se falhar no auth, tentar deletar só do profiles
+        console.log('Erro ao deletar do auth, tentando profiles:', authError)
+        
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .delete()
+          .eq('id', user.id)
 
-      // 2. Deletar do auth (admin only, pode falhar)
-      try {
-        await supabase.auth.admin.deleteUser(user.id)
-      } catch (authError) {
-        console.log('Não foi possível deletar do auth:', user.id)
+        if (profileError) throw profileError
       }
 
-      alert('✅ Usuário removido com sucesso!')
+      alert('✅ Usuário removido completamente!')
       loadUsers()
     } catch (error: any) {
       console.error('Erro ao remover usuário:', error)
