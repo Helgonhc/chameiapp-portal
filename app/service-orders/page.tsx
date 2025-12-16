@@ -36,6 +36,27 @@ export default function ServiceOrdersPage() {
   useEffect(() => {
     checkAuth()
     loadOrders()
+
+    // Atualização em tempo real
+    const channel = supabase
+      .channel('service_orders_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'service_orders'
+        },
+        () => {
+          // Recarregar quando houver mudanças
+          loadOrders()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   useEffect(() => {
@@ -82,9 +103,14 @@ export default function ServiceOrdersPage() {
   function applyFilters() {
     let filtered = [...orders]
 
-    // Filtro de status básico
+    // Filtro de status básico (considera português e inglês)
     if (filter !== 'all') {
-      filtered = filtered.filter(o => o.status === filter)
+      filtered = filtered.filter(o => {
+        if (filter === 'pending') return o.status === 'pending' || o.status === 'pendente'
+        if (filter === 'in_progress') return o.status === 'in_progress' || o.status === 'em_andamento'
+        if (filter === 'completed') return o.status === 'completed' || o.status === 'concluido' || o.status === 'concluida'
+        return o.status === filter
+      })
     }
 
     // Filtros avançados
@@ -160,27 +186,47 @@ export default function ServiceOrdersPage() {
   }
 
   function getStatusColor(status: string) {
-    const colors = {
+    const colors: Record<string, string> = {
+      // Inglês
       pending: 'bg-yellow-100 text-yellow-800',
       scheduled: 'bg-blue-100 text-blue-800',
       in_progress: 'bg-purple-100 text-purple-800',
       paused: 'bg-orange-100 text-orange-800',
       completed: 'bg-green-100 text-green-800',
       cancelled: 'bg-red-100 text-red-800',
+      // Português (app mobile)
+      pendente: 'bg-yellow-100 text-yellow-800',
+      agendada: 'bg-blue-100 text-blue-800',
+      em_andamento: 'bg-purple-100 text-purple-800',
+      pausada: 'bg-orange-100 text-orange-800',
+      concluido: 'bg-green-100 text-green-800',
+      concluida: 'bg-green-100 text-green-800',
+      cancelado: 'bg-red-100 text-red-800',
+      cancelada: 'bg-red-100 text-red-800',
     }
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'
+    return colors[status] || 'bg-gray-100 text-gray-800'
   }
 
   function getStatusLabel(status: string) {
-    const labels = {
+    const labels: Record<string, string> = {
+      // Inglês
       pending: 'Pendente',
       scheduled: 'Agendada',
       in_progress: 'Em Andamento',
       paused: 'Pausada',
       completed: 'Concluída',
       cancelled: 'Cancelada',
+      // Português (app mobile)
+      pendente: 'Pendente',
+      agendada: 'Agendada',
+      em_andamento: 'Em Andamento',
+      pausada: 'Pausada',
+      concluido: 'Concluída',
+      concluida: 'Concluída',
+      cancelado: 'Cancelada',
+      cancelada: 'Cancelada',
     }
-    return labels[status as keyof typeof labels] || status
+    return labels[status] || status
   }
 
 
@@ -238,9 +284,9 @@ export default function ServiceOrdersPage() {
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
             {[
               { key: 'all', label: 'Todas', count: orders.length, icon: '📋' },
-              { key: 'pending', label: 'Pendentes', count: orders.filter(o => o.status === 'pending').length, icon: '⏳' },
-              { key: 'in_progress', label: 'Em Andamento', count: orders.filter(o => o.status === 'in_progress').length, icon: '🔧' },
-              { key: 'completed', label: 'Concluídas', count: orders.filter(o => o.status === 'completed').length, icon: '✅' },
+              { key: 'pending', label: 'Pendentes', count: orders.filter(o => o.status === 'pending' || o.status === 'pendente').length, icon: '⏳' },
+              { key: 'in_progress', label: 'Em Andamento', count: orders.filter(o => o.status === 'in_progress' || o.status === 'em_andamento').length, icon: '🔧' },
+              { key: 'completed', label: 'Concluídas', count: orders.filter(o => o.status === 'completed' || o.status === 'concluido' || o.status === 'concluida').length, icon: '✅' },
             ].map((btn) => (
               <button
                 key={btn.key}
