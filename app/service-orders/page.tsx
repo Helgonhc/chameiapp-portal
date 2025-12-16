@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Wrench, Clock, CheckCircle, XCircle, Calendar, User, Filter, Sparkles } from 'lucide-react'
+import { Wrench, Clock, CheckCircle, XCircle, Calendar, User } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 
 interface ServiceOrder {
@@ -45,19 +45,14 @@ export default function ServiceOrdersPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Buscar client_id do usuário
       const { data: profile } = await supabase
         .from('profiles')
         .select('client_id')
         .eq('id', user.id)
         .single()
 
-      if (!profile?.client_id) {
-        console.error('Client ID não encontrado')
-        return
-      }
+      if (!profile?.client_id) return
 
-      // Buscar ordens de serviço do cliente
       const { data, error } = await supabase
         .from('service_orders')
         .select(`
@@ -78,14 +73,14 @@ export default function ServiceOrdersPage() {
 
   function getStatusColor(status: string) {
     const colors = {
-      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      scheduled: 'bg-blue-100 text-blue-800 border-blue-200',
-      in_progress: 'bg-purple-100 text-purple-800 border-purple-200',
-      paused: 'bg-orange-100 text-orange-800 border-orange-200',
-      completed: 'bg-green-100 text-green-800 border-green-200',
-      cancelled: 'bg-red-100 text-red-800 border-red-200',
+      pending: 'bg-yellow-100 text-yellow-800',
+      scheduled: 'bg-blue-100 text-blue-800',
+      in_progress: 'bg-purple-100 text-purple-800',
+      paused: 'bg-orange-100 text-orange-800',
+      completed: 'bg-green-100 text-green-800',
+      cancelled: 'bg-red-100 text-red-800',
     }
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800 border-gray-200'
+    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'
   }
 
   function getStatusLabel(status: string) {
@@ -100,28 +95,6 @@ export default function ServiceOrdersPage() {
     return labels[status as keyof typeof labels] || status
   }
 
-  function getStatusIcon(status: string) {
-    const icons = {
-      pending: <Clock className="w-5 h-5" />,
-      scheduled: <Calendar className="w-5 h-5" />,
-      in_progress: <Wrench className="w-5 h-5" />,
-      paused: <Clock className="w-5 h-5" />,
-      completed: <CheckCircle className="w-5 h-5" />,
-      cancelled: <XCircle className="w-5 h-5" />,
-    }
-    return icons[status as keyof typeof icons] || <Wrench className="w-5 h-5" />
-  }
-
-  function getPriorityColor(priority: string) {
-    const colors = {
-      baixa: 'text-green-600',
-      media: 'text-yellow-600',
-      alta: 'text-orange-600',
-      urgente: 'text-red-600',
-    }
-    return colors[priority as keyof typeof colors] || 'text-gray-600'
-  }
-
   const filteredOrders = filter === 'all' 
     ? orders 
     : orders.filter(o => o.status === filter)
@@ -129,13 +102,10 @@ export default function ServiceOrdersPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <div className="relative">
-              <div className="animate-spin rounded-full h-16 w-16 border-4 border-purple-200 border-t-purple-600 mx-auto mb-4"></div>
-              <Wrench className="w-6 h-6 text-purple-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-            </div>
-            <p className="text-sm font-medium text-slate-600">Carregando ordens de serviço...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -144,135 +114,112 @@ export default function ServiceOrdersPage() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        {/* Header Premium com Gradiente */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 px-8 py-12">
-          <div className="absolute inset-0 bg-grid-white/10"></div>
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-rose-500/20 rounded-full blur-3xl"></div>
-          
-          <div className="relative">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-white/20 backdrop-blur-xl rounded-lg">
-                <Wrench className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-4xl font-bold text-white">Ordens de Serviço</h1>
-            </div>
-            <p className="text-purple-100 text-lg">{orders.length} ordem{orders.length !== 1 ? 's' : ''} no total</p>
-          </div>
+      <div className="p-6 max-w-6xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Ordens de Serviço</h1>
+          <p className="text-gray-600 mt-2">{orders.length} ordem{orders.length !== 1 ? 's' : ''} no total</p>
         </div>
 
-        <div className="px-8 -mt-8 pb-8">
-        {/* Filtros Premium - Responsivo */}
-        <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3 mb-6">
-          {[
-            { key: 'all', label: 'Todas', count: orders.length, icon: '📋' },
-            { key: 'pending', label: 'Pendentes', count: orders.filter(o => o.status === 'pending').length, icon: '⏳' },
-            { key: 'in_progress', label: 'Em Andamento', count: orders.filter(o => o.status === 'in_progress').length, icon: '🔧' },
-            { key: 'completed', label: 'Concluídas', count: orders.filter(o => o.status === 'completed').length, icon: '✅' },
-          ].map((btn) => (
-            <button
-              key={btn.key}
-              onClick={() => setFilter(btn.key as any)}
-              className={`group px-4 md:px-5 py-3 rounded-xl font-semibold transition-all shadow-sm text-sm md:text-base ${
-                filter === btn.key
-                  ? 'bg-white text-purple-600 shadow-lg border-2 border-purple-200 scale-105'
-                  : 'bg-white/70 text-slate-600 hover:bg-white hover:shadow-md border-2 border-transparent'
-              }`}
-            >
-              <span className="mr-1 md:mr-2">{btn.icon}</span>
-              <span className="hidden sm:inline">{btn.label} </span>
-              <span className="sm:hidden">{btn.label.split(' ')[0]} </span>
-              ({btn.count})
-            </button>
-          ))}
+        <div className="flex flex-wrap gap-2 mb-6">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              filter === 'all'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Todas ({orders.length})
+          </button>
+          <button
+            onClick={() => setFilter('pending')}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              filter === 'pending'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Pendentes ({orders.filter(o => o.status === 'pending').length})
+          </button>
+          <button
+            onClick={() => setFilter('in_progress')}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              filter === 'in_progress'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Em Andamento ({orders.filter(o => o.status === 'in_progress').length})
+          </button>
+          <button
+            onClick={() => setFilter('completed')}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              filter === 'completed'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Concluídas ({orders.filter(o => o.status === 'completed').length})
+          </button>
         </div>
 
-        {/* Lista de Ordens Premium */}
-        <div className="grid gap-6">
+        <div className="grid gap-4">
           {filteredOrders.length === 0 ? (
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-slate-200/60 p-20 text-center">
-              <div className="inline-flex p-6 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full mb-6">
-                <Wrench className="w-16 h-16 text-purple-600" />
-              </div>
-              <p className="text-2xl font-bold text-slate-700 mb-3">
-                Nenhuma ordem de serviço encontrada
+            <div className="bg-white rounded-lg shadow p-12 text-center">
+              <Wrench className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-xl font-bold text-gray-700 mb-2">
+                Nenhuma ordem encontrada
               </p>
-              <p className="text-slate-500">
+              <p className="text-gray-500">
                 {filter === 'all' 
-                  ? 'Quando houver ordens de serviço, elas aparecerão aqui' 
+                  ? 'Quando houver ordens, elas aparecerão aqui' 
                   : 'Nenhuma ordem com este status'}
               </p>
             </div>
           ) : (
-            filteredOrders.map((order, index) => (
+            filteredOrders.map((order) => (
               <div
                 key={order.id}
-                style={{ animationDelay: `${index * 50}ms` }}
                 onClick={() => router.push(`/service-orders/${order.id}`)}
-                className="group relative bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-slate-200/60 p-6 hover:shadow-2xl transition-all duration-500 cursor-pointer hover:border-purple-300 overflow-hidden animate-fade-in-up"
+                className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer"
               >
-                {/* Efeito de brilho no hover */}
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <div className="flex flex-col gap-4 mb-4">
-                  {/* Linha 1: Ícone, Título e Valor */}
-                  <div className="flex items-start gap-3">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${getStatusColor(order.status)}`}>
-                      {getStatusIcon(order.status)}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="font-bold text-gray-900">{order.order_number}</span>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
+                        {getStatusLabel(order.status)}
+                      </span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-slate-900 text-sm">{order.order_number}</span>
-                      </div>
-                      <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                        {order.title}
-                      </h3>
-                    </div>
-                    {order.final_cost && (
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-xs text-slate-500">Valor</p>
-                        <p className="text-lg font-bold text-green-600 whitespace-nowrap">
-                          R$ {order.final_cost.toFixed(2)}
-                        </p>
-                      </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">
+                      {order.title}
+                    </h3>
+                    {order.description && (
+                      <p className="text-gray-600 text-sm line-clamp-2">{order.description}</p>
                     )}
                   </div>
-                  
-                  {/* Linha 2: Badges de Status */}
-                  <div className="flex flex-wrap gap-2">
-                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold border ${getStatusColor(order.status)}`}>
-                      {getStatusLabel(order.status)}
-                    </span>
-                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold ${getPriorityColor(order.priority)}`}>
-                      {order.priority === 'low' ? '🟢 Baixa' : 
-                       order.priority === 'medium' ? '🟡 Média' : 
-                       order.priority === 'high' ? '🟠 Alta' : '🔴 Urgente'}
-                    </span>
-                  </div>
-                </div>
-
-                {order.description && (
-                  <p className="text-slate-600 mb-4 line-clamp-2">{order.description}</p>
-                )}
-
-                <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-slate-200">
-                  {order.technician && (
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <User className="w-4 h-4 flex-shrink-0" />
-                      <span className="truncate">{order.technician.full_name}</span>
+                  {order.final_cost && (
+                    <div className="text-right ml-4">
+                      <p className="text-sm text-gray-500">Valor</p>
+                      <p className="text-xl font-bold text-green-600">
+                        R$ {order.final_cost.toFixed(2)}
+                      </p>
                     </div>
                   )}
-                  
+                </div>
+
+                <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-gray-200">
+                  {order.technician && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <User className="w-4 h-4" />
+                      <span>{order.technician.full_name}</span>
+                    </div>
+                  )}
                   {order.scheduled_at && (
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <Calendar className="w-4 h-4 flex-shrink-0" />
-                      <span className="whitespace-nowrap">
-                        {new Date(order.scheduled_at).toLocaleDateString('pt-BR', {
-                          day: '2-digit',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Calendar className="w-4 h-4" />
+                      <span>
+                        {new Date(order.scheduled_at).toLocaleDateString('pt-BR')}
                       </span>
                     </div>
                   )}
@@ -280,7 +227,6 @@ export default function ServiceOrdersPage() {
               </div>
             ))
           )}
-        </div>
         </div>
       </div>
     </DashboardLayout>
