@@ -346,19 +346,19 @@ body {
   <div class="report-box">${reportContent}</div>
 </div>
 
-${order.photos && order.photos.length > 0 ? `
+${(order.photos_url && order.photos_url.length > 0) || (order.photos && order.photos.length > 0) ? `
 <div class="section">
   <div class="section-title">
     <span>📸 Registro Fotográfico</span>
     <span style="font-size:9px; font-weight:normal; text-transform:none;">
-      ${order.photos.length} ${order.photos.length === 1 ? 'foto anexada' : 'fotos anexadas'}
+      ${(order.photos_url || order.photos).length} ${(order.photos_url || order.photos).length === 1 ? 'foto anexada' : 'fotos anexadas'}
     </span>
   </div>
-  <div class="photos-container ${order.photos.length === 1 ? 'photos-single' : ''}">
-    ${order.photos.map((u: string, index: number) => `
-    <div class="photo-card ${order.photos.length === 1 ? 'photo-card-single' : ''}">
+  <div class="photos-container ${(order.photos_url || order.photos).length === 1 ? 'photos-single' : ''}">
+    ${(order.photos_url || order.photos).map((u: string, index: number) => `
+    <div class="photo-card ${(order.photos_url || order.photos).length === 1 ? 'photo-card-single' : ''}">
       <img src="${u}" alt="Foto ${index + 1}" />
-      <div class="photo-label">Foto ${index + 1} de ${order.photos.length}</div>
+      <div class="photo-label">Foto ${index + 1} de ${(order.photos_url || order.photos).length}</div>
     </div>
     `).join('')}
   </div>

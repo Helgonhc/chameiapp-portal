@@ -16,9 +16,15 @@ interface ServiceOrder {
   status: string
   priority: string
   scheduled_date: string
+  scheduled_at: string
   completed_date: string
+  completed_at: string
+  checkin_at: string
   technician_notes: string
+  execution_report: string
   photos: string[]
+  photos_url: string[]
+  technician_id: string
   created_at: string
   updated_at: string
   signature_url?: string
@@ -31,6 +37,7 @@ interface ServiceOrder {
     phone: string
     address: string
     cnpj_cpf?: string
+    responsible_name?: string
   }
   equipments: {
     name: string
@@ -388,14 +395,14 @@ export default function ServiceOrderDetailsPage() {
               )}
 
               {/* Fotos */}
-              {order.photos && order.photos.length > 0 && (
+              {((order.photos_url && order.photos_url.length > 0) || (order.photos && order.photos.length > 0)) && (
                 <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <ImageIcon className="w-5 h-5 text-blue-600" />
-                    Fotos ({order.photos.length})
+                    Fotos ({(order.photos_url || order.photos).length})
                   </h2>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {order.photos.map((photo, index) => (
+                    {(order.photos_url || order.photos).map((photo, index) => (
                       <div
                         key={index}
                         onClick={() => setSelectedPhoto(photo)}
