@@ -189,13 +189,10 @@ export default function RegisterPage() {
       if (authError) throw authError
       if (!authData.user) throw new Error('Erro ao criar usuário')
 
-      // 2. FAZER LOGOUT IMEDIATAMENTE (para não ficar logado)
-      await supabase.auth.signOut()
-
-      // 3. Aguardar um pouco para o trigger criar o profile
+      // 2. Aguardar um pouco para o trigger criar o profile
       await new Promise(resolve => setTimeout(resolve, 1000))
 
-      // 4. Criar cliente na carteira
+      // 3. Criar cliente na carteira (ANTES do logout para ter permissão)
       const fullAddress = street && city 
         ? `${street}, ${number} - ${neighborhood}, ${city}/${state}${cep ? ` - CEP ${cep}` : ''}`
         : ''
@@ -245,6 +242,9 @@ export default function RegisterPage() {
         console.error('Erro ao atualizar profile:', profileError)
         throw new Error('Erro ao vincular conta ao cliente')
       }
+
+      // 6. FAZER LOGOUT AGORA (depois de criar tudo)
+      await supabase.auth.signOut()
 
       setSuccess(true)
       
