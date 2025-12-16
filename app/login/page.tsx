@@ -120,36 +120,40 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 px-4 py-8">
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-6">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 px-4 py-8 relative overflow-hidden">
+      {/* Efeitos de fundo */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl"></div>
+      
+      <div className="max-w-md w-full relative z-10">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-slate-200/60">
           {/* Logos */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-8">
             {/* Logo Empresa Cliente - DESTAQUE */}
-            <div className="mb-3">
+            <div className="mb-6">
               {branding?.logo_url && (
-                <div className="relative w-32 h-32 mx-auto mb-3">
+                <div className="relative w-32 h-32 mx-auto mb-4">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full blur opacity-20"></div>
                   <Image
                     src={branding.logo_url}
                     alt={`Logo ${branding.name}`}
                     fill
-                    className="object-contain"
+                    className="object-contain relative z-10"
                     priority
                   />
                 </div>
               )}
-              <h1 className="text-lg font-bold text-gray-900">Bem-vindo!</h1>
-              <p className="text-gray-600 text-sm mt-1 leading-relaxed">
+              <h1 className="text-2xl font-bold text-slate-900 mb-2">Bem-vindo de volta!</h1>
+              <p className="text-slate-600 text-sm leading-relaxed">
                 {branding?.portal_welcome_message || `Portal de Chamados da ${branding?.name || 'Empresa'}`}
               </p>
-              <p className="text-gray-500 text-xs mt-1">Acesse sua conta para continuar</p>
             </div>
 
             {/* Divisor com Powered by */}
-            <div className="mt-4 pt-3 border-t border-gray-200">
-              <div className="flex items-center justify-center gap-2 text-sm">
-                <span className="text-gray-500">Powered by</span>
-                <span className="font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+            <div className="pt-4 border-t border-slate-200">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-xs text-slate-500">Powered by</span>
+                <span className="text-sm font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                   ChameiApp
                 </span>
               </div>
@@ -157,15 +161,15 @@ export default function LoginPage() {
           </div>
 
           {/* Formulário */}
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-5">
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                {error}
+              <div className="bg-red-50/80 backdrop-blur-xl border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-xl">
+                <p className="text-sm font-medium">{error}</p>
               </div>
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-2">
                 Email
               </label>
               <input
@@ -174,13 +178,13 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 placeholder="seu@email.com"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-2">
                 Senha
               </label>
               <input
@@ -189,7 +193,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 placeholder="••••••••"
               />
             </div>
@@ -197,32 +201,35 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+              className="group relative w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-4 rounded-xl font-bold hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl overflow-hidden"
             >
-              {loading ? 'Entrando...' : 'Entrar'}
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+              <span className="relative">{loading ? 'Entrando...' : 'Entrar no Portal'}</span>
             </button>
           </form>
 
           {/* Link Criar Conta */}
-          <div className="mt-4 text-center text-xs text-gray-600">
-            <span>Não tem uma conta? </span>
-            <button
-              onClick={() => router.push('/register')}
-              className="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Criar conta
-            </button>
+          <div className="mt-6 text-center">
+            <p className="text-sm text-slate-600">
+              Não tem uma conta?{' '}
+              <button
+                onClick={() => router.push('/register')}
+                className="text-blue-600 hover:text-blue-700 font-semibold hover:underline transition-all"
+              >
+                Criar conta
+              </button>
+            </p>
           </div>
         </div>
       </div>
 
       {/* Rodapé com Créditos */}
-      <div className="mt-6 text-center">
-        <p className="text-xs text-gray-600">
+      <div className="mt-8 text-center relative z-10">
+        <p className="text-xs text-slate-600">
           © {new Date().getFullYear()} ChameiApp. Todos os direitos reservados.
         </p>
-        <p className="text-xs text-gray-500 mt-1">
-          Desenvolvido por <span className="font-semibold text-gray-700">Helgon Henrique</span>
+        <p className="text-xs text-slate-500 mt-1">
+          Desenvolvido por <span className="font-semibold text-slate-700">Helgon Henrique</span>
         </p>
       </div>
     </div>

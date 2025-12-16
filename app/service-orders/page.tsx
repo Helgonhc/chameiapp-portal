@@ -212,15 +212,15 @@ export default function ServiceOrdersPage() {
               >
                 {/* Efeito de brilho no hover */}
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${getStatusColor(order.status)}`}>
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${getStatusColor(order.status)}`}>
                       {getStatusIcon(order.status)}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
                         <span className="font-bold text-slate-900">{order.order_number}</span>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusColor(order.status)}`}>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border whitespace-nowrap ${getStatusColor(order.status)}`}>
                           {getStatusLabel(order.status)}
                         </span>
                       </div>
@@ -231,9 +231,9 @@ export default function ServiceOrdersPage() {
                   </div>
 
                   {order.final_cost && (
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0">
                       <p className="text-sm text-slate-500">Valor</p>
-                      <p className="text-xl font-bold text-green-600">
+                      <p className="text-xl font-bold text-green-600 whitespace-nowrap">
                         R$ {order.final_cost.toFixed(2)}
                       </p>
                     </div>
