@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, User, Mail, Phone, MapPin, Building2, Save, Eye, EyeOff, Bell, Shield } from 'lucide-react'
+import { ArrowLeft, User, Mail, Phone, MapPin, Building2, Save, Eye, EyeOff, Bell, Shield, Users } from 'lucide-react'
 
 interface ProfileData {
   id: string
@@ -184,6 +184,32 @@ export default function ProfilePage() {
             <p className="font-medium">{message.text}</p>
           </div>
         )}
+
+        {/* Gerenciar Usuários */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/60 p-8 mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Usuários do Portal</h2>
+                <p className="text-sm text-slate-500">Gerencie os usuários da sua empresa</p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => router.push('/profile/users')}
+            className="w-full group relative px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-2xl overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+            <div className="relative flex items-center justify-center gap-2">
+              <Users className="w-5 h-5" />
+              <span>👥 Gerenciar Usuários (Máx 2)</span>
+            </div>
+          </button>
+        </div>
 
         {/* Informações da Empresa */}
         {profile?.client && (
