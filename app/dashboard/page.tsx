@@ -45,12 +45,30 @@ export default function DashboardPage() {
 
   useEffect(() => {
     checkAuth()
-    loadStats()
   }, [])
 
   async function checkAuth() {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) router.push('/login')
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    // Verificar se o usuário tem profile de cliente
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('role, client_id')
+      .eq('id', user.id)
+      .single()
+
+    if (error || !profile || profile.role !== 'client') {
+      await supabase.auth.signOut()
+      router.push('/login')
+      return
+    }
+
+    // Tudo ok, carregar dados
+    loadStats()
   }
 
   async function loadStats() {
