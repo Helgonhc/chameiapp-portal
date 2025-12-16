@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Wrench, Clock, CheckCircle, XCircle, Calendar, User } from 'lucide-react'
+import { Wrench, Clock, CheckCircle, XCircle, Calendar, User, Plus } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 
 interface ServiceOrder {
@@ -125,13 +125,26 @@ export default function ServiceOrdersPage() {
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"></div>
           
           <div className="relative max-w-7xl mx-auto">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-white/20 backdrop-blur-xl rounded-lg">
-                <Wrench className="w-6 h-6 text-white" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 backdrop-blur-xl rounded-lg">
+                  <Wrench className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-bold text-white">Ordens de Serviço</h1>
+                  <p className="text-blue-100 text-lg mt-1">{orders.length} ordem{orders.length !== 1 ? 's' : ''} no total</p>
+                </div>
               </div>
-              <h1 className="text-4xl font-bold text-white">Ordens de Serviço</h1>
+              <button
+                onClick={() => router.push('/new-order')}
+                className="group relative px-6 py-4 bg-white text-blue-600 rounded-2xl font-bold hover:shadow-2xl hover:shadow-white/50 transition-all duration-500 overflow-hidden flex items-center gap-2"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                <span className="relative text-2xl">+</span>
+                <span className="relative hidden sm:inline">Nova Ordem</span>
+                <span className="relative sm:hidden">Nova</span>
+              </button>
             </div>
-            <p className="text-blue-100 text-lg">{orders.length} ordem{orders.length !== 1 ? 's' : ''} no total</p>
           </div>
         </div>
 
