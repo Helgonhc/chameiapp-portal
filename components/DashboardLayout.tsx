@@ -14,6 +14,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
   const [clientData, setClientData] = useState<any>(null)
+  const [userData, setUserData] = useState<any>(null)
   const [pendingQuotes, setPendingQuotes] = useState(0)
   const { unreadCount: unreadNotifications } = useRealtimeNotifications()
 
@@ -29,20 +30,25 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       return
     }
 
+    // Buscar dados do profile do usuário logado
     const { data: profile } = await supabase
       .from('profiles')
-      .select('client_id')
+      .select('*, client_id')
       .eq('id', user.id)
       .single()
 
-    if (profile?.client_id) {
-      const { data: client } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', profile.client_id)
-        .single()
+    if (profile) {
+      setUserData(profile)
       
-      if (client) setClientData(client)
+      if (profile.client_id) {
+        const { data: client } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id', profile.client_id)
+          .single()
+        
+        if (client) setClientData(client)
+      }
     }
   }
 
@@ -100,11 +106,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <h1 className="text-lg font-bold text-white">
                 {clientData?.name || 'Carregando...'}
               </h1>
-              {clientData?.responsible_name && (
-                <p className="text-sm text-blue-100">
-                  👤 {clientData.responsible_name}
-                </p>
-              )}
+              <p className="text-sm text-blue-100">
+                👤 {userData?.full_name || clientData?.responsible_name || 'Usuário'}
+              </p>
             </div>
           </div>
 
