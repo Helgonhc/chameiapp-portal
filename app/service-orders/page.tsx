@@ -163,8 +163,8 @@ export default function ServiceOrdersPage() {
         </div>
 
         <div className="px-8 -mt-8 pb-8">
-        {/* Filtros Premium */}
-        <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
+        {/* Filtros Premium - Responsivo */}
+        <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3 mb-6">
           {[
             { key: 'all', label: 'Todas', count: orders.length, icon: '📋' },
             { key: 'pending', label: 'Pendentes', count: orders.filter(o => o.status === 'pending').length, icon: '⏳' },
@@ -174,14 +174,16 @@ export default function ServiceOrdersPage() {
             <button
               key={btn.key}
               onClick={() => setFilter(btn.key as any)}
-              className={`group px-5 py-3 rounded-xl font-semibold transition-all whitespace-nowrap shadow-sm ${
+              className={`group px-4 md:px-5 py-3 rounded-xl font-semibold transition-all shadow-sm text-sm md:text-base ${
                 filter === btn.key
                   ? 'bg-white text-purple-600 shadow-lg border-2 border-purple-200 scale-105'
                   : 'bg-white/70 text-slate-600 hover:bg-white hover:shadow-md border-2 border-transparent'
               }`}
             >
-              <span className="mr-2">{btn.icon}</span>
-              {btn.label} ({btn.count})
+              <span className="mr-1 md:mr-2">{btn.icon}</span>
+              <span className="hidden sm:inline">{btn.label} </span>
+              <span className="sm:hidden">{btn.label.split(' ')[0]} </span>
+              ({btn.count})
             </button>
           ))}
         </div>
@@ -212,67 +214,68 @@ export default function ServiceOrdersPage() {
               >
                 {/* Efeito de brilho no hover */}
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
-                  <div className="flex items-start gap-3 flex-1">
+                <div className="flex flex-col gap-4 mb-4">
+                  {/* Linha 1: Ícone, Título e Valor */}
+                  <div className="flex items-start gap-3">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${getStatusColor(order.status)}`}>
                       {getStatusIcon(order.status)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <span className="font-bold text-slate-900">{order.order_number}</span>
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border whitespace-nowrap ${getStatusColor(order.status)}`}>
-                          {getStatusLabel(order.status)}
-                        </span>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-slate-900 text-sm">{order.order_number}</span>
                       </div>
                       <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
                         {order.title}
                       </h3>
                     </div>
+                    {order.final_cost && (
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-xs text-slate-500">Valor</p>
+                        <p className="text-lg font-bold text-green-600 whitespace-nowrap">
+                          R$ {order.final_cost.toFixed(2)}
+                        </p>
+                      </div>
+                    )}
                   </div>
-
-                  {order.final_cost && (
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm text-slate-500">Valor</p>
-                      <p className="text-xl font-bold text-green-600 whitespace-nowrap">
-                        R$ {order.final_cost.toFixed(2)}
-                      </p>
-                    </div>
-                  )}
+                  
+                  {/* Linha 2: Badges de Status */}
+                  <div className="flex flex-wrap gap-2">
+                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold border ${getStatusColor(order.status)}`}>
+                      {getStatusLabel(order.status)}
+                    </span>
+                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold ${getPriorityColor(order.priority)}`}>
+                      {order.priority === 'low' ? '🟢 Baixa' : 
+                       order.priority === 'medium' ? '🟡 Média' : 
+                       order.priority === 'high' ? '🟠 Alta' : '🔴 Urgente'}
+                    </span>
+                  </div>
                 </div>
 
                 {order.description && (
                   <p className="text-slate-600 mb-4 line-clamp-2">{order.description}</p>
                 )}
 
-                <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-                  <div className="flex items-center gap-4">
-                    {order.technician && (
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <User className="w-4 h-4" />
-                        <span>{order.technician.full_name}</span>
-                      </div>
-                    )}
-                    
-                    {order.scheduled_at && (
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <Calendar className="w-4 h-4" />
-                        <span>
-                          {new Date(order.scheduled_at).toLocaleDateString('pt-BR', {
-                            day: '2-digit',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className={`text-sm font-semibold ${getPriorityColor(order.priority)}`}>
-                    {order.priority === 'low' ? '🟢 Baixa' : 
-                     order.priority === 'medium' ? '🟡 Média' : 
-                     order.priority === 'high' ? '🟠 Alta' : '🔴 Urgente'}
-                  </div>
+                <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-slate-200">
+                  {order.technician && (
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <User className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">{order.technician.full_name}</span>
+                    </div>
+                  )}
+                  
+                  {order.scheduled_at && (
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <Calendar className="w-4 h-4 flex-shrink-0" />
+                      <span className="whitespace-nowrap">
+                        {new Date(order.scheduled_at).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))
