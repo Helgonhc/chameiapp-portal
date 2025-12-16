@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Calendar, TrendingUp, Download, Filter, Search } from 'lucide-react'
+import { Calendar, TrendingUp, Download, Filter, Search, Sparkles, BarChart3 } from 'lucide-react'
 import { Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -15,6 +15,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js'
+import DashboardLayout from '@/components/DashboardLayout'
 
 ChartJS.register(
   CategoryScale,
@@ -139,74 +140,85 @@ export default function HistoryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+          <div className="text-center">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 border-t-indigo-600 mx-auto mb-4"></div>
+              <BarChart3 className="w-6 h-6 text-indigo-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <p className="text-sm font-medium text-slate-600">Carregando histórico...</p>
+          </div>
+        </div>
+      </DashboardLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => router.back()} 
-                className="p-2.5 hover:bg-slate-100 rounded-xl transition-all"
-              >
-                <ArrowLeft className="w-5 h-5 text-slate-700" />
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">Histórico de Serviços</h1>
-                <p className="text-sm text-slate-500">{filteredOrders.length} serviço{filteredOrders.length !== 1 ? 's' : ''} concluído{filteredOrders.length !== 1 ? 's' : ''}</p>
+    <DashboardLayout>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        {/* Header Premium com Gradiente */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 px-8 py-12">
+          <div className="absolute inset-0 bg-grid-white/10"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"></div>
+          
+          <div className="relative flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-white/20 backdrop-blur-xl rounded-lg">
+                  <BarChart3 className="w-6 h-6 text-white" />
+                </div>
+                <h1 className="text-4xl font-bold text-white">Histórico de Serviços</h1>
               </div>
+              <p className="text-indigo-100 text-lg">{filteredOrders.length} serviço{filteredOrders.length !== 1 ? 's' : ''} concluído{filteredOrders.length !== 1 ? 's' : ''}</p>
             </div>
 
             <button
               onClick={() => window.print()}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-all"
+              className="group relative px-6 py-4 bg-white text-indigo-600 rounded-2xl font-bold hover:shadow-2xl hover:shadow-white/50 transition-all duration-500 overflow-hidden"
             >
-              <Download className="w-4 h-4" />
-              <span className="hidden sm:inline">Exportar PDF</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+              <div className="relative flex items-center gap-2">
+                <Download className="w-5 h-5" />
+                <span className="hidden sm:inline">Exportar PDF</span>
+                <span className="sm:hidden">PDF</span>
+              </div>
             </button>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        {/* Estatísticas */}
+        <div className="px-8 -mt-8 pb-8">
+        {/* Estatísticas Premium */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/60 p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
+          {[
+            { icon: TrendingUp, label: 'Total de Serviços', value: filteredOrders.length, color: 'from-blue-500 to-cyan-500', format: 'number' },
+            { icon: '💰', label: 'Valor Total', value: totalCost, color: 'from-emerald-500 to-teal-500', format: 'currency' },
+            { icon: '📊', label: 'Valor Médio', value: averageCost, color: 'from-purple-500 to-pink-500', format: 'currency' },
+          ].map((stat, index) => (
+            <div
+              key={index}
+              style={{ animationDelay: `${index * 100}ms` }}
+              className="group relative bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 border border-slate-200/50 overflow-hidden animate-fade-in-up"
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}></div>
+              <div className="absolute -right-8 -top-8 w-32 h-32 bg-gradient-to-br from-slate-100 to-slate-50 rounded-full opacity-50"></div>
+              
+              <div className="relative">
+                <div className={`inline-flex p-3 bg-gradient-to-br ${stat.color} rounded-xl shadow-lg mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                  {typeof stat.icon === 'string' ? (
+                    <span className="text-2xl">{stat.icon}</span>
+                  ) : (
+                    <stat.icon className="w-6 h-6 text-white" />
+                  )}
+                </div>
+                <p className="text-sm font-medium text-slate-600 mb-2">{stat.label}</p>
+                <p className="text-4xl font-bold bg-gradient-to-br from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                  {stat.format === 'currency' ? `R$ ${stat.value.toFixed(2)}` : stat.value}
+                </p>
               </div>
-              <p className="text-sm font-medium text-slate-600">Total de Serviços</p>
             </div>
-            <p className="text-3xl font-bold text-slate-900">{filteredOrders.length}</p>
-          </div>
-
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/60 p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                <span className="text-xl">💰</span>
-              </div>
-              <p className="text-sm font-medium text-slate-600">Valor Total</p>
-            </div>
-            <p className="text-3xl font-bold text-green-600">R$ {totalCost.toFixed(2)}</p>
-          </div>
-
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/60 p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-                <span className="text-xl">📊</span>
-              </div>
-              <p className="text-sm font-medium text-slate-600">Valor Médio</p>
-            </div>
-            <p className="text-3xl font-bold text-purple-600">R$ {averageCost.toFixed(2)}</p>
-          </div>
+          ))}
         </div>
 
         {/* Gráfico */}
@@ -319,7 +331,8 @@ export default function HistoryPage() {
             ))
           )}
         </div>
-      </main>
-    </div>
+        </div>
+      </div>
+    </DashboardLayout>
   )
 }

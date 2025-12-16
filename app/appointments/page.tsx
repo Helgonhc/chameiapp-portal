@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Calendar, Clock, Plus, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Calendar, Clock, Plus, CheckCircle, XCircle, AlertCircle, Sparkles } from 'lucide-react'
+import DashboardLayout from '@/components/DashboardLayout'
 
 interface Appointment {
   id: string
@@ -102,104 +103,109 @@ export default function AppointmentsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+          <div className="text-center">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-emerald-200 border-t-emerald-600 mx-auto mb-4"></div>
+              <Calendar className="w-6 h-6 text-emerald-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <p className="text-sm font-medium text-slate-600">Carregando agendamentos...</p>
+          </div>
+        </div>
+      </DashboardLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => router.back()} 
-                className="p-2.5 hover:bg-slate-100 rounded-xl transition-all"
-              >
-                <ArrowLeft className="w-5 h-5 text-slate-700" />
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">Agendamentos</h1>
-                <p className="text-sm text-slate-500">{appointments.length} agendamento{appointments.length !== 1 ? 's' : ''}</p>
+    <DashboardLayout>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        {/* Header Premium com Gradiente */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 px-8 py-12">
+          <div className="absolute inset-0 bg-grid-white/10"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"></div>
+          
+          <div className="relative flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-white/20 backdrop-blur-xl rounded-lg">
+                  <Calendar className="w-6 h-6 text-white" />
+                </div>
+                <h1 className="text-4xl font-bold text-white">Agendamentos</h1>
               </div>
+              <p className="text-emerald-100 text-lg">{appointments.length} agendamento{appointments.length !== 1 ? 's' : ''} no total</p>
             </div>
 
             <button
               onClick={() => router.push('/appointments/new')}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-all"
+              className="group relative px-6 py-4 bg-white text-emerald-600 rounded-2xl font-bold hover:shadow-2xl hover:shadow-white/50 transition-all duration-500 overflow-hidden"
             >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Novo Agendamento</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+              <div className="relative flex items-center gap-2">
+                <Plus className="w-5 h-5" />
+                <span className="hidden sm:inline">Novo Agendamento</span>
+                <span className="sm:hidden">Novo</span>
+              </div>
             </button>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        {/* Filtros */}
+        <div className="px-8 -mt-8 pb-8">
+        {/* Filtros Premium */}
         <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap ${
-              filter === 'all'
-                ? 'bg-white text-blue-600 shadow-sm border border-blue-200'
-                : 'bg-white/60 text-slate-600 hover:bg-white'
-            }`}
-          >
-            Todos ({appointments.length})
-          </button>
-          <button
-            onClick={() => setFilter('pending')}
-            className={`px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap ${
-              filter === 'pending'
-                ? 'bg-white text-blue-600 shadow-sm border border-blue-200'
-                : 'bg-white/60 text-slate-600 hover:bg-white'
-            }`}
-          >
-            Pendentes ({appointments.filter(a => a.status === 'pending').length})
-          </button>
-          <button
-            onClick={() => setFilter('confirmed')}
-            className={`px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap ${
-              filter === 'confirmed'
-                ? 'bg-white text-blue-600 shadow-sm border border-blue-200'
-                : 'bg-white/60 text-slate-600 hover:bg-white'
-            }`}
-          >
-            Confirmados ({appointments.filter(a => a.status === 'confirmed').length})
-          </button>
+          {[
+            { key: 'all', label: 'Todos', count: appointments.length, icon: '📅' },
+            { key: 'pending', label: 'Pendentes', count: appointments.filter(a => a.status === 'pending').length, icon: '⏳' },
+            { key: 'confirmed', label: 'Confirmados', count: appointments.filter(a => a.status === 'confirmed').length, icon: '✅' },
+          ].map((btn) => (
+            <button
+              key={btn.key}
+              onClick={() => setFilter(btn.key as any)}
+              className={`group px-5 py-3 rounded-xl font-semibold transition-all whitespace-nowrap shadow-sm ${
+                filter === btn.key
+                  ? 'bg-white text-emerald-600 shadow-lg border-2 border-emerald-200 scale-105'
+                  : 'bg-white/70 text-slate-600 hover:bg-white hover:shadow-md border-2 border-transparent'
+              }`}
+            >
+              <span className="mr-2">{btn.icon}</span>
+              {btn.label} ({btn.count})
+            </button>
+          ))}
         </div>
 
-        {/* Lista */}
-        <div className="space-y-4">
+        {/* Lista Premium */}
+        <div className="space-y-6">
           {filteredAppointments.length === 0 ? (
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/60 p-16 text-center">
-              <Calendar className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <p className="text-lg font-medium text-slate-700 mb-2">
+            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-slate-200/60 p-20 text-center">
+              <div className="inline-flex p-6 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full mb-6">
+                <Calendar className="w-16 h-16 text-emerald-600" />
+              </div>
+              <p className="text-2xl font-bold text-slate-700 mb-3">
                 Nenhum agendamento encontrado
               </p>
-              <p className="text-sm text-slate-500 mb-6">
+              <p className="text-slate-500 mb-8">
                 {filter === 'all' 
                   ? 'Crie seu primeiro agendamento' 
                   : 'Nenhum agendamento com este status'}
               </p>
               <button
                 onClick={() => router.push('/appointments/new')}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-all"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all"
               >
                 <Plus className="w-5 h-5" />
                 Novo Agendamento
               </button>
             </div>
           ) : (
-            filteredAppointments.map((appointment) => (
+            filteredAppointments.map((appointment, index) => (
               <div
                 key={appointment.id}
-                className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/60 p-6 hover:shadow-lg transition-all"
+                style={{ animationDelay: `${index * 50}ms` }}
+                className="group relative bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-slate-200/60 p-6 hover:shadow-2xl transition-all duration-500 hover:border-emerald-300 overflow-hidden animate-fade-in-up"
               >
+                {/* Efeito de brilho no hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${getStatusColor(appointment.status)}`}>
@@ -274,7 +280,8 @@ export default function AppointmentsPage() {
             ))
           )}
         </div>
-      </main>
-    </div>
+        </div>
+      </div>
+    </DashboardLayout>
   )
 }

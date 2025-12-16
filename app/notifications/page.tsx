@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Bell, Check, CheckCheck, Trash2, Filter, FileText, DollarSign, AlertCircle, MessageSquare } from 'lucide-react'
+import { Bell, Check, CheckCheck, Trash2, Filter, FileText, DollarSign, AlertCircle, MessageSquare, Sparkles } from 'lucide-react'
+import DashboardLayout from '@/components/DashboardLayout'
 
 interface Notification {
   id: string
@@ -169,83 +170,92 @@ export default function NotificationsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+          <div className="text-center">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-red-200 border-t-red-600 mx-auto mb-4"></div>
+              <Bell className="w-6 h-6 text-red-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <p className="text-sm font-medium text-slate-600">Carregando notificações...</p>
+          </div>
+        </div>
+      </DashboardLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header Premium */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => router.back()} 
-                className="p-2.5 hover:bg-slate-100 rounded-xl transition-all duration-200"
-              >
-                <ArrowLeft className="w-5 h-5 text-slate-700" />
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">Notificações</h1>
-                <p className="text-sm text-slate-500">
-                  {unreadCount > 0 ? `${unreadCount} não lida${unreadCount > 1 ? 's' : ''}` : 'Tudo em dia'}
-                </p>
+    <DashboardLayout>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        {/* Header Premium com Gradiente */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 px-8 py-12">
+          <div className="absolute inset-0 bg-grid-white/10"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl"></div>
+          
+          <div className="relative">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 backdrop-blur-xl rounded-lg">
+                  <Bell className="w-6 h-6 text-white" />
+                </div>
+                <h1 className="text-4xl font-bold text-white">Notificações</h1>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    className="group relative px-5 py-3 bg-white text-red-600 rounded-xl font-bold hover:shadow-2xl hover:shadow-white/50 transition-all duration-500 overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                    <div className="relative flex items-center gap-2">
+                      <CheckCheck className="w-4 h-4" />
+                      <span className="hidden sm:inline">Marcar todas</span>
+                      <span className="sm:hidden">Marcar</span>
+                    </div>
+                  </button>
+                )}
+                
+                {notifications.filter(n => n.is_read).length > 0 && (
+                  <button
+                    onClick={deleteAllRead}
+                    className="group relative px-5 py-3 bg-white/20 backdrop-blur-xl text-white rounded-xl font-bold hover:bg-white/30 transition-all duration-300"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Trash2 className="w-4 h-4" />
+                      <span className="hidden sm:inline">Limpar</span>
+                    </div>
+                  </button>
+                )}
               </div>
             </div>
-
-            <div className="flex items-center gap-2">
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllAsRead}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-all"
-                >
-                  <CheckCheck className="w-4 h-4" />
-                  <span className="hidden sm:inline">Marcar todas como lidas</span>
-                  <span className="sm:hidden">Marcar</span>
-                </button>
-              )}
-              
-              {notifications.filter(n => n.is_read).length > 0 && (
-                <button
-                  onClick={deleteAllRead}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-all"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">Limpar lidas</span>
-                  <span className="sm:hidden">Limpar</span>
-                </button>
-              )}
-            </div>
+            <p className="text-red-100 text-lg">
+              {unreadCount > 0 ? `${unreadCount} não lida${unreadCount > 1 ? 's' : ''}` : 'Tudo em dia! 🎉'}
+            </p>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-8">
-        {/* Filtros */}
+        <div className="max-w-4xl mx-auto px-6 -mt-8 pb-8">
+        {/* Filtros Premium */}
         <div className="flex gap-3 mb-6">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-xl font-medium transition-all ${
-              filter === 'all'
-                ? 'bg-white text-blue-600 shadow-sm border border-blue-200'
-                : 'bg-white/60 text-slate-600 hover:bg-white'
-            }`}
-          >
-            Todas ({notifications.length})
-          </button>
-          <button
-            onClick={() => setFilter('unread')}
-            className={`px-4 py-2 rounded-xl font-medium transition-all ${
-              filter === 'unread'
-                ? 'bg-white text-blue-600 shadow-sm border border-blue-200'
-                : 'bg-white/60 text-slate-600 hover:bg-white'
-            }`}
-          >
-            Não lidas ({unreadCount})
-          </button>
+          {[
+            { key: 'all', label: 'Todas', count: notifications.length, icon: '📬' },
+            { key: 'unread', label: 'Não lidas', count: unreadCount, icon: '🔔' },
+          ].map((btn) => (
+            <button
+              key={btn.key}
+              onClick={() => setFilter(btn.key as any)}
+              className={`group px-5 py-3 rounded-xl font-semibold transition-all whitespace-nowrap shadow-sm ${
+                filter === btn.key
+                  ? 'bg-white text-red-600 shadow-lg border-2 border-red-200 scale-105'
+                  : 'bg-white/70 text-slate-600 hover:bg-white hover:shadow-md border-2 border-transparent'
+              }`}
+            >
+              <span className="mr-2">{btn.icon}</span>
+              {btn.label} ({btn.count})
+            </button>
+          ))}
         </div>
 
         {/* Lista de Notificações */}
@@ -332,7 +342,8 @@ export default function NotificationsPage() {
             ))
           )}
         </div>
-      </main>
-    </div>
+        </div>
+      </div>
+    </DashboardLayout>
   )
 }

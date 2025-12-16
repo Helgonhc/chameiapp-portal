@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, ArrowRight, X, CheckCircle2, Camera, Image as ImageIcon, Zap, Wrench, FileText } from 'lucide-react'
+import { ArrowLeft, ArrowRight, X, CheckCircle2, Camera, Image as ImageIcon, Zap, Wrench, FileText, Sparkles } from 'lucide-react'
+import DashboardLayout from '@/components/DashboardLayout'
 
 interface Equipment {
   id: string
@@ -140,34 +141,41 @@ export default function NewOrderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => step === 1 ? router.back() : setStep(step - 1)} 
-                className="p-2.5 hover:bg-slate-100 rounded-xl transition-all"
-              >
-                <ArrowLeft className="w-5 h-5 text-slate-700" />
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">Novo Chamado</h1>
-                <p className="text-sm text-slate-500">Passo {step} de 4</p>
+    <DashboardLayout>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        {/* Header Premium */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 px-8 py-8">
+          <div className="absolute inset-0 bg-grid-white/10"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+          
+          <div className="relative max-w-5xl mx-auto">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => step === 1 ? router.push('/dashboard') : setStep(step - 1)} 
+                  className="p-3 bg-white/20 backdrop-blur-xl hover:bg-white/30 rounded-xl transition-all"
+                >
+                  <ArrowLeft className="w-5 h-5 text-white" />
+                </button>
+                <div>
+                  <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+                    Novo Chamado
+                    <Sparkles className="w-6 h-6" />
+                  </h1>
+                  <p className="text-cyan-100">Passo {step} de 4</p>
+                </div>
               </div>
-            </div>
-            {/* Progress Bar */}
-            <div className="hidden md:flex items-center gap-2">
-              {[1, 2, 3, 4].map((s) => (
-                <div key={s} className={`h-2 w-16 rounded-full transition-all ${s <= step ? 'bg-blue-600' : 'bg-slate-200'}`} />
-              ))}
+              {/* Progress Bar Premium */}
+              <div className="hidden md:flex items-center gap-2">
+                {[1, 2, 3, 4].map((s) => (
+                  <div key={s} className={`h-3 w-20 rounded-full transition-all duration-500 ${s <= step ? 'bg-white shadow-lg' : 'bg-white/30'}`} />
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
+        <main className="max-w-5xl mx-auto px-6 py-8">
         {/* Step 1: Escolher Tipo */}
         {step === 1 && (
           <div className="animate-[fadeIn_0.3s_ease-out]">
@@ -494,7 +502,8 @@ export default function NewOrderPage() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+        </main>
+      </div>
+    </DashboardLayout>
   )
 }
