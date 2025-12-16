@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, DollarSign, FileText, Calendar, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react'
+import { DollarSign, FileText, Calendar, CheckCircle, XCircle, Clock, AlertCircle, Sparkles, TrendingUp } from 'lucide-react'
+import DashboardLayout from '@/components/DashboardLayout'
 
 interface Quote {
   id: string
@@ -121,100 +122,90 @@ export default function QuotesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+          <div className="text-center">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-200 border-t-amber-600 mx-auto mb-4"></div>
+              <DollarSign className="w-6 h-6 text-amber-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <p className="text-sm font-medium text-slate-600">Carregando orçamentos...</p>
+          </div>
+        </div>
+      </DashboardLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header Premium */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => router.back()} 
-                className="p-2.5 hover:bg-slate-100 rounded-xl transition-all duration-200"
-              >
-                <ArrowLeft className="w-5 h-5 text-slate-700" />
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">Orçamentos</h1>
-                <p className="text-sm text-slate-500">
-                  {pendingCount > 0 ? `${pendingCount} aguardando aprovação` : 'Todos os orçamentos'}
-                </p>
+    <DashboardLayout>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        {/* Header Premium com Gradiente */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 px-8 py-12">
+          <div className="absolute inset-0 bg-grid-white/10"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-red-500/20 rounded-full blur-3xl"></div>
+          
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-white/20 backdrop-blur-xl rounded-lg">
+                <DollarSign className="w-6 h-6 text-white" />
               </div>
+              <h1 className="text-4xl font-bold text-white">Orçamentos</h1>
             </div>
+            <p className="text-amber-100 text-lg">
+              {pendingCount > 0 ? `${pendingCount} aguardando sua aprovação` : 'Todos os seus orçamentos'}
+            </p>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        {/* Filtros */}
+        <div className="px-8 -mt-8 pb-8">
+        {/* Filtros Premium */}
         <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all ${
-              filter === 'all'
-                ? 'bg-white text-blue-600 shadow-sm border border-blue-200'
-                : 'bg-white/60 text-slate-600 hover:bg-white'
-            }`}
-          >
-            Todos ({quotes.length})
-          </button>
-          <button
-            onClick={() => setFilter('pending')}
-            className={`px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all ${
-              filter === 'pending'
-                ? 'bg-white text-amber-600 shadow-sm border border-amber-200'
-                : 'bg-white/60 text-slate-600 hover:bg-white'
-            }`}
-          >
-            Aguardando ({quotes.filter(q => q.status === 'pending').length})
-          </button>
-          <button
-            onClick={() => setFilter('approved')}
-            className={`px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all ${
-              filter === 'approved'
-                ? 'bg-white text-emerald-600 shadow-sm border border-emerald-200'
-                : 'bg-white/60 text-slate-600 hover:bg-white'
-            }`}
-          >
-            Aprovados ({quotes.filter(q => q.status === 'approved').length})
-          </button>
-          <button
-            onClick={() => setFilter('rejected')}
-            className={`px-4 py-2 rounded-xl font-medium whitespace-nowrap transition-all ${
-              filter === 'rejected'
-                ? 'bg-white text-red-600 shadow-sm border border-red-200'
-                : 'bg-white/60 text-slate-600 hover:bg-white'
-            }`}
-          >
-            Rejeitados ({quotes.filter(q => q.status === 'rejected').length})
-          </button>
+          {[
+            { key: 'all', label: 'Todos', count: quotes.length, icon: '💰', color: 'blue' },
+            { key: 'pending', label: 'Aguardando', count: quotes.filter(q => q.status === 'pending').length, icon: '⏳', color: 'amber' },
+            { key: 'approved', label: 'Aprovados', count: quotes.filter(q => q.status === 'approved').length, icon: '✅', color: 'emerald' },
+            { key: 'rejected', label: 'Rejeitados', count: quotes.filter(q => q.status === 'rejected').length, icon: '❌', color: 'red' },
+          ].map((btn) => (
+            <button
+              key={btn.key}
+              onClick={() => setFilter(btn.key)}
+              className={`group px-5 py-3 rounded-xl font-semibold transition-all whitespace-nowrap shadow-sm ${
+                filter === btn.key
+                  ? `bg-white text-${btn.color}-600 shadow-lg border-2 border-${btn.color}-200 scale-105`
+                  : 'bg-white/70 text-slate-600 hover:bg-white hover:shadow-md border-2 border-transparent'
+              }`}
+            >
+              <span className="mr-2">{btn.icon}</span>
+              {btn.label} ({btn.count})
+            </button>
+          ))}
         </div>
 
-        {/* Lista de Orçamentos */}
+        {/* Lista de Orçamentos Premium */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {filteredQuotes.length === 0 ? (
-            <div className="col-span-2 bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/60 p-16 text-center">
-              <DollarSign className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <p className="text-lg font-medium text-slate-700 mb-2">
+            <div className="col-span-2 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-slate-200/60 p-20 text-center">
+              <div className="inline-flex p-6 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full mb-6">
+                <DollarSign className="w-16 h-16 text-amber-600" />
+              </div>
+              <p className="text-2xl font-bold text-slate-700 mb-3">
                 {filter === 'all' ? 'Nenhum orçamento' : `Nenhum orçamento ${getStatusLabel(filter).toLowerCase()}`}
               </p>
-              <p className="text-sm text-slate-500">
+              <p className="text-slate-500">
                 Quando recebermos orçamentos, eles aparecerão aqui
               </p>
             </div>
           ) : (
-            filteredQuotes.map((quote) => (
+            filteredQuotes.map((quote, index) => (
               <div
                 key={quote.id}
+                style={{ animationDelay: `${index * 50}ms` }}
                 onClick={() => router.push(`/quotes/${quote.id}`)}
-                className="group bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer border border-slate-200/60 hover:border-blue-300"
+                className="group relative bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer border border-slate-200/60 hover:border-amber-300 overflow-hidden animate-fade-in-up"
               >
+                {/* Efeito de brilho no hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
@@ -279,7 +270,8 @@ export default function QuotesPage() {
             ))
           )}
         </div>
-      </main>
-    </div>
+        </div>
+      </div>
+    </DashboardLayout>
   )
 }

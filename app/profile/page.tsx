@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, User, Mail, Phone, MapPin, Building2, Save, Eye, EyeOff, Bell, Shield, Users } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Building2, Save, Eye, EyeOff, Bell, Shield, Users, Sparkles, Crown } from 'lucide-react'
+import DashboardLayout from '@/components/DashboardLayout'
 
 interface ProfileData {
   id: string
@@ -147,66 +148,86 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+          <div className="text-center">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 border-t-indigo-600 mx-auto mb-4"></div>
+              <User className="w-6 h-6 text-indigo-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <p className="text-sm font-medium text-slate-600">Carregando perfil...</p>
+          </div>
+        </div>
+      </DashboardLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header Premium */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => router.back()} 
-              className="p-2.5 hover:bg-slate-100 rounded-xl transition-all duration-200"
-            >
-              <ArrowLeft className="w-5 h-5 text-slate-700" />
-            </button>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">Meu Perfil</h1>
-              <p className="text-sm text-slate-500">Gerencie suas informações pessoais</p>
+    <DashboardLayout>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        {/* Header Premium com Gradiente */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-8 py-12">
+          <div className="absolute inset-0 bg-grid-white/10"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl"></div>
+          
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-white/20 backdrop-blur-xl rounded-lg">
+                <User className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold text-white">Meu Perfil</h1>
             </div>
+            <p className="text-indigo-100 text-lg">Gerencie suas informações e configurações</p>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-8">
-        {/* Mensagem de Feedback */}
+        <div className="max-w-4xl mx-auto px-6 -mt-8 pb-8">
+        {/* Mensagem de Feedback Premium */}
         {message && (
-          <div className={`mb-6 p-4 rounded-xl border-l-4 ${
+          <div className={`mb-6 p-5 rounded-2xl border-l-4 shadow-lg backdrop-blur-xl ${
             message.type === 'success' 
-              ? 'bg-emerald-50 border-emerald-500 text-emerald-800' 
-              : 'bg-red-50 border-red-500 text-red-800'
+              ? 'bg-emerald-50/80 border-emerald-500 text-emerald-800' 
+              : 'bg-red-50/80 border-red-500 text-red-800'
           }`}>
-            <p className="font-medium">{message.text}</p>
+            <p className="font-semibold flex items-center gap-2">
+              {message.type === 'success' ? '✅' : '❌'}
+              {message.text}
+            </p>
           </div>
         )}
 
-        {/* Gerenciar Usuários */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/60 p-8 mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
-                <Users className="w-6 h-6 text-white" />
+        {/* Gerenciar Usuários Premium */}
+        <div className="group relative bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-slate-200/60 p-8 mb-6 overflow-hidden hover:shadow-2xl transition-all duration-500">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          
+          <div className="relative flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl blur opacity-50"></div>
+                <div className="relative w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Users className="w-7 h-7 text-white" />
+                </div>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-slate-900">Usuários do Portal</h2>
-                <p className="text-sm text-slate-500">Gerencie os usuários da sua empresa</p>
+                <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                  Usuários do Portal
+                  <Crown className="w-5 h-5 text-yellow-500" />
+                </h2>
+                <p className="text-sm text-slate-500">Gerencie até 2 usuários da sua empresa</p>
               </div>
             </div>
           </div>
 
           <button
             onClick={() => router.push('/profile/users')}
-            className="w-full group relative px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-2xl overflow-hidden"
+            className="relative w-full group/btn px-6 py-5 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 text-white rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-purple-500/50 transition-all duration-500 overflow-hidden"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-            <div className="relative flex items-center justify-center gap-2">
-              <Users className="w-5 h-5" />
-              <span>👥 Gerenciar Usuários (Máx 2)</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000"></div>
+            <div className="relative flex items-center justify-center gap-3">
+              <Users className="w-6 h-6 group-hover/btn:scale-110 transition-transform" />
+              <span>👥 Gerenciar Usuários</span>
+              <Sparkles className="w-5 h-5 group-hover/btn:rotate-12 transition-transform" />
             </div>
           </button>
         </div>
@@ -406,7 +427,8 @@ export default function ProfilePage() {
             </button>
           </div>
         </div>
-      </main>
-    </div>
+        </div>
+      </div>
+    </DashboardLayout>
   )
 }
