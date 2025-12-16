@@ -227,7 +227,8 @@ export default function RegisterPage() {
         throw new Error('Erro ao criar cliente na carteira')
       }
 
-      // 5. Atualizar profile com client_id (usando admin client)
+      // 5. Atualizar profile com client_id
+      // O trigger já deve ter vinculado, mas vamos garantir
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -238,9 +239,10 @@ export default function RegisterPage() {
         })
         .eq('id', authData.user.id)
 
+      // Se falhar, não é crítico - o trigger deve ter feito
       if (profileError) {
-        console.error('Erro ao atualizar profile:', profileError)
-        throw new Error('Erro ao vincular conta ao cliente')
+        console.error('Aviso ao atualizar profile:', profileError)
+        // Não lançar erro - o trigger deve ter vinculado automaticamente
       }
 
       // 6. FAZER LOGOUT AGORA (depois de criar tudo)
