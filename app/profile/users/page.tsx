@@ -107,13 +107,16 @@ export default function ManageUsersPage() {
     setInviting(true)
 
     try {
+      // Salvar sessão atual antes de criar novo usuário
+      const { data: currentSession } = await supabase.auth.getSession()
+      
       const tempPassword = 'Portal@' + Math.random().toString(36).slice(-6)
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUserEmail,
         password: tempPassword,
         options: {
-          emailRedirectTo: 'https://chameiapp-portal.vercel.app',
+          emailRedirectTo: 'https://chameiapp-portal.vercel.app/login',
           data: {
             full_name: newUserName,
             role: 'client'
@@ -156,7 +159,12 @@ export default function ManageUsersPage() {
         }
       }
 
-      alert(`Usuário convidado!\nEmail: ${newUserEmail}\nSenha: ${tempPassword}`)
+      // Restaurar sessão do usuário atual (signUp pode ter trocado)
+      if (currentSession?.session) {
+        await supabase.auth.setSession(currentSession.session)
+      }
+
+      alert(`Usuário convidado!\nEmail: ${newUserEmail}\nSenha: ${tempPassword}\n\nO usuário receberá um email de confirmação.`)
 
       setShowModal(false)
       setNewUserName('')
@@ -165,6 +173,12 @@ export default function ManageUsersPage() {
     } catch (error: any) {
       console.error('Erro ao convidar usuário:', error)
       setError(`Erro: ${error.message}`)
+      
+      // Restaurar sessão em caso de erro também
+      const { data: session } = await supabase.auth.getSession()
+      if (!session?.session) {
+        router.push('/login')
+      }
     } finally {
       setInviting(false)
     }
