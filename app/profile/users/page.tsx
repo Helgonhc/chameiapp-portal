@@ -116,11 +116,12 @@ export default function ManageUsersPage() {
       // Gerar senha temporária
       const tempPassword = 'Portal@' + Math.random().toString(36).slice(-6)
 
-      // 1. Criar usuário
+      // 1. Criar usuário (SEM autoConfirm para forçar envio de email)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUserEmail,
         password: tempPassword,
         options: {
+          emailRedirectTo: 'https://chameiapp-portal.vercel.app',
           data: {
             full_name: newUserName,
             role: 'client'
@@ -157,13 +158,33 @@ export default function ManageUsersPage() {
         throw new Error(profileError.message)
       }
 
-      // 4. Sucesso! (Email será enviado automaticamente pelo Supabase)
+      // 4. Forçar envio de email de confirmação
+      try {
+        const { error: emailError } = await supabase.auth.resend({
+          type: 'signup',
+          email: newUserEmail,
+          options: {
+            emailRedirectTo: 'https://chameiapp-portal.vercel.app'
+          }
+        })
+        
+        if (emailError) {
+          console.log('Aviso ao reenviar email:', emailError)
+        } else {
+          console.log('✅ Email de confirmação enviado!')
+        }
+      } catch (e) {
+        console.log('Erro ao enviar email:', e)
+      }
+
+      // 5. Sucesso!
       alert(
         `✅ Usuário convidado com sucesso!\n\n` +
         `Email: ${newUserEmail}\n` +
         `Senha temporária: ${tempPassword}\n\n` +
-        `📧 O Supabase enviará automaticamente um email de confirmação para ${newUserEmail}\n\n` +
-        `⚠️ Informe estas credenciais ao usuário.`
+        `📧 Um email de confirmação foi enviado para ${newUserEmail}\n` +
+        `⚠️ Peça para verificar a caixa de entrada e SPAM\n\n` +
+        `Informe estas credenciais ao usuário.`
       )
 
       setShowModal(false)
