@@ -188,9 +188,9 @@ export default function HistoryPage() {
           </div>
         </div>
 
-        <div className="px-8 -mt-8 pb-8">
+        <div className="px-4 sm:px-6 md:px-8 -mt-6 sm:-mt-8 pb-6 sm:pb-8">
         {/* Estatísticas Premium */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {[
             { icon: TrendingUp, label: 'Total de Serviços', value: filteredOrders.length, color: 'from-blue-500 to-cyan-500', format: 'number' },
             { icon: '💰', label: 'Valor Total', value: totalCost, color: 'from-emerald-500 to-teal-500', format: 'currency' },
@@ -199,21 +199,21 @@ export default function HistoryPage() {
             <div
               key={index}
               style={{ animationDelay: `${index * 100}ms` }}
-              className="group relative bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 border border-slate-200/50 overflow-hidden animate-fade-in-up"
+              className="group relative bg-white/80 backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-2xl transition-all duration-500 border border-slate-200/50 overflow-hidden animate-fade-in-up"
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`}></div>
-              <div className="absolute -right-8 -top-8 w-32 h-32 bg-gradient-to-br from-slate-100 to-slate-50 rounded-full opacity-50"></div>
+              <div className="absolute -right-8 -top-8 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-slate-100 to-slate-50 rounded-full opacity-50"></div>
               
               <div className="relative">
-                <div className={`inline-flex p-3 bg-gradient-to-br ${stat.color} rounded-xl shadow-lg mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                <div className={`inline-flex p-2 sm:p-3 bg-gradient-to-br ${stat.color} rounded-lg sm:rounded-xl shadow-lg mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300`}>
                   {typeof stat.icon === 'string' ? (
-                    <span className="text-2xl">{stat.icon}</span>
+                    <span className="text-xl sm:text-2xl">{stat.icon}</span>
                   ) : (
-                    <stat.icon className="w-6 h-6 text-white" />
+                    <stat.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   )}
                 </div>
-                <p className="text-sm font-medium text-slate-600 mb-2">{stat.label}</p>
-                <p className="text-4xl font-bold bg-gradient-to-br from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 mb-1 sm:mb-2">{stat.label}</p>
+                <p className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-br from-slate-900 to-slate-600 bg-clip-text text-transparent">
                   {stat.format === 'currency' ? `R$ ${stat.value.toFixed(2)}` : stat.value}
                 </p>
               </div>
@@ -223,42 +223,45 @@ export default function HistoryPage() {
 
         {/* Gráfico */}
         {orders.length > 0 && (
-          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/60 p-6 mb-8">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Serviços por Mês</h2>
-            <Line 
-              data={getChartData()} 
-              options={{
-                responsive: true,
-                plugins: {
-                  legend: {
-                    display: false,
-                  },
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      stepSize: 1,
+          <div className="bg-white/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-sm border border-slate-200/60 p-4 sm:p-6 mb-6 sm:mb-8">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-3 sm:mb-4">Serviços por Mês</h2>
+            <div className="h-48 sm:h-64">
+              <Line 
+                data={getChartData()} 
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      display: false,
                     },
                   },
-                },
-              }}
-            />
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      ticks: {
+                        stepSize: 1,
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
           </div>
         )}
 
         {/* Filtros */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/60 p-6 mb-6">
-          <div className="grid md:grid-cols-2 gap-4">
+        <div className="bg-white/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-sm border border-slate-200/60 p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {/* Busca */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
               <input
                 type="text"
-                placeholder="Buscar por título, número ou técnico..."
+                placeholder="Buscar..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2.5 sm:py-3 text-sm sm:text-base bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
 
@@ -266,7 +269,7 @@ export default function HistoryPage() {
             <select
               value={period}
               onChange={(e) => setPeriod(e.target.value as any)}
-              className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             >
               <option value="month">Último mês</option>
               <option value="3months">Últimos 3 meses</option>
@@ -278,14 +281,14 @@ export default function HistoryPage() {
         </div>
 
         {/* Lista */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {filteredOrders.length === 0 ? (
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/60 p-16 text-center">
-              <Calendar className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <p className="text-lg font-medium text-slate-700 mb-2">
+            <div className="bg-white/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-sm border border-slate-200/60 p-10 sm:p-16 text-center">
+              <Calendar className="w-12 h-12 sm:w-16 sm:h-16 text-slate-300 mx-auto mb-3 sm:mb-4" />
+              <p className="text-base sm:text-lg font-medium text-slate-700 mb-1 sm:mb-2">
                 Nenhum serviço encontrado
               </p>
-              <p className="text-sm text-slate-500">
+              <p className="text-xs sm:text-sm text-slate-500">
                 Tente ajustar os filtros ou período
               </p>
             </div>
@@ -294,38 +297,40 @@ export default function HistoryPage() {
               <div
                 key={order.id}
                 onClick={() => router.push(`/service-orders/${order.id}`)}
-                className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/60 p-6 hover:shadow-lg transition-all cursor-pointer"
+                className="bg-white/80 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-sm border border-slate-200/60 p-4 sm:p-6 hover:shadow-lg transition-all cursor-pointer"
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold text-slate-900">{order.order_number}</span>
-                      <span className="px-2.5 py-0.5 bg-green-100 text-green-800 text-xs font-bold rounded-full">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-3 mb-2 sm:mb-3">
+                  <div className="w-full sm:w-auto">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <span className="font-bold text-slate-900 text-sm sm:text-base">{order.order_number}</span>
+                      <span className="px-2 sm:px-2.5 py-0.5 bg-green-100 text-green-800 text-[10px] sm:text-xs font-bold rounded-full">
                         Concluído
                       </span>
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900">{order.title}</h3>
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900">{order.title}</h3>
                   </div>
 
                   {order.final_cost && (
-                    <div className="text-right">
-                      <p className="text-sm text-slate-500">Valor</p>
-                      <p className="text-xl font-bold text-green-600">
+                    <div className="w-full sm:w-auto text-left sm:text-right bg-green-50 rounded-lg p-2 sm:p-0 sm:bg-transparent">
+                      <p className="text-xs sm:text-sm text-slate-500">Valor</p>
+                      <p className="text-lg sm:text-xl font-bold text-green-600">
                         R$ {order.final_cost.toFixed(2)}
                       </p>
                     </div>
                   )}
                 </div>
 
-                <div className="flex items-center justify-between text-sm text-slate-600">
-                  <div className="flex items-center gap-4">
-                    {order.technician && (
-                      <span>👤 {order.technician.full_name}</span>
-                    )}
-                    <span>
-                      📅 {new Date(order.completed_at).toLocaleDateString('pt-BR')}
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-slate-600">
+                  {order.technician && (
+                    <span className="flex items-center gap-1">
+                      <span>👤</span>
+                      <span className="truncate">{order.technician.full_name}</span>
                     </span>
-                  </div>
+                  )}
+                  <span className="flex items-center gap-1">
+                    <span>📅</span>
+                    <span>{new Date(order.completed_at).toLocaleDateString('pt-BR')}</span>
+                  </span>
                 </div>
               </div>
             ))

@@ -1,54 +1,32 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Clock, User, AlertCircle, CheckCircle, Calendar, Wrench, Send, Trash2 } from 'lucide-react'
+import { ArrowLeft, AlertCircle, Calendar, Clock, User, FileText, Image as ImageIcon, CheckCircle, XCircle } from 'lucide-react'
+import DashboardLayout from '@/components/DashboardLayout'
 
-interface OrderDetails {
+interface Ticket {
   id: string
+  ticket_number: string
   title: string
   description: string
   status: string
   priority: string
+  category: string
+  photos: string[]
   created_at: string
   updated_at: string
-  opened_by_type: string
-  equipment_id: string | null
-  technician_id: string | null
-  maintenance_type_id: string | null
-  scheduled_at: string | null
-  completed_at: string | null
-  photos: string[] | null
-  equipment?: {
+  resolved_at: string
+  clients: {
     name: string
-    brand: string
+    email: string
+    phone: string
+  }
+  equipments?: {
+    name: string
     model: string
     serial_number: string
-  }
-  technician?: {
-    full_name: string
-    email: string
-  }
-  maintenance_type?: {
-    name: string
-    description: string
-    default_frequency: string
-  }
-  created_by_user?: {
-    full_name: string
-    email: string
-  } | null
-}
-
-interface Comment {
-  id: string
-  user_id: string
-  comment: string
-  created_at: string
-  user?: {
-    full_name: string
-    role: string
   }
 }
 
@@ -58,560 +36,333 @@ export default function OrderDetailsPage() {
   const orderId = params.id as string
 
   const [loading, setLoading] = useState(true)
-  const [order, setOrder] = useState<OrderDetails | null>(null)
-  const [comments, setComments] = useState<Comment[]>([])
-  const [newComment, setNewComment] = useState('')
-  const [sendingComment, setSendingComment] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const [error, setError] = useState('')
+  const [ticket, setTicket] = useState<Ticket | null>(null)
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
 
   useEffect(() => {
-    checkAuth()
-    loadOrder()
-    loadComments()
+    loadTicket()
   }, [orderId])
 
-  async function checkAuth() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/login')
-    }
-  }
-
-  async function loadOrder() {
+  async function loadTicket() {
     try {
-      setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        router.push('/login')
+        return
+      }
 
-      // Buscar ticket
-      const { data: orderData, error: orderError } = await supabase
+      const { data, error } = await supabase
         .from('tickets')
-        .select('*')
+        .select(`
+          *,
+          clients (
+            name,
+            email,
+            phone
+          ),
+          equipments (
+            name,
+            model,
+            serial_number
+          )
+        `)
         .eq('id', orderId)
-        .single()
+        .maybeSingle()
 
-      if (orderError) throw orderError
-
-      // Buscar equipamento se tiver
-      let equipment = null
-      if (orderData.equipment_id) {
-        const { data: equipData } = await supabase
-          .from('equipments')
-          .select('name, brand, model, serial_number')
-          .eq('id', orderData.equipment_id)
-          .single()
-        equipment = equipData
+      if (error) throw error
+      
+      if (!data) {
+        alert('Chamado não encontrado')
+        router.push('/tickets')
+        return
       }
 
-      // Buscar técnico se tiver
-      let technician = null
-      if (orderData.technician_id) {
-        const { data: techData } = await supabase
-          .from('profiles')
-          .select('full_name, email')
-          .eq('id', orderData.technician_id)
-          .single()
-        technician = techData
-      }
-
-      // Buscar tipo de manutenção se tiver
-      let maintenanceType = null
-      if (orderData.maintenance_type_id) {
-        const { data: mtData } = await supabase
-          .from('maintenance_types')
-          .select('name, description, default_frequency')
-          .eq('id', orderData.maintenance_type_id)
-          .single()
-        maintenanceType = mtData
-      }
-
-      // Buscar quem criou o ticket
-      let createdBy = null
-      if (orderData.created_by) {
-        const { data: creatorData } = await supabase
-          .from('profiles')
-          .select('full_name, email')
-          .eq('id', orderData.created_by)
-          .single()
-        createdBy = creatorData
-      }
-
-      setOrder({
-        ...orderData,
-        equipment,
-        technician,
-        maintenance_type: maintenanceType,
-        created_by_user: createdBy
-      })
-    } catch (error: any) {
-      console.error('Erro ao carregar ordem:', error)
-      setError('Erro ao carregar detalhes do chamado')
+      setTicket(data)
+    } catch (error) {
+      console.error('Erro ao carregar chamado:', error)
+      alert('Erro ao carregar chamado')
     } finally {
       setLoading(false)
     }
   }
 
-  async function loadComments() {
-    try {
-      const { data, error } = await supabase
-        .from('ticket_comments')
-        .select(`
-          *,
-          user:profiles(full_name, role)
-        `)
-        .eq('ticket_id', orderId)
-        .order('created_at', { ascending: true })
-
-      if (error) throw error
-      setComments(data || [])
-    } catch (error) {
-      console.error('Erro ao carregar comentários:', error)
-    }
-  }
-
-  async function handleSendComment(e: React.FormEvent) {
-    e.preventDefault()
-    if (!newComment.trim()) return
-
-    setSendingComment(true)
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Usuário não autenticado')
-
-      const { error } = await supabase
-        .from('ticket_comments')
-        .insert({
-          ticket_id: orderId,
-          user_id: user.id,
-          comment: newComment.trim()
-        })
-
-      if (error) throw error
-
-      setNewComment('')
-      await loadComments()
-    } catch (error: any) {
-      console.error('Erro ao enviar comentário:', error)
-      alert('Erro ao enviar comentário')
-    } finally {
-      setSendingComment(false)
-    }
-  }
-
-  async function handleDeleteTicket() {
-    if (!confirm('Tem certeza que deseja excluir este chamado? Esta ação não pode ser desfeita.')) {
-      return
-    }
-
-    setDeleting(true)
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Usuário não autenticado')
-
-      // Verificar se o chamado pertence ao cliente
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('client_id')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile?.client_id) throw new Error('Cliente não encontrado')
-
-      // Deletar comentários primeiro
-      await supabase
-        .from('ticket_comments')
-        .delete()
-        .eq('ticket_id', orderId)
-
-      // Deletar o ticket
-      const { error } = await supabase
-        .from('tickets')
-        .delete()
-        .eq('id', orderId)
-        .eq('client_id', profile.client_id)
-
-      if (error) throw error
-
-      alert('✅ Chamado excluído com sucesso!')
-      router.push('/dashboard')
-    } catch (error: any) {
-      console.error('Erro ao excluir chamado:', error)
-      alert('Erro ao excluir chamado: ' + error.message)
-    } finally {
-      setDeleting(false)
-    }
-  }
-
   function getStatusColor(status: string) {
     const colors = {
-      aberto: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      em_analise: 'bg-blue-100 text-blue-800 border-blue-200',
-      aprovado: 'bg-purple-100 text-purple-800 border-purple-200',
-      convertido: 'bg-green-100 text-green-800 border-green-200',
-      rejeitado: 'bg-red-100 text-red-800 border-red-200',
+      open: 'bg-blue-100 text-blue-800 border-blue-300',
+      in_progress: 'bg-amber-100 text-amber-800 border-amber-300',
+      resolved: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      closed: 'bg-gray-100 text-gray-800 border-gray-300',
     }
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800 border-gray-200'
+    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800'
   }
 
   function getStatusLabel(status: string) {
     const labels = {
-      aberto: 'Aberto',
-      em_analise: 'Em Análise',
-      aprovado: 'Aprovado',
-      convertido: 'Convertido em OS',
-      rejeitado: 'Rejeitado',
+      open: 'Aberto',
+      in_progress: 'Em Andamento',
+      resolved: 'Resolvido',
+      closed: 'Fechado',
     }
     return labels[status as keyof typeof labels] || status
   }
 
+  function getStatusIcon(status: string) {
+    const icons = {
+      open: <AlertCircle className="w-5 h-5" />,
+      in_progress: <Clock className="w-5 h-5" />,
+      resolved: <CheckCircle className="w-5 h-5" />,
+      closed: <XCircle className="w-5 h-5" />,
+    }
+    return icons[status as keyof typeof icons]
+  }
+
   function getPriorityColor(priority: string) {
     const colors = {
-      baixa: 'text-green-600',
-      media: 'text-yellow-600',
-      alta: 'text-red-600',
+      low: 'bg-green-100 text-green-800',
+      medium: 'bg-yellow-100 text-yellow-800',
+      high: 'bg-red-100 text-red-800',
     }
-    return colors[priority as keyof typeof colors] || 'text-gray-600'
+    return colors[priority as keyof typeof colors] || 'bg-gray-100 text-gray-800'
   }
 
   function getPriorityLabel(priority: string) {
     const labels = {
-      baixa: 'Baixa',
-      media: 'Média',
-      alta: 'Alta',
+      low: 'Baixa',
+      medium: 'Média',
+      high: 'Alta',
     }
     return labels[priority as keyof typeof labels] || priority
   }
 
-  function formatDate(date: string) {
-    return new Date(date).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+  function getCategoryLabel(category: string) {
+    const labels = {
+      technical: 'Técnico',
+      maintenance: 'Manutenção',
+      support: 'Suporte',
+      installation: 'Instalação',
+      other: 'Outro',
+    }
+    return labels[category as keyof typeof labels] || category
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-screen bg-gray-50">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
+            <p className="text-sm font-medium text-gray-600">Carregando chamado...</p>
+          </div>
+        </div>
+      </DashboardLayout>
     )
   }
 
-  if (error || !order) {
+  if (!ticket) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="bg-white rounded-lg shadow p-8 max-w-md text-center">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Erro</h2>
-          <p className="text-gray-600 mb-4">{error || 'Chamado não encontrado'}</p>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="text-blue-600 hover:text-blue-700 font-medium"
-          >
-            Voltar ao Dashboard
-          </button>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-screen bg-gray-50">
+          <div className="text-center">
+            <p className="text-xl font-semibold text-gray-700">Chamado não encontrado</p>
+            <button
+              onClick={() => router.push('/tickets')}
+              className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Voltar
+            </button>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+    <DashboardLayout>
+      <div className="min-h-screen bg-gray-50 pb-8">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 sm:px-6 md:px-8 py-8 shadow-lg">
+          <div className="max-w-7xl mx-auto">
             <button
-              onClick={() => router.back()}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+              onClick={() => router.push('/tickets')}
+              className="flex items-center gap-2 text-white hover:text-blue-100 transition-colors mb-4"
             >
               <ArrowLeft className="w-5 h-5" />
-              Voltar
+              <span>Voltar</span>
             </button>
             
-            {/* Botão Excluir */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-blue-100 text-sm mb-1">{ticket.ticket_number}</p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-white">{ticket.title}</h1>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 -mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Coluna Principal */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Status, Prioridade e Categoria */}
+              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Status:</span>
+                    <span className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border ${getStatusColor(ticket.status)}`}>
+                      {getStatusIcon(ticket.status)}
+                      {getStatusLabel(ticket.status)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Prioridade:</span>
+                    <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${getPriorityColor(ticket.priority)}`}>
+                      {getPriorityLabel(ticket.priority)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Categoria:</span>
+                    <span className="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                      {getCategoryLabel(ticket.category)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Descrição */}
+              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  Descrição do Problema
+                </h2>
+                <p className="text-gray-700 whitespace-pre-wrap">{ticket.description}</p>
+              </div>
+
+              {/* Fotos */}
+              {ticket.photos && ticket.photos.length > 0 && (
+                <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5 text-blue-600" />
+                    Fotos Anexadas ({ticket.photos.length})
+                  </h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {ticket.photos.map((photo, index) => (
+                      <div
+                        key={index}
+                        onClick={() => setSelectedPhoto(photo)}
+                        className="relative aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border border-gray-200"
+                      >
+                        <img
+                          src={photo}
+                          alt={`Foto ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Coluna Lateral */}
+            <div className="space-y-6">
+              {/* Datas */}
+              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-blue-600" />
+                  Datas
+                </h2>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-gray-600">Criado em</p>
+                    <p className="text-gray-900 font-medium">
+                      {new Date(ticket.created_at).toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                  {ticket.updated_at && ticket.updated_at !== ticket.created_at && (
+                    <div>
+                      <p className="text-sm text-gray-600">Última atualização</p>
+                      <p className="text-gray-900 font-medium">
+                        {new Date(ticket.updated_at).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  )}
+                  {ticket.resolved_at && (
+                    <div>
+                      <p className="text-sm text-gray-600">Resolvido em</p>
+                      <p className="text-gray-900 font-medium">
+                        {new Date(ticket.resolved_at).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Equipamento */}
+              {ticket.equipments && (
+                <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Equipamento</h2>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-sm text-gray-600">Nome</p>
+                      <p className="text-gray-900 font-medium">{ticket.equipments.name}</p>
+                    </div>
+                    {ticket.equipments.model && (
+                      <div>
+                        <p className="text-sm text-gray-600">Modelo</p>
+                        <p className="text-gray-900 font-medium">{ticket.equipments.model}</p>
+                      </div>
+                    )}
+                    {ticket.equipments.serial_number && (
+                      <div>
+                        <p className="text-sm text-gray-600">Número de Série</p>
+                        <p className="text-gray-900 font-medium">{ticket.equipments.serial_number}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Modal de Foto */}
+        {selectedPhoto && (
+          <div
+            onClick={() => setSelectedPhoto(null)}
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          >
             <button
-              onClick={handleDeleteTicket}
-              disabled={deleting}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              onClick={() => setSelectedPhoto(null)}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 text-4xl"
             >
-              <Trash2 className="w-4 h-4" />
-              <span>{deleting ? 'Excluindo...' : 'Excluir Chamado'}</span>
+              ×
             </button>
-          </div>
-        </div>
-      </header>
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Título e Status */}
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <h1 className="text-2xl font-bold text-gray-900">{order.title}</h1>
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(order.status)}`}>
-                {getStatusLabel(order.status)}
-              </span>
-            </div>
-            <p className="text-gray-600">{order.description}</p>
-          </div>
-        </div>
-
-        {/* Informações Principais */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          {/* Prioridade */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                <AlertCircle className="w-5 h-5 text-gray-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Prioridade</p>
-                <p className={`text-lg font-semibold ${getPriorityColor(order.priority)}`}>
-                  {getPriorityLabel(order.priority)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Data de Abertura */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-gray-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Aberto em</p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {formatDate(order.created_at)}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Técnico Responsável */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${order.technician ? 'bg-blue-100' : 'bg-gray-100'}`}>
-              <User className={`w-6 h-6 ${order.technician ? 'text-blue-600' : 'text-gray-400'}`} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Técnico Responsável</p>
-              {order.technician ? (
-                <>
-                  <p className="text-lg font-semibold text-gray-900">{order.technician.full_name}</p>
-                  <p className="text-sm text-gray-500">{order.technician.email}</p>
-                </>
-              ) : (
-                <p className="text-lg font-medium text-gray-500">Aguardando atribuição</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Tipo de Manutenção */}
-        {order.maintenance_type && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center bg-orange-100">
-                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Tipo de Manutenção</p>
-                <p className="text-lg font-semibold text-gray-900">{order.maintenance_type.name}</p>
-                {order.maintenance_type.description && (
-                  <p className="text-sm text-gray-500">{order.maintenance_type.description}</p>
-                )}
-                {order.maintenance_type.default_frequency && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    Frequência: {order.maintenance_type.default_frequency}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Equipamento */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${order.equipment ? 'bg-purple-100' : 'bg-gray-100'}`}>
-              <Wrench className={`w-6 h-6 ${order.equipment ? 'text-purple-600' : 'text-gray-400'}`} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Equipamento</p>
-              {order.equipment ? (
-                <>
-                  <p className="text-lg font-semibold text-gray-900">{order.equipment.name}</p>
-                  <p className="text-sm text-gray-500">
-                    {order.equipment.brand && `${order.equipment.brand} - `}{order.equipment.model}
-                    {order.equipment.serial_number && ` (S/N: ${order.equipment.serial_number})`}
-                  </p>
-                </>
-              ) : (
-                <p className="text-lg font-medium text-gray-500">Nenhum equipamento específico</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Timeline */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Histórico</h2>
-          <div className="space-y-4">
-            {/* Criado */}
-            <div className="flex gap-4">
-              <div className="flex flex-col items-center">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Clock className="w-4 h-4 text-blue-600" />
-                </div>
-                <div className="w-0.5 h-full bg-gray-200 mt-2"></div>
-              </div>
-              <div className="pb-4">
-                <p className="font-medium text-gray-900">Chamado Aberto</p>
-                <p className="text-sm text-gray-500">{formatDate(order.created_at)}</p>
-                <p className="text-sm text-gray-600 mt-1">
-                  Aberto por {order.created_by_user?.full_name || 'você'}
-                </p>
-              </div>
-            </div>
-
-            {/* Atribuído */}
-            {order.technician ? (
-              <div className="flex gap-4">
-                <div className="flex flex-col items-center">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-purple-600" />
-                  </div>
-                  {order.status !== 'pendente' && <div className="w-0.5 h-full bg-gray-200 mt-2"></div>}
-                </div>
-                <div className="pb-4">
-                  <p className="font-medium text-gray-900">Técnico Atribuído</p>
-                  <p className="text-sm text-gray-600 mt-1">{order.technician.full_name}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex gap-4">
-                <div className="flex flex-col items-center">
-                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                    <Clock className="w-4 h-4 text-gray-400" />
-                  </div>
-                </div>
-                <div className="pb-4">
-                  <p className="font-medium text-gray-900">Aguardando Atribuição</p>
-                  <p className="text-sm text-gray-600 mt-1">Um técnico será atribuído em breve</p>
-                </div>
-              </div>
-            )}
-
-            {/* Em Andamento */}
-            {(order.status === 'em_andamento' || order.status === 'concluido') && (
-              <div className="flex gap-4">
-                <div className="flex flex-col items-center">
-                  <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <Wrench className="w-4 h-4 text-yellow-600" />
-                  </div>
-                  {order.status === 'concluido' && <div className="w-0.5 h-full bg-gray-200 mt-2"></div>}
-                </div>
-                <div className="pb-4">
-                  <p className="font-medium text-gray-900">Em Andamento</p>
-                  <p className="text-sm text-gray-600 mt-1">Técnico está trabalhando no chamado</p>
-                </div>
-              </div>
-            )}
-
-            {/* Concluído */}
-            {order.status === 'concluido' && order.completed_at && (
-              <div className="flex gap-4">
-                <div className="flex flex-col items-center">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                  </div>
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Concluído</p>
-                  <p className="text-sm text-gray-500">{formatDate(order.completed_at)}</p>
-                  <p className="text-sm text-gray-600 mt-1">Chamado finalizado com sucesso</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Fotos */}
-        {order.photos && order.photos.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Fotos</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {order.photos.map((photo, index) => (
-                <img
-                  key={index}
-                  src={photo}
-                  alt={`Foto ${index + 1}`}
-                  className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => window.open(photo, '_blank')}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Comentários */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Comentários</h2>
-          
-          {/* Lista de Comentários */}
-          <div className="space-y-4 mb-6">
-            {comments.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">Nenhum comentário ainda</p>
-            ) : (
-              comments.map((comment) => (
-                <div key={comment.id} className="border-l-4 border-blue-500 pl-4 py-2">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-gray-900">
-                      {comment.user?.full_name || 'Usuário'}
-                    </span>
-                    <span className={`text-xs px-2 py-0.5 rounded ${
-                      comment.user?.role === 'client' 
-                        ? 'bg-blue-100 text-blue-700' 
-                        : 'bg-purple-100 text-purple-700'
-                    }`}>
-                      {comment.user?.role === 'client' ? 'Cliente' : 'Técnico'}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {formatDate(comment.created_at)}
-                    </span>
-                  </div>
-                  <p className="text-gray-700">{comment.comment}</p>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Formulário de Novo Comentário */}
-          <form onSubmit={handleSendComment} className="border-t pt-4">
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Escreva um comentário..."
-              rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            <img
+              src={selectedPhoto}
+              alt="Foto ampliada"
+              className="max-w-full max-h-full object-contain"
             />
-            <button
-              type="submit"
-              disabled={sendingComment || !newComment.trim()}
-              className="mt-3 px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {sendingComment ? 'Enviando...' : 'Enviar Comentário'}
-            </button>
-          </form>
-        </div>
-      </main>
-    </div>
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
   )
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Calendar, Clock, CheckCircle2 } from 'lucide-react'
+import DashboardLayout from '@/components/DashboardLayout'
 
 export default function NewAppointmentPage() {
   const router = useRouter()
@@ -74,27 +75,30 @@ export default function NewAppointmentPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="bg-white rounded-3xl shadow-2xl p-12 max-w-md text-center">
-          <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center mx-auto shadow-2xl mb-8">
-            <CheckCircle2 className="w-14 h-14 text-white" />
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-3">Agendamento Solicitado!</h2>
-          <p className="text-gray-600 mb-6">
-            Sua solicitação foi enviada. Aguarde a confirmação do técnico.
-          </p>
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-            <p className="text-sm text-emerald-800 font-medium">
-              ✓ Você receberá uma notificação quando for confirmado
+      <DashboardLayout>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-12 max-w-md text-center">
+            <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center mx-auto shadow-2xl mb-8">
+              <CheckCircle2 className="w-14 h-14 text-white" />
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">Agendamento Solicitado!</h2>
+            <p className="text-gray-600 mb-6">
+              Sua solicitação foi enviada. Aguarde a confirmação do técnico.
             </p>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+              <p className="text-sm text-emerald-800 font-medium">
+                ✓ Você receberá uma notificação quando for confirmado
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <DashboardLayout>
+      <div className="min-h-screen bg-gray-50">
       <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-8 py-12 shadow-lg">
         <div className="max-w-4xl mx-auto">
           <button 
@@ -268,6 +272,6 @@ export default function NewAppointmentPage() {
           </button>
         </form>
       </main>
-    </div>
+    </DashboardLayout>
   )
 }

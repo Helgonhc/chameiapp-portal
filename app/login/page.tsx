@@ -19,6 +19,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [showResetPassword, setShowResetPassword] = useState(false)
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetLoading, setResetLoading] = useState(false)
   const [branding, setBranding] = useState<ClientBranding | null>(null)
   const [loadingBranding, setLoadingBranding] = useState(true)
 
@@ -111,6 +115,34 @@ export default function LoginPage() {
     }
   }
 
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault()
+    setResetLoading(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+
+      if (error) throw error
+
+      setSuccess('✅ Email de redefinição enviado! Verifique sua caixa de entrada.')
+      setResetEmail('')
+      
+      // Voltar para login após 3 segundos
+      setTimeout(() => {
+        setShowResetPassword(false)
+        setSuccess('')
+      }, 3000)
+    } catch (error: any) {
+      setError(error.message)
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
   if (loadingBranding) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
@@ -161,65 +193,136 @@ export default function LoginPage() {
           </div>
 
           {/* Formulário */}
-          <form onSubmit={handleLogin} className="space-y-5">
-            {error && (
-              <div className="bg-red-50/80 backdrop-blur-xl border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-xl">
-                <p className="text-sm font-medium">{error}</p>
+          {!showResetPassword ? (
+            <form onSubmit={handleLogin} className="space-y-5">
+              {error && (
+                <div className="bg-red-50/80 backdrop-blur-xl border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-xl">
+                  <p className="text-sm font-medium whitespace-pre-line">{error}</p>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-2">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  placeholder="seu@email.com"
+                />
               </div>
-            )}
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-2">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                placeholder="seu@email.com"
-              />
-            </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="password" className="block text-sm font-semibold text-slate-700">
+                    Senha
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPassword(true)}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-semibold hover:underline transition-all"
+                  >
+                    Esqueci minha senha
+                  </button>
+                </div>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  placeholder="••••••••"
+                />
+              </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-2">
-                Senha
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                placeholder="••••••••"
-              />
-            </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-4 rounded-xl font-bold hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                <span className="relative">{loading ? 'Entrando...' : 'Entrar no Portal'}</span>
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleResetPassword} className="space-y-5">
+              {error && (
+                <div className="bg-red-50/80 backdrop-blur-xl border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-xl">
+                  <p className="text-sm font-medium">{error}</p>
+                </div>
+              )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-4 rounded-xl font-bold hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-              <span className="relative">{loading ? 'Entrando...' : 'Entrar no Portal'}</span>
-            </button>
-          </form>
+              {success && (
+                <div className="bg-green-50/80 backdrop-blur-xl border-l-4 border-green-500 text-green-700 px-4 py-3 rounded-xl">
+                  <p className="text-sm font-medium">{success}</p>
+                </div>
+              )}
+
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 mb-2">Redefinir Senha</h2>
+                <p className="text-sm text-slate-600 mb-4">
+                  Digite seu email e enviaremos um link para redefinir sua senha.
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="reset-email" className="block text-sm font-semibold text-slate-700 mb-2">
+                  Email
+                </label>
+                <input
+                  id="reset-email"
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  placeholder="seu@email.com"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowResetPassword(false)
+                    setError('')
+                    setSuccess('')
+                    setResetEmail('')
+                  }}
+                  className="flex-1 bg-slate-200 text-slate-700 py-3 px-4 rounded-xl font-semibold hover:bg-slate-300 transition-all"
+                >
+                  Voltar
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetLoading}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
+                >
+                  {resetLoading ? 'Enviando...' : 'Enviar Link'}
+                </button>
+              </div>
+            </form>
+          )}
 
           {/* Link Criar Conta */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-slate-600">
-              Não tem uma conta?{' '}
-              <button
-                onClick={() => router.push('/register')}
-                className="text-blue-600 hover:text-blue-700 font-semibold hover:underline transition-all"
-              >
-                Criar conta
-              </button>
-            </p>
-          </div>
+          {!showResetPassword && (
+            <div className="mt-6 text-center">
+              <p className="text-sm text-slate-600">
+                Não tem uma conta?{' '}
+                <button
+                  onClick={() => router.push('/register')}
+                  className="text-blue-600 hover:text-blue-700 font-semibold hover:underline transition-all"
+                >
+                  Criar conta
+                </button>
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

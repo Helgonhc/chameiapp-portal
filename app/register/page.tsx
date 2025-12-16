@@ -173,7 +173,7 @@ export default function RegisterPage() {
       if (password !== confirmPassword) throw new Error('As senhas não coincidem')
       if (!phone.trim()) throw new Error('Telefone é obrigatório')
 
-      // 1. Criar usuário no Supabase Auth
+      // 1. Criar usuário no Supabase Auth (SEM fazer login automático)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim(),
         password: password,
@@ -189,10 +189,13 @@ export default function RegisterPage() {
       if (authError) throw authError
       if (!authData.user) throw new Error('Erro ao criar usuário')
 
-      // 2. Aguardar um pouco para o trigger criar o profile
+      // 2. FAZER LOGOUT IMEDIATAMENTE (para não ficar logado)
+      await supabase.auth.signOut()
+
+      // 3. Aguardar um pouco para o trigger criar o profile
       await new Promise(resolve => setTimeout(resolve, 1000))
 
-      // 3. Criar cliente na carteira
+      // 4. Criar cliente na carteira
       const fullAddress = street && city 
         ? `${street}, ${number} - ${neighborhood}, ${city}/${state}${cep ? ` - CEP ${cep}` : ''}`
         : ''
@@ -215,7 +218,9 @@ export default function RegisterPage() {
           neighborhood: neighborhood.trim() || null,
           city: city.trim() || null,
           state: state.trim() || null,
-          address: fullAddress || null
+          address: fullAddress || null,
+          portal_enabled: true,
+          portal_blocked: false
         })
         .select()
         .single()
@@ -225,7 +230,7 @@ export default function RegisterPage() {
         throw new Error('Erro ao criar cliente na carteira')
       }
 
-      // 4. Atualizar profile com client_id
+      // 5. Atualizar profile com client_id (usando admin client)
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -263,12 +268,20 @@ export default function RegisterPage() {
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Conta Criada!</h2>
-          <p className="text-gray-600 mb-4">
-            Sua conta foi criada com sucesso.
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Conta Criada com Sucesso!</h2>
+          <p className="text-gray-600 mb-2">
+            Sua conta foi criada e está pronta para uso.
           </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <p className="text-sm text-blue-800 font-medium mb-1">
+              📧 Próximo passo:
+            </p>
+            <p className="text-sm text-blue-700">
+              Faça login com seu email e senha para acessar o portal.
+            </p>
+          </div>
           <p className="text-sm text-gray-500">
-            Redirecionando para o login...
+            Redirecionando para o login em 3 segundos...
           </p>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Sidebar from './Sidebar'
+import NotificationBell from './NotificationBell'
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications'
 
 interface DashboardLayoutProps {
@@ -78,6 +79,38 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         pendingQuotes={pendingQuotes}
       />
       <main className="flex-1 overflow-y-auto">
+        {/* Header com dados do cliente e NotificationBell */}
+        <div className="sticky top-0 z-30 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800 px-4 sm:px-6 md:px-8 py-4 flex items-center justify-between shadow-lg">
+          {/* Dados do Cliente */}
+          <div className="flex items-center gap-4">
+            {clientData?.client_logo_url ? (
+              <img 
+                src={clientData.client_logo_url} 
+                alt={clientData.name}
+                className="w-12 h-12 rounded-lg bg-white p-1 object-contain shadow-md"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center shadow-md">
+                <span className="text-2xl font-bold text-blue-600">
+                  {clientData?.name?.[0] || '?'}
+                </span>
+              </div>
+            )}
+            <div>
+              <h1 className="text-lg font-bold text-white">
+                {clientData?.name || 'Carregando...'}
+              </h1>
+              {clientData?.responsible_name && (
+                <p className="text-sm text-blue-100">
+                  👤 {clientData.responsible_name}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* NotificationBell */}
+          <NotificationBell />
+        </div>
         {children}
       </main>
     </div>

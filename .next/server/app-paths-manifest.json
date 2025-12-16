@@ -1,19 +1,7 @@
 {
-  "/_not-found": "app/_not-found.js",
-  "/appointments/new/page": "app/appointments/new/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/appointments/page": "app/appointments/page.js",
-  "/history/page": "app/history/page.js",
-  "/order/[id]/page": "app/order/[id]/page.js",
-  "/login/page": "app/login/page.js",
-  "/new-order/page": "app/new-order/page.js",
-  "/notifications/page": "app/notifications/page.js",
-  "/profile/page": "app/profile/page.js",
-  "/page": "app/page.js",
-  "/profile/users/page": "app/profile/users/page.js",
-  "/quotes/[id]/page": "app/quotes/[id]/page.js",
-  "/quotes/page": "app/quotes/page.js",
-  "/register/page": "app/register/page.js",
   "/service-orders/page": "app/service-orders/page.js",
-  "/service-orders/[id]/page": "app/service-orders/[id]/page.js"
+  "/dashboard/page": "app/dashboard/page.js",
+  "/service-orders/[id]/page": "app/service-orders/[id]/page.js",
+  "/login/page": "app/login/page.js",
+  "/appointments/page": "app/appointments/page.js"
 }

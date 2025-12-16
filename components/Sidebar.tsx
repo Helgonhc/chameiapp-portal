@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, FileText, DollarSign, Calendar, History, Bell, User, LogOut, Menu, X, Building2, Ticket } from 'lucide-react'
+import { Home, FileText, DollarSign, Calendar, CalendarDays, History, Bell, User, LogOut, Menu, X, Building2, Ticket, MessageCircle } from 'lucide-react'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
@@ -19,9 +19,11 @@ export default function Sidebar({ clientData, unreadNotifications = 0, pendingQu
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/dashboard', badge: null, tooltip: 'Visão geral do portal' },
     { icon: FileText, label: 'Ordens de Serviço', path: '/service-orders', badge: null, tooltip: 'Acompanhe os serviços em execução' },
-    { icon: Ticket, label: 'Meus Chamados', path: '/tickets', badge: null, tooltip: 'Abra chamados quando precisar de ajuda' },
-    { icon: DollarSign, label: 'Orçamentos', path: '/quotes', badge: pendingQuotes > 0 ? pendingQuotes : null, tooltip: 'Aprove ou rejeite orçamentos' },
+    { icon: CalendarDays, label: 'Calendário', path: '/calendar', badge: null, tooltip: 'Visualize ordens por data' },
     { icon: Calendar, label: 'Agendamentos', path: '/appointments', badge: null, tooltip: 'Agende visitas técnicas' },
+    { icon: Ticket, label: 'Meus Chamados', path: '/tickets', badge: null, tooltip: 'Abra chamados quando precisar de ajuda' },
+    { icon: MessageCircle, label: 'Chat Suporte', path: '/chat', badge: null, tooltip: 'Converse em tempo real com o suporte' },
+    { icon: DollarSign, label: 'Orçamentos', path: '/quotes', badge: pendingQuotes > 0 ? pendingQuotes : null, tooltip: 'Aprove orçamentos e acompanhe solicitações' },
     { icon: Bell, label: 'Notificações', path: '/notifications', badge: unreadNotifications > 0 ? unreadNotifications : null, tooltip: 'Veja suas notificações' },
     { icon: User, label: 'Meu Perfil', path: '/profile', badge: null, tooltip: 'Gerencie seu perfil e usuários' },
   ]
