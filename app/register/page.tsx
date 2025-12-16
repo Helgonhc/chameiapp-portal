@@ -189,10 +189,9 @@ export default function RegisterPage() {
       if (authError) throw authError
       if (!authData.user) throw new Error('Erro ao criar usuário')
 
-      // 2. Aguardar um pouco para o trigger criar o profile
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const userId = authData.user.id
 
-      // 3. Criar cliente na carteira (ANTES do logout para ter permissão)
+      // 2. Criar cliente na carteira PRIMEIRO
       const fullAddress = street && city 
         ? `${street}, ${number} - ${neighborhood}, ${city}/${state}${cep ? ` - CEP ${cep}` : ''}`
         : ''
@@ -217,7 +216,8 @@ export default function RegisterPage() {
           state: state.trim() || null,
           address: fullAddress || null,
           portal_enabled: true,
-          portal_blocked: false
+          portal_blocked: false,
+          is_active: true
         })
         .select()
         .single()
@@ -227,22 +227,38 @@ export default function RegisterPage() {
         throw new Error('Erro ao criar cliente na carteira')
       }
 
-      // 5. Atualizar profile com client_id
-      // O trigger já deve ter vinculado, mas vamos garantir
-      const { error: profileError } = await supabase
+      // 3. CRIAR O PROFILE DIRETAMENTE (não depender do trigger)
+      // Primeiro tenta INSERT, se falhar tenta UPDATE
+      const { error: insertProfileError } = await supabase
         .from('profiles')
-        .update({
+        .insert({
+          id: userId,
+          email: email.trim(),
           full_name: fullName.trim(),
           role: 'client',
           client_id: clientData.id,
-          phone: phone.trim()
+          phone: phone.trim(),
+          is_active: true
         })
-        .eq('id', authData.user.id)
 
-      // Se falhar, não é crítico - o trigger deve ter feito
-      if (profileError) {
-        console.error('Aviso ao atualizar profile:', profileError)
-        // Não lançar erro - o trigger deve ter vinculado automaticamente
+      if (insertProfileError) {
+        // Se já existe (trigger criou), faz UPDATE
+        console.log('Profile pode já existir, tentando update...')
+        const { error: updateProfileError } = await supabase
+          .from('profiles')
+          .update({
+            full_name: fullName.trim(),
+            role: 'client',
+            client_id: clientData.id,
+            phone: phone.trim(),
+            is_active: true
+          })
+          .eq('id', userId)
+
+        if (updateProfileError) {
+          console.error('Erro ao criar/atualizar profile:', updateProfileError)
+          // Não lançar erro - vamos tentar fazer login mesmo assim
+        }
       }
 
       // 6. FAZER LOGOUT AGORA (depois de criar tudo)
