@@ -460,7 +460,7 @@ export default function OrderDetailsPage() {
                 <p className="font-medium text-gray-900">Chamado Aberto</p>
                 <p className="text-sm text-gray-500">{formatDate(order.created_at)}</p>
                 <p className="text-sm text-gray-600 mt-1">
-                  Aberto por {order.opened_by_type === 'client' ? 'você' : 'técnico'}
+                  Aberto por você
                 </p>
               </div>
             </div>
