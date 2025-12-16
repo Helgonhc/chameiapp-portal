@@ -107,7 +107,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 {clientData?.name || 'Carregando...'}
               </h1>
               <p className="text-sm text-blue-100">
-                👤 {userData?.full_name || clientData?.responsible_name || 'Usuário'}
+                👤 {
+                  // Se email do usuário = email do cliente → é o principal → mostra responsible_name
+                  // Se email diferente → é convidado → mostra full_name do profile
+                  userData?.email === clientData?.email
+                    ? (clientData?.responsible_name || userData?.full_name || 'Responsável')
+                    : (userData?.full_name || 'Usuário')
+                }
               </p>
             </div>
           </div>
