@@ -157,13 +157,24 @@ export default function ManageUsersPage() {
         throw new Error(profileError.message)
       }
 
-      // 4. Sucesso!
+      // 4. Enviar email de boas-vindas
+      try {
+        await supabase.auth.resetPasswordForEmail(newUserEmail, {
+          redirectTo: 'https://chameiapp-portal.vercel.app/reset-password'
+        })
+        console.log('✅ Email de boas-vindas enviado!')
+      } catch (emailError) {
+        console.log('Aviso: Email não enviado:', emailError)
+        // Não bloqueia a criação do usuário
+      }
+
+      // 5. Sucesso!
       alert(
         `✅ Usuário convidado com sucesso!\n\n` +
         `Email: ${newUserEmail}\n` +
         `Senha temporária: ${tempPassword}\n\n` +
-        `⚠️ Informe estas credenciais ao usuário.\n` +
-        `O usuário receberá um email de confirmação.`
+        `📧 Um email de boas-vindas foi enviado para ${newUserEmail}\n\n` +
+        `⚠️ Informe estas credenciais ao usuário.`
       )
 
       setShowModal(false)
