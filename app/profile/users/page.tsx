@@ -124,27 +124,36 @@ export default function ManageUsersPage() {
       if (authError) throw new Error(authError.message)
       if (!authData.user) throw new Error('Usuário não foi criado')
 
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      const { error: profileError } = await supabase
+      // Criar profile diretamente (não depender do trigger)
+      const { error: insertError } = await supabase
         .from('profiles')
-        .update({
+        .insert({
+          id: authData.user.id,
           email: newUserEmail,
           full_name: newUserName,
           role: 'client',
           client_id: clientId,
           is_active: true
         })
-        .eq('id', authData.user.id)
 
-      if (profileError) {
-        console.error('Erro ao atualizar profile:', profileError)
-        try {
-          await supabase.auth.admin.deleteUser(authData.user.id)
-        } catch (e) {
-          console.log('Não foi possível reverter')
+      // Se já existe, tenta update
+      if (insertError) {
+        console.log('Profile pode já existir, tentando update...')
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            email: newUserEmail,
+            full_name: newUserName,
+            role: 'client',
+            client_id: clientId,
+            is_active: true
+          })
+          .eq('id', authData.user.id)
+
+        if (updateError) {
+          console.error('Erro ao criar/atualizar profile:', updateError)
+          throw new Error('Erro ao criar perfil do usuário')
         }
-        throw new Error(profileError.message)
       }
 
       alert(`Usuário convidado!\nEmail: ${newUserEmail}\nSenha: ${tempPassword}`)
