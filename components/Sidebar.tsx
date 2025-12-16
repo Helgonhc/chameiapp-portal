@@ -17,12 +17,13 @@ export default function Sidebar({ clientData, unreadNotifications = 0, pendingQu
   const [isOpen, setIsOpen] = useState(false)
 
   const menuItems = [
-    { icon: Home, label: 'Início', path: '/dashboard', badge: null },
-    { icon: FileText, label: 'Meus Serviços', path: '/services', badge: null },
-    { icon: DollarSign, label: 'Orçamentos', path: '/quotes', badge: pendingQuotes > 0 ? pendingQuotes : null },
-    { icon: Calendar, label: 'Agendamentos', path: '/appointments', badge: null },
-    { icon: Bell, label: 'Notificações', path: '/notifications', badge: unreadNotifications > 0 ? unreadNotifications : null },
-    { icon: User, label: 'Meu Perfil', path: '/profile', badge: null },
+    { icon: Home, label: 'Dashboard', path: '/dashboard', badge: null, tooltip: 'Visão geral do portal' },
+    { icon: FileText, label: 'Ordens de Serviço', path: '/service-orders', badge: null, tooltip: 'Acompanhe os serviços em execução' },
+    { icon: Ticket, label: 'Meus Chamados', path: '/tickets', badge: null, tooltip: 'Abra chamados quando precisar de ajuda' },
+    { icon: DollarSign, label: 'Orçamentos', path: '/quotes', badge: pendingQuotes > 0 ? pendingQuotes : null, tooltip: 'Aprove ou rejeite orçamentos' },
+    { icon: Calendar, label: 'Agendamentos', path: '/appointments', badge: null, tooltip: 'Agende visitas técnicas' },
+    { icon: Bell, label: 'Notificações', path: '/notifications', badge: unreadNotifications > 0 ? unreadNotifications : null, tooltip: 'Veja suas notificações' },
+    { icon: User, label: 'Meu Perfil', path: '/profile', badge: null, tooltip: 'Gerencie seu perfil e usuários' },
   ]
 
   async function handleLogout() {
@@ -109,6 +110,7 @@ export default function Sidebar({ clientData, unreadNotifications = 0, pendingQu
                       router.push(item.path)
                       setIsOpen(false)
                     }}
+                    title={item.tooltip}
                     className={`
                       group relative w-full flex items-center gap-3 px-4 py-3 rounded-xl
                       transition-all duration-200
