@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Ticket, Plus, Clock, CheckCircle, XCircle, AlertCircle, User, Calendar } from 'lucide-react'
+import { Ticket, Plus, Clock, CheckCircle, XCircle, AlertCircle, User, Calendar, Edit2, Trash2 } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 
 interface TicketData {
@@ -31,6 +31,7 @@ export default function TicketsPage() {
   const [filter, setFilter] = useState<'all' | 'aberto' | 'em_analise' | 'aprovado' | 'rejeitado'>('all')
   const [showModal, setShowModal] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [editingTicket, setEditingTicket] = useState<TicketData | null>(null)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<'baixa' | 'media' | 'alta'>('media')
@@ -94,28 +95,81 @@ export default function TicketsPage() {
 
       if (!profile?.client_id) throw new Error('Cliente não encontrado')
 
-      const { error: insertError } = await supabase
-        .from('tickets')
-        .insert({
-          client_id: profile.client_id,
-          title: title.trim(),
-          description: description.trim(),
-          priority,
-          status: 'aberto',
-          created_by: user.id
-        })
+      if (editingTicket) {
+        // Atualizar chamado existente
+        const { error: updateError } = await supabase
+          .from('tickets')
+          .update({
+            title: title.trim(),
+            description: description.trim(),
+            priority
+          })
+          .eq('id', editingTicket.id)
 
-      if (insertError) throw insertError
+        if (updateError) throw updateError
+      } else {
+        // Criar novo chamado
+        const { error: insertError } = await supabase
+          .from('tickets')
+          .insert({
+            client_id: profile.client_id,
+            title: title.trim(),
+            description: description.trim(),
+            priority,
+            status: 'aberto',
+            created_by: user.id
+          })
+
+        if (insertError) throw insertError
+      }
 
       setShowModal(false)
+      setEditingTicket(null)
       setTitle('')
       setDescription('')
       setPriority('media')
       loadTickets()
     } catch (error: any) {
-      setError(error.message || 'Erro ao criar chamado')
+      setError(error.message || 'Erro ao salvar chamado')
     } finally {
       setCreating(false)
+    }
+  }
+
+  function handleEditTicket(ticket: TicketData) {
+    if (ticket.status !== 'aberto') {
+      alert('Apenas chamados abertos podem ser editados')
+      return
+    }
+    setEditingTicket(ticket)
+    setTitle(ticket.title)
+    setDescription(ticket.description)
+    setPriority(ticket.priority as 'baixa' | 'media' | 'alta')
+    setShowModal(true)
+  }
+
+  async function handleDeleteTicket(ticket: TicketData) {
+    if (ticket.status === 'convertido') {
+      alert('Chamados convertidos em OS não podem ser excluídos')
+      return
+    }
+
+    if (!confirm(`Deseja realmente excluir o chamado ${ticket.ticket_number}?`)) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('tickets')
+        .delete()
+        .eq('id', ticket.id)
+
+      if (error) throw error
+
+      loadTickets()
+    } catch (error: any) {
+      console.error('Erro ao excluir chamado:', error)
+      alert('Erro ao excluir chamado: ' + error.message)
     }
   }
 
@@ -199,7 +253,13 @@ export default function TicketsPage() {
               </div>
 
               <button
-                onClick={() => setShowModal(true)}
+                onClick={() => {
+                  setEditingTicket(null)
+                  setTitle('')
+                  setDescription('')
+                  setPriority('media')
+                  setShowModal(true)
+                }}
                 className="px-6 py-4 bg-white text-blue-600 rounded-xl font-bold hover:shadow-xl transition-all flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" />
@@ -279,19 +339,40 @@ export default function TicketsPage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-gray-100">
-                    {ticket.creator && (
+                  <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-gray-100">
+                    <div className="flex flex-wrap items-center gap-4">
+                      {ticket.creator && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <User className="w-4 h-4" />
+                          <span>Aberto por: {ticket.creator.full_name}</span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <User className="w-4 h-4" />
-                        <span>Aberto por: {ticket.creator.full_name}</span>
+                        <Calendar className="w-4 h-4" />
+                        <span>
+                          {new Date(ticket.created_at).toLocaleDateString('pt-BR')} às {new Date(ticket.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    </div>
+
+                    {ticket.status === 'aberto' && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEditTicket(ticket)}
+                          className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
+                          title="Editar chamado"
+                        >
+                          <Edit2 className="w-4 h-4 text-blue-600" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTicket(ticket)}
+                          className="p-2 hover:bg-red-100 rounded-lg transition-colors"
+                          title="Excluir chamado"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </button>
                       </div>
                     )}
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar className="w-4 h-4" />
-                      <span>
-                        {new Date(ticket.created_at).toLocaleDateString('pt-BR')} às {new Date(ticket.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
                   </div>
 
                   {ticket.rejection_reason && (
@@ -320,9 +401,11 @@ export default function TicketsPage() {
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Ticket className="w-6 h-6 text-blue-600" />
+                {editingTicket ? <Edit2 className="w-6 h-6 text-blue-600" /> : <Ticket className="w-6 h-6 text-blue-600" />}
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Novo Chamado</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                {editingTicket ? 'Editar Chamado' : 'Novo Chamado'}
+              </h2>
             </div>
 
             <form onSubmit={handleCreateTicket}>
@@ -392,6 +475,7 @@ export default function TicketsPage() {
                   type="button"
                   onClick={() => {
                     setShowModal(false)
+                    setEditingTicket(null)
                     setTitle('')
                     setDescription('')
                     setPriority('media')
@@ -411,8 +495,8 @@ export default function TicketsPage() {
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                   ) : (
                     <>
-                      <Plus className="w-5 h-5" />
-                      Criar Chamado
+                      {editingTicket ? <Edit2 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                      {editingTicket ? 'Salvar Alterações' : 'Criar Chamado'}
                     </>
                   )}
                 </button>
