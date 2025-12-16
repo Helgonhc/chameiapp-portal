@@ -17,12 +17,10 @@ export default function Sidebar({ clientData, unreadNotifications = 0, pendingQu
   const [isOpen, setIsOpen] = useState(false)
 
   const menuItems = [
-    { icon: Home, label: 'Dashboard', path: '/dashboard', badge: null },
-    { icon: Ticket, label: 'Chamados', path: '/tickets', badge: null },
-    { icon: FileText, label: 'Ordens de Serviço', path: '/service-orders', badge: null },
+    { icon: Home, label: 'Início', path: '/dashboard', badge: null },
+    { icon: FileText, label: 'Meus Serviços', path: '/services', badge: null },
     { icon: DollarSign, label: 'Orçamentos', path: '/quotes', badge: pendingQuotes > 0 ? pendingQuotes : null },
     { icon: Calendar, label: 'Agendamentos', path: '/appointments', badge: null },
-    { icon: History, label: 'Histórico', path: '/history', badge: null },
     { icon: Bell, label: 'Notificações', path: '/notifications', badge: unreadNotifications > 0 ? unreadNotifications : null },
     { icon: User, label: 'Meu Perfil', path: '/profile', badge: null },
   ]
