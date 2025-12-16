@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, FileText, DollarSign, Calendar, History, Bell, User, LogOut, Menu, X, Building2 } from 'lucide-react'
+import { Home, FileText, DollarSign, Calendar, History, Bell, User, LogOut, Menu, X, Building2, Ticket } from 'lucide-react'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
@@ -18,6 +18,7 @@ export default function Sidebar({ clientData, unreadNotifications = 0, pendingQu
 
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/dashboard', badge: null },
+    { icon: Ticket, label: 'Chamados', path: '/tickets', badge: null },
     { icon: FileText, label: 'Ordens de Serviço', path: '/service-orders', badge: null },
     { icon: DollarSign, label: 'Orçamentos', path: '/quotes', badge: pendingQuotes > 0 ? pendingQuotes : null },
     { icon: Calendar, label: 'Agendamentos', path: '/appointments', badge: null },
