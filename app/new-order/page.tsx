@@ -25,7 +25,7 @@ export default function NewOrderPage() {
   const [callType, setCallType] = useState<'custom' | 'maintenance'>('custom')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium')
+  const [priority, setPriority] = useState<'baixa' | 'media' | 'alta'>('media')
   const [equipmentId, setEquipmentId] = useState<string>('')
   const [photos, setPhotos] = useState<string[]>([])
   const [maintenanceTypeId, setMaintenanceTypeId] = useState<string>('')
@@ -112,7 +112,7 @@ export default function NewOrderPage() {
     setTitle(`Manutenção: ${mt.name}`)
     setDescription(mt.description || `Solicitação de manutenção periódica: ${mt.name}`)
     setMaintenanceTypeId(mt.id)
-    setPriority('medium')
+    setPriority('media')
     setStep(3) // Pular para prioridade já que título e descrição estão preenchidos
   }
 
@@ -334,9 +334,9 @@ export default function NewOrderPage() {
                 </label>
                 <div className="grid grid-cols-3 gap-4">
                   <button 
-                    onClick={() => setPriority('low')} 
+                    onClick={() => setPriority('baixa')} 
                     className={`p-6 rounded-2xl border-3 transition-all ${
-                      priority === 'low' 
+                      priority === 'baixa' 
                         ? 'border-emerald-500 bg-emerald-50 shadow-lg scale-105' 
                         : 'border-slate-200 hover:border-emerald-300'
                     }`}
@@ -347,9 +347,9 @@ export default function NewOrderPage() {
                   </button>
                   
                   <button 
-                    onClick={() => setPriority('medium')} 
+                    onClick={() => setPriority('media')} 
                     className={`p-6 rounded-2xl border-3 transition-all ${
-                      priority === 'medium' 
+                      priority === 'media' 
                         ? 'border-amber-500 bg-amber-50 shadow-lg scale-105' 
                         : 'border-slate-200 hover:border-amber-300'
                     }`}
@@ -360,9 +360,9 @@ export default function NewOrderPage() {
                   </button>
                   
                   <button 
-                    onClick={() => setPriority('high')} 
+                    onClick={() => setPriority('alta')} 
                     className={`p-6 rounded-2xl border-3 transition-all ${
-                      priority === 'high' 
+                      priority === 'alta' 
                         ? 'border-red-500 bg-red-50 shadow-lg scale-105' 
                         : 'border-slate-200 hover:border-red-300'
                     }`}
@@ -471,7 +471,7 @@ export default function NewOrderPage() {
                 <h3 className="font-bold text-xl text-slate-900 mb-4">Resumo do Chamado</h3>
                 <div className="space-y-3 text-slate-700">
                   <p><strong>Título:</strong> {title}</p>
-                  <p><strong>Prioridade:</strong> {priority === 'low' ? '🟢 Baixa' : priority === 'medium' ? '🟡 Média' : '🔴 Alta'}</p>
+                  <p><strong>Prioridade:</strong> {priority === 'baixa' ? '🟢 Baixa' : priority === 'media' ? '🟡 Média' : '🔴 Alta'}</p>
                   {photos.length > 0 && <p><strong>Fotos:</strong> {photos.length} anexada(s)</p>}
                 </div>
               </div>
