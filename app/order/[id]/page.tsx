@@ -35,6 +35,10 @@ interface OrderDetails {
     description: string
     default_frequency: string
   }
+  created_by_user?: {
+    full_name: string
+    email: string
+  } | null
 }
 
 interface Comment {
@@ -122,11 +126,23 @@ export default function OrderDetailsPage() {
         maintenanceType = mtData
       }
 
+      // Buscar quem criou o ticket
+      let createdBy = null
+      if (orderData.created_by) {
+        const { data: creatorData } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', orderData.created_by)
+          .single()
+        createdBy = creatorData
+      }
+
       setOrder({
         ...orderData,
         equipment,
         technician,
-        maintenance_type: maintenanceType
+        maintenance_type: maintenanceType,
+        created_by_user: createdBy
       })
     } catch (error: any) {
       console.error('Erro ao carregar ordem:', error)
@@ -460,7 +476,7 @@ export default function OrderDetailsPage() {
                 <p className="font-medium text-gray-900">Chamado Aberto</p>
                 <p className="text-sm text-gray-500">{formatDate(order.created_at)}</p>
                 <p className="text-sm text-gray-600 mt-1">
-                  Aberto por você
+                  Aberto por {order.created_by_user?.full_name || 'você'}
                 </p>
               </div>
             </div>
