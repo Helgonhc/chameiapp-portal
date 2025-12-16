@@ -143,7 +143,7 @@ export default function AppointmentsPage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-8 -mt-8 pb-8">
-          <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
+          <div className="flex flex-wrap justify-center gap-3 mb-6">
             {[
               { key: 'all', label: 'Todos', count: appointments.length, icon: '📅' },
               { key: 'pending', label: 'Pendentes', count: appointments.filter(a => a.status === 'pending').length, icon: '⏳' },

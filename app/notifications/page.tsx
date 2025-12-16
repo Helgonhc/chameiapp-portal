@@ -226,7 +226,7 @@ export default function NotificationsPage() {
         </div>
 
         <div className="max-w-4xl mx-auto px-6 -mt-8 pb-8">
-          <div className="flex gap-3 mb-6">
+          <div className="flex flex-wrap justify-center gap-3 mb-6">
             {[
               { key: 'all', label: 'Todas', count: notifications.length, icon: '📬' },
               { key: 'unread', label: 'Não lidas', count: unreadCount, icon: '🔔' },

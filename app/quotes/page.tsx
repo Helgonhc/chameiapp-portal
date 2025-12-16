@@ -153,7 +153,7 @@ export default function QuotesPage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-8 -mt-8 pb-8">
-          <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3 mb-6">
+          <div className="flex flex-wrap justify-center gap-3 mb-6">
             {[
               { key: 'all', label: 'Todos', count: quotes.length, icon: '💰' },
               { key: 'pending', label: 'Aguardando', count: quotes.filter(q => q.status === 'pending').length, icon: '⏳' },
