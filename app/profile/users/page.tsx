@@ -451,7 +451,7 @@ export default function ManageUsersPage() {
             {canAddUser ? '✨ Convidar Novo Usuário' : '🔒 Limite de Usuários Atingido'}
           </button>
         )}
-      </main>
+        </main>
       </div>
 
       {/* Modal Convidar Usuário Premium */}
@@ -539,6 +539,6 @@ export default function ManageUsersPage() {
           </div>
         </div>
       )}
-    </div>
+    </DashboardLayout>
   )
 }
