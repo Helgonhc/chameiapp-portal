@@ -159,8 +159,8 @@ export default function QuotesPage() {
         </div>
 
         <div className="px-8 -mt-8 pb-8">
-        {/* Filtros Premium */}
-        <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
+        {/* Filtros Premium - Responsivo */}
+        <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3 mb-6">
           {[
             { key: 'all', label: 'Todos', count: quotes.length, icon: '💰', color: 'blue' },
             { key: 'pending', label: 'Aguardando', count: quotes.filter(q => q.status === 'pending').length, icon: '⏳', color: 'amber' },
@@ -170,14 +170,16 @@ export default function QuotesPage() {
             <button
               key={btn.key}
               onClick={() => setFilter(btn.key)}
-              className={`group px-5 py-3 rounded-xl font-semibold transition-all whitespace-nowrap shadow-sm ${
+              className={`group px-4 md:px-5 py-3 rounded-xl font-semibold transition-all shadow-sm text-sm md:text-base ${
                 filter === btn.key
-                  ? `bg-white text-${btn.color}-600 shadow-lg border-2 border-${btn.color}-200 scale-105`
+                  ? 'bg-white text-amber-600 shadow-lg border-2 border-amber-200 scale-105'
                   : 'bg-white/70 text-slate-600 hover:bg-white hover:shadow-md border-2 border-transparent'
               }`}
             >
-              <span className="mr-2">{btn.icon}</span>
-              {btn.label} ({btn.count})
+              <span className="mr-1 md:mr-2">{btn.icon}</span>
+              <span className="hidden sm:inline">{btn.label} </span>
+              <span className="sm:hidden">{btn.label.split(' ')[0]} </span>
+              ({btn.count})
             </button>
           ))}
         </div>
