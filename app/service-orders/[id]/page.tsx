@@ -21,11 +21,16 @@ interface ServiceOrder {
   photos: string[]
   created_at: string
   updated_at: string
+  signature_url?: string
+  signer_name?: string
+  signer_doc?: string
+  signed_at?: string
   clients: {
     name: string
     email: string
     phone: string
     address: string
+    cnpj_cpf?: string
   }
   equipments: {
     name: string

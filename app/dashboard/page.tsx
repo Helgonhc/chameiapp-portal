@@ -69,7 +69,7 @@ export default function DashboardPage() {
       const [ordersData, quotesData] = await Promise.all([
         supabase
           .from('service_orders')
-          .select('status')
+          .select('status, created_at')
           .eq('client_id', profile.client_id),
         supabase
           .from('quotes')
@@ -85,8 +85,8 @@ export default function DashboardPage() {
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-      const ordersThisWeek = orders.filter(o => new Date(o.created_at) >= weekAgo).length
-      const ordersThisMonth = orders.filter(o => new Date(o.created_at) >= monthAgo).length
+      const ordersThisWeek = orders.filter((o: any) => new Date(o.created_at) >= weekAgo).length
+      const ordersThisMonth = orders.filter((o: any) => new Date(o.created_at) >= monthAgo).length
 
       setStats({
         totalOrders: orders.length,
@@ -240,7 +240,7 @@ export default function DashboardPage() {
                           position: 'bottom',
                           labels: {
                             padding: 10,
-                            font: { size: 11, weight: '600' }
+                            font: { size: 11, weight: 'bold' }
                           }
                         }
                       }
