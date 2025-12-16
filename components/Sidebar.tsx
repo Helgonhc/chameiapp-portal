@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, FileText, DollarSign, Calendar, History, Bell, User, LogOut, Menu, X } from 'lucide-react'
+import { Home, FileText, DollarSign, Calendar, History, Bell, User, LogOut, Menu, X, Building2 } from 'lucide-react'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
@@ -17,7 +17,7 @@ export default function Sidebar({ clientData, unreadNotifications = 0, pendingQu
   const [isOpen, setIsOpen] = useState(false)
 
   const menuItems = [
-    { icon: Home, label: 'Início', path: '/dashboard', badge: null },
+    { icon: Home, label: 'Dashboard', path: '/dashboard', badge: null },
     { icon: FileText, label: 'Ordens de Serviço', path: '/service-orders', badge: null },
     { icon: DollarSign, label: 'Orçamentos', path: '/quotes', badge: pendingQuotes > 0 ? pendingQuotes : null },
     { icon: Calendar, label: 'Agendamentos', path: '/appointments', badge: null },
@@ -37,56 +37,66 @@ export default function Sidebar({ clientData, unreadNotifications = 0, pendingQu
 
   return (
     <>
+      {/* Mobile Menu Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg"
+        className="lg:hidden fixed top-4 left-4 z-50 p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow"
       >
-        {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        {isOpen ? <X className="w-6 h-6 text-gray-700" /> : <Menu className="w-6 h-6 text-gray-700" />}
       </button>
 
+      {/* Overlay */}
       {isOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity"
           onClick={() => setIsOpen(false)}
         />
       )}
 
+      {/* Sidebar */}
       <aside
         className={`
           fixed top-0 left-0 h-full z-40
-          transition-transform duration-300
+          transition-all duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:static
-          w-64 flex flex-col
-          bg-white border-r border-gray-200
+          w-72 flex flex-col
+          bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900
+          shadow-2xl
         `}
       >
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center gap-3">
+        {/* Header com Logo */}
+        <div className="p-6 border-b border-slate-700/50">
+          <div className="flex items-center gap-4">
             {clientData?.logo_url ? (
-              <img
-                src={clientData.logo_url}
-                alt={clientData.name}
-                className="h-10 w-10 object-contain rounded"
-              />
+              <div className="relative">
+                <div className="absolute inset-0 bg-blue-500/20 rounded-xl blur"></div>
+                <img
+                  src={clientData.logo_url}
+                  alt={clientData.name}
+                  className="relative h-12 w-12 object-contain rounded-xl bg-white/10 p-2"
+                />
+              </div>
             ) : (
-              <div className="h-10 w-10 bg-blue-600 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-lg">
-                  {clientData?.name?.charAt(0) || 'C'}
-                </span>
+              <div className="relative">
+                <div className="absolute inset-0 bg-blue-500/20 rounded-xl blur"></div>
+                <div className="relative h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Building2 className="w-6 h-6 text-white" />
+                </div>
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h2 className="font-bold text-gray-900 truncate">
-                {clientData?.name || 'Portal'}
+              <h2 className="font-bold text-white truncate text-base">
+                {clientData?.name || 'Portal Cliente'}
               </h2>
-              <p className="text-xs text-gray-500 truncate">
-                {clientData?.responsible_name || 'Cliente'}
+              <p className="text-xs text-slate-400 truncate">
+                {clientData?.responsible_name || 'Bem-vindo'}
               </p>
             </div>
           </div>
         </div>
 
+        {/* Menu Items */}
         <nav className="flex-1 p-4 overflow-y-auto">
           <ul className="space-y-1">
             {menuItems.map((item) => {
@@ -101,19 +111,25 @@ export default function Sidebar({ clientData, unreadNotifications = 0, pendingQu
                       setIsOpen(false)
                     }}
                     className={`
-                      w-full flex items-center gap-3 px-4 py-3 rounded-lg
-                      transition-colors
+                      group relative w-full flex items-center gap-3 px-4 py-3 rounded-xl
+                      transition-all duration-200
                       ${active
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
+                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/50'
+                        : 'text-slate-300 hover:bg-white/5 hover:text-white'
                       }
                     `}
                   >
-                    <Icon className="w-5 h-5" />
+                    {active && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full"></div>
+                    )}
+                    <Icon className={`w-5 h-5 ${active ? 'scale-110' : 'group-hover:scale-110'} transition-transform`} />
                     <span className="flex-1 text-left text-sm font-medium">{item.label}</span>
                     {item.badge && (
-                      <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                        {item.badge > 9 ? '9+' : item.badge}
+                      <span className="relative">
+                        <span className="absolute inset-0 bg-red-500 rounded-full blur animate-pulse"></span>
+                        <span className="relative bg-gradient-to-br from-red-500 to-red-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
+                          {item.badge > 9 ? '9+' : item.badge}
+                        </span>
                       </span>
                     )}
                   </button>
@@ -123,13 +139,14 @@ export default function Sidebar({ clientData, unreadNotifications = 0, pendingQu
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-gray-200">
+        {/* Footer com Logout */}
+        <div className="p-4 border-t border-slate-700/50">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 group"
           >
-            <LogOut className="w-5 h-5" />
-            <span className="text-sm font-medium">Sair</span>
+            <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <span className="text-sm font-medium">Sair da Conta</span>
           </button>
         </div>
       </aside>
