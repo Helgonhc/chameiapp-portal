@@ -21,6 +21,13 @@ const formatOrderId = (id: string, dateString: string) => {
 
 export async function generateServiceOrderPDF(order: any) {
   try {
+    // DEBUG: Verificar fotos
+    console.log('=== DEBUG PDF ===')
+    console.log('Order ID:', order.id)
+    console.log('photos_url:', order.photos_url)
+    console.log('photos:', order.photos)
+    console.log('=================')
+
     // 1. CARREGAMENTO DE DADOS
     const { data: config } = await supabase
       .from('app_config')
@@ -401,8 +408,42 @@ ${(order.photos_url && order.photos_url.length > 0) || (order.photos && order.ph
     printWindow.document.write(html)
     printWindow.document.close()
 
-    // Aguardar imagens carregarem antes de imprimir
-    printWindow.onload = () => {
+    // Aguardar TODAS as imagens carregarem antes de imprimir
+    const waitForImages = () => {
+      return new Promise<void>((resolve) => {
+        const images = printWindow.document.querySelectorAll('img')
+        if (images.length === 0) {
+          resolve()
+          return
+        }
+
+        let loadedCount = 0
+        const totalImages = images.length
+
+        const checkAllLoaded = () => {
+          loadedCount++
+          if (loadedCount >= totalImages) {
+            resolve()
+          }
+        }
+
+        images.forEach((img) => {
+          if (img.complete) {
+            checkAllLoaded()
+          } else {
+            img.onload = checkAllLoaded
+            img.onerror = checkAllLoaded // Conta mesmo se falhar
+          }
+        })
+
+        // Timeout de segurança - 5 segundos
+        setTimeout(resolve, 5000)
+      })
+    }
+
+    printWindow.onload = async () => {
+      await waitForImages()
+      // Aguarda mais um pouco para renderização
       setTimeout(() => {
         printWindow.print()
       }, 500)
