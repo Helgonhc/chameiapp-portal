@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 import { generateQuotePDF } from '@/utils/generateQuotePDF'
+import { sendWhatsAppNotification, sendEmailNotification } from '@/utils/quoteNotifications'
 
 interface Quote {
   id: string
@@ -103,74 +104,148 @@ export default function QuoteDetailsPage() {
     }
   }
 
-  // Função para enviar email de notificação
-  async function sendQuoteStatusEmail(status: 'aprovado' | 'rejeitado', reason?: string) {
+  // Função para enviar notificações (email + WhatsApp)
+  async function sendQuoteStatusNotifications(status: 'aprovado' | 'rejeitado', reason?: string) {
     if (!quote) return
     
     try {
       // Buscar configurações da empresa
       const { data: config } = await supabase
         .from('app_config')
-        .select('company_name, email')
-        .limit(1)
-        .single()
-
-      // Buscar email do admin/criador do orçamento
-      const { data: creator } = await supabase
-        .from('profiles')
-        .select('email, full_name')
-        .eq('id', quote.profiles?.full_name ? undefined : undefined)
+        .select('company_name, email, phone')
         .limit(1)
         .single()
 
       // Buscar admins para notificar
       const { data: admins } = await supabase
         .from('profiles')
-        .select('email, full_name')
+        .select('email, full_name, phone')
         .eq('role', 'admin')
         .eq('is_active', true)
 
-      const companyName = config?.company_name || 'Empresa'
       const clientName = quote.clients?.name || 'Cliente'
-      const quoteTitle = quote.title
       const quoteNumber = quote.quote_number
+      const quoteTitle = quote.title
       const quoteTotal = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(quote.total || 0)
 
-      // Criar registro de email para ser enviado (via trigger ou edge function)
+      // ========== ENVIAR EMAIL ==========
       const emailSubject = status === 'aprovado' 
         ? `✅ Orçamento ${quoteNumber} APROVADO - ${clientName}`
         : `❌ Orçamento ${quoteNumber} REJEITADO - ${clientName}`
 
-      const emailBody = status === 'aprovado'
-        ? `
-          <h2>Orçamento Aprovado!</h2>
-          <p>O cliente <strong>${clientName}</strong> aprovou o orçamento:</p>
-          <ul>
-            <li><strong>Número:</strong> ${quoteNumber}</li>
-            <li><strong>Título:</strong> ${quoteTitle}</li>
-            <li><strong>Valor:</strong> ${quoteTotal}</li>
-          </ul>
-          <p>Acesse o sistema para dar continuidade ao serviço.</p>
-        `
-        : `
-          <h2>Orçamento Rejeitado</h2>
-          <p>O cliente <strong>${clientName}</strong> rejeitou o orçamento:</p>
-          <ul>
-            <li><strong>Número:</strong> ${quoteNumber}</li>
-            <li><strong>Título:</strong> ${quoteTitle}</li>
-            <li><strong>Valor:</strong> ${quoteTotal}</li>
-            ${reason ? `<li><strong>Motivo:</strong> ${reason}</li>` : ''}
-          </ul>
-          <p>Entre em contato com o cliente para mais informações.</p>
-        `
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: ${status === 'aprovado' ? '#10B981' : '#EF4444'}; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
+            .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
+            .info-box { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
+            .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+            .info-row:last-child { border-bottom: none; }
+            .label { color: #6b7280; }
+            .value { font-weight: bold; color: #111827; }
+            .total { font-size: 24px; color: ${status === 'aprovado' ? '#10B981' : '#EF4444'}; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+            .reason { background: #FEF3C7; border: 1px solid #F59E0B; padding: 15px; border-radius: 8px; margin-top: 15px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>${status === 'aprovado' ? '✅ Orçamento Aprovado!' : '❌ Orçamento Rejeitado'}</h1>
+            </div>
+            <div class="content">
+              <p>O cliente <strong>${clientName}</strong> ${status === 'aprovado' ? 'APROVOU' : 'rejeitou'} o orçamento:</p>
+              
+              <div class="info-box">
+                <div class="info-row">
+                  <span class="label">Número:</span>
+                  <span class="value">${quoteNumber}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Título:</span>
+                  <span class="value">${quoteTitle}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">Valor Total:</span>
+                  <span class="value total">${quoteTotal}</span>
+                </div>
+              </div>
+              
+              ${reason ? `
+              <div class="reason">
+                <strong>📝 Motivo da rejeição:</strong><br>
+                ${reason}
+              </div>
+              ` : ''}
+              
+              <p style="margin-top: 20px;">
+                ${status === 'aprovado' 
+                  ? '🎉 Acesse o sistema para dar continuidade ao serviço.' 
+                  : 'Entre em contato com o cliente para mais informações.'}
+              </p>
+            </div>
+            <div class="footer">
+              ${config?.company_name || 'Sistema de Gestão'} - Notificação Automática
+            </div>
+          </div>
+        </body>
+        </html>
+      `
 
-      // Inserir na tabela de emails pendentes (se existir) ou usar edge function
-      // Por enquanto, vamos apenas logar - o trigger de notificação já cuida disso
-      console.log('Email de notificação:', { subject: emailSubject, admins: admins?.map(a => a.email) })
+      // Tentar enviar email via Edge Function
+      for (const admin of (admins || [])) {
+        if (admin.email) {
+          try {
+            await supabase.functions.invoke('send-email', {
+              body: {
+                to: admin.email,
+                subject: emailSubject,
+                html: emailHtml
+              }
+            })
+            console.log('Email enviado para:', admin.email)
+          } catch (emailError) {
+            console.log('Edge function de email não configurada, usando fallback')
+          }
+        }
+      }
+
+      // ========== ABRIR WHATSAPP ==========
+      // Buscar telefone do admin principal
+      const adminPhone = admins?.[0]?.phone || config?.phone
+      if (adminPhone) {
+        const whatsappMessage = status === 'aprovado'
+          ? `✅ *ORÇAMENTO APROVADO!*\n\n` +
+            `📋 *Número:* ${quoteNumber}\n` +
+            `👤 *Cliente:* ${clientName}\n` +
+            `📝 *Título:* ${quoteTitle}\n` +
+            `💰 *Valor:* ${quoteTotal}\n\n` +
+            `🎉 O cliente aprovou o orçamento! Acesse o sistema para dar continuidade.`
+          : `❌ *ORÇAMENTO REJEITADO*\n\n` +
+            `📋 *Número:* ${quoteNumber}\n` +
+            `👤 *Cliente:* ${clientName}\n` +
+            `📝 *Título:* ${quoteTitle}\n` +
+            `💰 *Valor:* ${quoteTotal}\n` +
+            (reason ? `\n📝 *Motivo:* ${reason}\n` : '') +
+            `\nEntre em contato com o cliente para mais informações.`
+
+        // Formatar telefone (remover caracteres especiais)
+        const cleanPhone = adminPhone.replace(/\D/g, '')
+        const whatsappUrl = `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(whatsappMessage)}`
+        
+        // Perguntar se quer enviar WhatsApp
+        if (confirm(`Deseja enviar notificação via WhatsApp para ${adminPhone}?`)) {
+          window.open(whatsappUrl, '_blank')
+        }
+      }
       
     } catch (error) {
-      console.error('Erro ao preparar email:', error)
-      // Não bloquear a aprovação/rejeição se o email falhar
+      console.error('Erro ao enviar notificações:', error)
+      // Não bloquear a aprovação/rejeição se as notificações falharem
     }
   }
 
@@ -189,10 +264,10 @@ export default function QuoteDetailsPage() {
 
       if (error) throw error
       
-      // Enviar email de notificação
-      await sendQuoteStatusEmail('aprovado')
+      // Enviar notificações (email + WhatsApp)
+      await sendQuoteStatusNotifications('aprovado')
       
-      alert('✅ Orçamento aprovado com sucesso! A equipe foi notificada.')
+      alert('✅ Orçamento aprovado com sucesso!')
       loadQuote()
     } catch (error: any) {
       console.error('Erro ao aprovar:', error)
@@ -216,10 +291,10 @@ export default function QuoteDetailsPage() {
 
       if (error) throw error
       
-      // Enviar email de notificação
-      await sendQuoteStatusEmail('rejeitado', rejectReason)
+      // Enviar notificações (email + WhatsApp)
+      await sendQuoteStatusNotifications('rejeitado', rejectReason)
       
-      alert('Orçamento rejeitado. A equipe foi notificada.')
+      alert('Orçamento rejeitado.')
       setShowRejectModal(false)
       setRejectReason('')
       loadQuote()
