@@ -65,41 +65,85 @@ export default function AppointmentsPage() {
   }
 
   function getStatusColor(status: string) {
-    const colors = {
+    const colors: Record<string, string> = {
+      pendente: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      confirmado: 'bg-green-100 text-green-800 border-green-200',
       confirmed: 'bg-green-100 text-green-800 border-green-200',
+      reagendado: 'bg-blue-100 text-blue-800 border-blue-200',
       rescheduled: 'bg-blue-100 text-blue-800 border-blue-200',
+      concluido: 'bg-gray-100 text-gray-800 border-gray-200',
       completed: 'bg-gray-100 text-gray-800 border-gray-200',
+      cancelado: 'bg-red-100 text-red-800 border-red-200',
       cancelled: 'bg-red-100 text-red-800 border-red-200',
     }
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800 border-gray-200'
+    return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200'
   }
 
   function getStatusLabel(status: string) {
-    const labels = {
+    const labels: Record<string, string> = {
+      pendente: 'Aguardando Confirmação',
       pending: 'Aguardando Confirmação',
+      confirmado: 'Confirmado',
       confirmed: 'Confirmado',
+      reagendado: 'Reagendado',
       rescheduled: 'Reagendado',
+      concluido: 'Realizado',
       completed: 'Realizado',
+      cancelado: 'Cancelado',
       cancelled: 'Cancelado',
     }
-    return labels[status as keyof typeof labels] || status
+    return labels[status] || status
   }
 
   function getStatusIcon(status: string) {
-    const icons = {
-      pending: <Clock className="w-5 h-5" />,
-      confirmed: <CheckCircle className="w-5 h-5" />,
-      rescheduled: <AlertCircle className="w-5 h-5" />,
-      completed: <CheckCircle className="w-5 h-5" />,
-      cancelled: <XCircle className="w-5 h-5" />,
+    if (status === 'pendente' || status === 'pending') return <Clock className="w-5 h-5" />
+    if (status === 'confirmado' || status === 'confirmed') return <CheckCircle className="w-5 h-5" />
+    if (status === 'reagendado' || status === 'rescheduled') return <AlertCircle className="w-5 h-5" />
+    if (status === 'concluido' || status === 'completed') return <CheckCircle className="w-5 h-5" />
+    if (status === 'cancelado' || status === 'cancelled') return <XCircle className="w-5 h-5" />
+    return <Clock className="w-5 h-5" />
+  }
+
+  async function handleCancelAppointment(id: string) {
+    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return
+    
+    try {
+      const { error } = await supabase
+        .from('appointment_requests')
+        .update({ status: 'cancelado', cancellation_reason: 'Cancelado pelo cliente' })
+        .eq('id', id)
+      
+      if (error) throw error
+      loadAppointments()
+    } catch (error) {
+      console.error('Erro ao cancelar:', error)
+      alert('Erro ao cancelar agendamento')
     }
-    return icons[status as keyof typeof icons] || <Clock className="w-5 h-5" />
+  }
+
+  async function handleDeleteAppointment(id: string) {
+    if (!confirm('Tem certeza que deseja EXCLUIR este agendamento? Esta ação não pode ser desfeita.')) return
+    
+    try {
+      const { error } = await supabase
+        .from('appointment_requests')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      loadAppointments()
+    } catch (error) {
+      console.error('Erro ao excluir:', error)
+      alert('Erro ao excluir agendamento')
+    }
   }
 
   const filteredAppointments = filter === 'all' 
     ? appointments 
-    : appointments.filter(a => a.status === filter)
+    : filter === 'pending'
+    ? appointments.filter(a => a.status === 'pending' || a.status === 'pendente')
+    : appointments.filter(a => a.status === 'confirmed' || a.status === 'confirmado')
 
   if (loading) {
     return (
@@ -146,8 +190,8 @@ export default function AppointmentsPage() {
           <div className="flex flex-wrap justify-center gap-3 mb-6">
             {[
               { key: 'all', label: 'Todos', count: appointments.length, icon: '📅' },
-              { key: 'pending', label: 'Pendentes', count: appointments.filter(a => a.status === 'pending').length, icon: '⏳' },
-              { key: 'confirmed', label: 'Confirmados', count: appointments.filter(a => a.status === 'confirmed').length, icon: '✅' },
+              { key: 'pending', label: 'Pendentes', count: appointments.filter(a => a.status === 'pending' || a.status === 'pendente').length, icon: '⏳' },
+              { key: 'confirmed', label: 'Confirmados', count: appointments.filter(a => a.status === 'confirmed' || a.status === 'confirmado').length, icon: '✅' },
             ].map((btn) => (
               <button
                 key={btn.key}
@@ -252,11 +296,34 @@ export default function AppointmentsPage() {
                   )}
 
                   {appointment.cancellation_reason && (
-                    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
                       <p className="text-sm font-semibold text-red-900 mb-1">Motivo do Cancelamento:</p>
                       <p className="text-sm text-red-800">{appointment.cancellation_reason}</p>
                     </div>
                   )}
+
+                  {/* Botões de Ação */}
+                  <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">
+                    {(appointment.status === 'pendente' || appointment.status === 'pending') && (
+                      <button
+                        onClick={() => handleCancelAppointment(appointment.id)}
+                        className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-200 transition-colors flex items-center gap-2"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Cancelar
+                      </button>
+                    )}
+                    
+                    {(appointment.status === 'cancelado' || appointment.status === 'cancelled' || 
+                      appointment.status === 'concluido' || appointment.status === 'completed') && (
+                      <button
+                        onClick={() => handleDeleteAppointment(appointment.id)}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-200 transition-colors flex items-center gap-2"
+                      >
+                        🗑️ Excluir
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))
             )}
