@@ -35,30 +35,26 @@ export default function NotificationBell() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('client_id')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile?.client_id) return
-
+      // Buscar notificações pelo user_id (não client_id)
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
-        .eq('client_id', profile.client_id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20)
 
-      if (error) throw error
+      if (error) {
+        console.error('Erro na query:', error)
+        throw error
+      }
       
-      // Mapear notificações
+      // Mapear notificações - usar is_read (não read) e body/message
       const mappedNotifications: Notification[] = (data || []).map(n => ({
         id: n.id,
-        title: n.title,
-        message: n.message,
+        title: n.title || 'Notificação',
+        message: n.body || n.message || '',
         type: getNotificationType(n.type),
-        read: n.read || false,
+        read: n.is_read || false,
         created_at: n.created_at,
         link: getNotificationLink(n),
       }))
@@ -78,9 +74,28 @@ export default function NotificationBell() {
   }
 
   function getNotificationLink(notification: any): string | undefined {
-    if (notification.service_order_id) return `/service-orders/${notification.service_order_id}`
+    const refId = notification.reference_id || notification.data?.reference_id
+    const type = notification.type || ''
+    
+    // Baseado no tipo
+    if (type.includes('quote') || type.includes('orcamento')) {
+      return refId ? `/quotes/${refId}` : '/quotes'
+    }
+    if (type.includes('order') || type.includes('service')) {
+      return refId ? `/orders/${refId}` : '/orders'
+    }
+    if (type.includes('ticket') || type.includes('chamado')) {
+      return refId ? `/tickets/${refId}` : '/tickets'
+    }
+    if (type.includes('appointment') || type.includes('agendamento')) {
+      return '/appointments'
+    }
+    
+    // Fallback para campos específicos
+    if (notification.service_order_id) return `/orders/${notification.service_order_id}`
     if (notification.quote_id) return `/quotes/${notification.quote_id}`
     if (notification.ticket_id) return `/tickets`
+    
     return undefined
   }
 
@@ -88,7 +103,7 @@ export default function NotificationBell() {
     try {
       await supabase
         .from('notifications')
-        .update({ read: true })
+        .update({ is_read: true, read_at: new Date().toISOString() })
         .eq('id', notificationId)
 
       setNotifications(prev =>
@@ -105,19 +120,12 @@ export default function NotificationBell() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('client_id')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile?.client_id) return
-
+      // Usar user_id em vez de client_id
       await supabase
         .from('notifications')
-        .update({ read: true })
-        .eq('client_id', profile.client_id)
-        .eq('read', false)
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('user_id', user.id)
+        .eq('is_read', false)
 
       setNotifications(prev => prev.map(n => ({ ...n, read: true })))
     } catch (error) {
