@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { 
   DollarSign, FileText, Calendar, CheckCircle, XCircle, Clock, 
   AlertCircle, ArrowLeft, Download, User, MapPin, Phone, Mail,
-  Package, FileCheck
+  Package, FileCheck, Send, MessageCircle
 } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 import { generateQuotePDF } from '@/utils/generateQuotePDF'
@@ -313,6 +313,158 @@ export default function QuoteDetailsPage() {
     }
   }
 
+  // Função para enviar email manualmente
+  async function handleSendEmail() {
+    if (!quote) return
+    
+    try {
+      // Buscar configurações da empresa
+      const { data: config } = await supabase
+        .from('app_config')
+        .select('company_name, email, phone')
+        .limit(1)
+        .single()
+
+      // Buscar admins para notificar
+      const { data: admins } = await supabase
+        .from('profiles')
+        .select('email, full_name, phone')
+        .eq('role', 'admin')
+        .eq('is_active', true)
+
+      const clientName = quote.clients?.name || 'Cliente'
+      const quoteNumber = quote.quote_number
+      const quoteTitle = quote.title
+      const quoteTotal = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(quote.total || 0)
+      const status = quote.status === 'aprovado' || quote.status === 'approved' ? 'aprovado' : 'rejeitado'
+
+      const emailSubject = status === 'aprovado' 
+        ? `✅ Orçamento ${quoteNumber} APROVADO - ${clientName}`
+        : `❌ Orçamento ${quoteNumber} REJEITADO - ${clientName}`
+
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: ${status === 'aprovado' ? '#10B981' : '#EF4444'}; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
+            .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
+            .info-box { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>${status === 'aprovado' ? '✅ Orçamento Aprovado!' : '❌ Orçamento Rejeitado'}</h1>
+            </div>
+            <div class="content">
+              <p>O cliente <strong>${clientName}</strong> ${status === 'aprovado' ? 'APROVOU' : 'rejeitou'} o orçamento:</p>
+              <div class="info-box">
+                <p><strong>Número:</strong> ${quoteNumber}</p>
+                <p><strong>Título:</strong> ${quoteTitle}</p>
+                <p><strong>Valor:</strong> ${quoteTotal}</p>
+                ${quote.rejection_reason ? `<p><strong>Motivo:</strong> ${quote.rejection_reason}</p>` : ''}
+              </div>
+            </div>
+            <div class="footer">${config?.company_name || 'Sistema'}</div>
+          </div>
+        </body>
+        </html>
+      `
+
+      // Tentar enviar email via Edge Function
+      let emailSent = false
+      for (const admin of (admins || [])) {
+        if (admin.email) {
+          try {
+            await supabase.functions.invoke('send-email', {
+              body: { to: admin.email, subject: emailSubject, html: emailHtml }
+            })
+            emailSent = true
+          } catch (e) {
+            console.log('Erro ao enviar email:', e)
+          }
+        }
+      }
+
+      if (emailSent) {
+        alert('✅ Email enviado com sucesso!')
+      } else {
+        // Fallback: abrir cliente de email
+        const adminEmail = admins?.[0]?.email || config?.email || ''
+        const mailtoUrl = `mailto:${adminEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(
+          `${status === 'aprovado' ? 'ORÇAMENTO APROVADO' : 'ORÇAMENTO REJEITADO'}\n\n` +
+          `Número: ${quoteNumber}\n` +
+          `Cliente: ${clientName}\n` +
+          `Título: ${quoteTitle}\n` +
+          `Valor: ${quoteTotal}\n` +
+          (quote.rejection_reason ? `Motivo: ${quote.rejection_reason}\n` : '')
+        )}`
+        window.open(mailtoUrl, '_blank')
+        alert('📧 Abrindo cliente de email...')
+      }
+    } catch (error) {
+      console.error('Erro ao enviar email:', error)
+      alert('Erro ao enviar email')
+    }
+  }
+
+  // Função para enviar WhatsApp manualmente
+  function handleSendWhatsApp() {
+    if (!quote) return
+    
+    const fetchAdminPhone = async () => {
+      // Buscar telefone do admin
+      const { data: config } = await supabase
+        .from('app_config')
+        .select('phone')
+        .limit(1)
+        .single()
+
+      const { data: admins } = await supabase
+        .from('profiles')
+        .select('phone')
+        .eq('role', 'admin')
+        .eq('is_active', true)
+        .limit(1)
+
+      return admins?.[0]?.phone || config?.phone || ''
+    }
+
+    fetchAdminPhone().then(adminPhone => {
+      const clientName = quote.clients?.name || 'Cliente'
+      const quoteNumber = quote.quote_number
+      const quoteTitle = quote.title
+      const quoteTotal = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(quote.total || 0)
+      const status = quote.status === 'aprovado' || quote.status === 'approved' ? 'aprovado' : 'rejeitado'
+
+      const message = status === 'aprovado'
+        ? `✅ *ORÇAMENTO APROVADO!*\n\n` +
+          `📋 *Número:* ${quoteNumber}\n` +
+          `👤 *Cliente:* ${clientName}\n` +
+          `📝 *Título:* ${quoteTitle}\n` +
+          `💰 *Valor:* ${quoteTotal}\n\n` +
+          `🎉 O cliente aprovou o orçamento!`
+        : `❌ *ORÇAMENTO REJEITADO*\n\n` +
+          `📋 *Número:* ${quoteNumber}\n` +
+          `👤 *Cliente:* ${clientName}\n` +
+          `📝 *Título:* ${quoteTitle}\n` +
+          `💰 *Valor:* ${quoteTotal}\n` +
+          (quote.rejection_reason ? `\n📝 *Motivo:* ${quote.rejection_reason}` : '')
+
+      // Formatar telefone
+      const cleanPhone = adminPhone.replace(/\D/g, '')
+      const whatsappUrl = cleanPhone 
+        ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`
+        : `https://wa.me/?text=${encodeURIComponent(message)}`
+      
+      window.open(whatsappUrl, '_blank')
+    })
+  }
+
 
   function getStatusColor(status: string) {
     const colors: Record<string, string> = {
@@ -498,6 +650,27 @@ export default function QuoteDetailsPage() {
                 <Download className="w-5 h-5" />
                 Baixar PDF
               </button>
+              
+              {/* Botões de envio - aparecem quando orçamento foi aprovado ou rejeitado */}
+              {(quote.status === 'aprovado' || quote.status === 'approved' || 
+                quote.status === 'rejeitado' || quote.status === 'rejected') && (
+                <>
+                  <button
+                    onClick={() => handleSendEmail()}
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all"
+                  >
+                    <Send className="w-5 h-5" />
+                    Enviar Email
+                  </button>
+                  <button
+                    onClick={() => handleSendWhatsApp()}
+                    className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-all"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    Enviar WhatsApp
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
