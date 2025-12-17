@@ -321,82 +321,195 @@ export default function QuoteDetailsPage() {
       // Buscar configurações da empresa
       const { data: config } = await supabase
         .from('app_config')
-        .select('company_name, email, phone')
+        .select('company_name, email, phone, logo_url, primary_color')
         .limit(1)
         .single()
 
-      // Buscar admins para notificar
+      // Buscar admins e técnicos para notificar
       const { data: admins } = await supabase
         .from('profiles')
         .select('email, full_name, phone')
-        .eq('role', 'admin')
+        .in('role', ['admin', 'technician'])
         .eq('is_active', true)
 
+      const companyName = config?.company_name || 'Empresa'
+      const companyLogo = config?.logo_url || ''
+      const primaryColor = config?.primary_color || '#0044cc'
       const clientName = quote.clients?.name || 'Cliente'
+      const clientPhone = quote.clients?.phone || ''
+      const clientEmail = quote.clients?.email || ''
       const quoteNumber = quote.quote_number
       const quoteTitle = quote.title
       const quoteTotal = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(quote.total || 0)
       const status = quote.status === 'aprovado' || quote.status === 'approved' ? 'aprovado' : 'rejeitado'
+      const statusColor = status === 'aprovado' ? '#10B981' : '#EF4444'
+      const statusBg = status === 'aprovado' ? '#D1FAE5' : '#FEE2E2'
+
+      // Coletar todos os emails dos admins
+      const adminEmails = (admins || [])
+        .map(a => a.email)
+        .filter((email): email is string => !!email)
+
+      // ========== EMAILS FIXOS ADICIONAIS (edite aqui se quiser) ==========
+      const emailsFixos: string[] = [
+        // 'gerente@empresa.com',
+        // 'financeiro@empresa.com',
+      ]
+      
+      // Combinar todos os emails (remover duplicados)
+      const todosEmails = [...new Set([...adminEmails, ...emailsFixos])]
+
+      if (todosEmails.length === 0) {
+        alert('⚠️ Nenhum email de admin encontrado para enviar.')
+        return
+      }
 
       const emailSubject = status === 'aprovado' 
         ? `✅ Orçamento ${quoteNumber} APROVADO - ${clientName}`
         : `❌ Orçamento ${quoteNumber} REJEITADO - ${clientName}`
 
+      // Template HTML bonito e profissional
       const emailHtml = `
         <!DOCTYPE html>
         <html>
         <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: ${status === 'aprovado' ? '#10B981' : '#EF4444'}; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
-            .content { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; }
-            .info-box { background: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
-            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+            body { margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f3f4f6; }
+            .wrapper { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .card { background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, ${statusColor}, ${statusColor}dd); color: white; padding: 30px; text-align: center; }
+            .header img { max-width: 120px; margin-bottom: 15px; border-radius: 8px; }
+            .header h1 { margin: 0; font-size: 24px; font-weight: bold; }
+            .header p { margin: 10px 0 0; opacity: 0.9; font-size: 14px; }
+            .content { padding: 30px; }
+            .alert-box { background: ${statusBg}; border-left: 4px solid ${statusColor}; padding: 15px 20px; border-radius: 8px; margin-bottom: 25px; }
+            .alert-box p { margin: 0; color: ${statusColor}; font-weight: 600; }
+            .info-section { margin-bottom: 25px; }
+            .info-section h3 { color: #374151; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 15px; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb; }
+            .info-grid { display: table; width: 100%; }
+            .info-row { display: table-row; }
+            .info-label { display: table-cell; padding: 8px 0; color: #6b7280; font-size: 14px; width: 120px; }
+            .info-value { display: table-cell; padding: 8px 0; color: #111827; font-size: 14px; font-weight: 500; }
+            .total-box { background: linear-gradient(135deg, ${primaryColor}10, ${primaryColor}05); border: 2px solid ${primaryColor}; border-radius: 12px; padding: 20px; text-align: center; margin: 25px 0; }
+            .total-label { color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+            .total-value { color: ${primaryColor}; font-size: 32px; font-weight: bold; margin-top: 5px; }
+            .reason-box { background: #FEF3C7; border: 1px solid #F59E0B; border-radius: 8px; padding: 15px; margin-top: 20px; }
+            .reason-box h4 { color: #92400E; margin: 0 0 8px; font-size: 14px; }
+            .reason-box p { color: #78350F; margin: 0; font-size: 14px; }
+            .footer { background: #f9fafb; padding: 20px 30px; text-align: center; border-top: 1px solid #e5e7eb; }
+            .footer p { margin: 0; color: #9ca3af; font-size: 12px; }
+            .btn { display: inline-block; background: ${primaryColor}; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 15px; }
           </style>
         </head>
         <body>
-          <div class="container">
-            <div class="header">
-              <h1>${status === 'aprovado' ? '✅ Orçamento Aprovado!' : '❌ Orçamento Rejeitado'}</h1>
-            </div>
-            <div class="content">
-              <p>O cliente <strong>${clientName}</strong> ${status === 'aprovado' ? 'APROVOU' : 'rejeitou'} o orçamento:</p>
-              <div class="info-box">
-                <p><strong>Número:</strong> ${quoteNumber}</p>
-                <p><strong>Título:</strong> ${quoteTitle}</p>
-                <p><strong>Valor:</strong> ${quoteTotal}</p>
-                ${quote.rejection_reason ? `<p><strong>Motivo:</strong> ${quote.rejection_reason}</p>` : ''}
+          <div class="wrapper">
+            <div class="card">
+              <div class="header">
+                ${companyLogo ? `<img src="${companyLogo}" alt="${companyName}">` : ''}
+                <h1>${status === 'aprovado' ? '✅ Orçamento Aprovado!' : '❌ Orçamento Rejeitado'}</h1>
+                <p>${companyName}</p>
+              </div>
+              
+              <div class="content">
+                <div class="alert-box">
+                  <p>${status === 'aprovado' 
+                    ? `🎉 Ótima notícia! O cliente ${clientName} APROVOU o orçamento.`
+                    : `O cliente ${clientName} rejeitou o orçamento.`
+                  }</p>
+                </div>
+
+                <div class="info-section">
+                  <h3>📋 Dados do Orçamento</h3>
+                  <div class="info-grid">
+                    <div class="info-row">
+                      <span class="info-label">Número:</span>
+                      <span class="info-value">${quoteNumber}</span>
+                    </div>
+                    <div class="info-row">
+                      <span class="info-label">Título:</span>
+                      <span class="info-value">${quoteTitle}</span>
+                    </div>
+                    <div class="info-row">
+                      <span class="info-label">Descrição:</span>
+                      <span class="info-value">${quote.description || '-'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="total-box">
+                  <div class="total-label">Valor Total</div>
+                  <div class="total-value">${quoteTotal}</div>
+                </div>
+
+                <div class="info-section">
+                  <h3>👤 Dados do Cliente</h3>
+                  <div class="info-grid">
+                    <div class="info-row">
+                      <span class="info-label">Nome:</span>
+                      <span class="info-value">${clientName}</span>
+                    </div>
+                    ${clientPhone ? `
+                    <div class="info-row">
+                      <span class="info-label">Telefone:</span>
+                      <span class="info-value">${clientPhone}</span>
+                    </div>
+                    ` : ''}
+                    ${clientEmail ? `
+                    <div class="info-row">
+                      <span class="info-label">Email:</span>
+                      <span class="info-value">${clientEmail}</span>
+                    </div>
+                    ` : ''}
+                  </div>
+                </div>
+
+                ${quote.rejection_reason ? `
+                <div class="reason-box">
+                  <h4>📝 Motivo da Rejeição</h4>
+                  <p>${quote.rejection_reason}</p>
+                </div>
+                ` : ''}
+
+                <p style="text-align: center; color: #6b7280; margin-top: 25px;">
+                  ${status === 'aprovado' 
+                    ? 'Acesse o sistema para dar continuidade ao serviço.'
+                    : 'Entre em contato com o cliente para mais informações.'
+                  }
+                </p>
+              </div>
+              
+              <div class="footer">
+                <p>📧 Este email foi enviado automaticamente pelo Portal do Cliente</p>
+                <p style="margin-top: 5px;">${companyName} - ${new Date().toLocaleDateString('pt-BR')}</p>
               </div>
             </div>
-            <div class="footer">${config?.company_name || 'Sistema'}</div>
           </div>
         </body>
         </html>
       `
 
-      // Tentar enviar email via Edge Function
-      let emailSent = false
-      for (const admin of (admins || [])) {
-        if (admin.email) {
-          try {
-            await supabase.functions.invoke('send-email', {
-              body: { to: admin.email, subject: emailSubject, html: emailHtml }
-            })
-            emailSent = true
-          } catch (e) {
-            console.log('Erro ao enviar email:', e)
+      // Enviar para TODOS os emails de uma vez
+      try {
+        const { data, error } = await supabase.functions.invoke('send-email', {
+          body: { 
+            to: todosEmails,  // Array de emails
+            subject: emailSubject, 
+            html: emailHtml,
+            replyTo: clientEmail || undefined
           }
-        }
-      }
+        })
 
-      if (emailSent) {
-        alert('✅ Email enviado com sucesso!')
-      } else {
+        if (error) throw error
+
+        alert(`✅ Email enviado com sucesso para ${todosEmails.length} destinatário(s)!\n\n${todosEmails.join('\n')}`)
+      } catch (e) {
+        console.log('Edge function não disponível, usando fallback:', e)
+        
         // Fallback: abrir cliente de email
-        const adminEmail = admins?.[0]?.email || config?.email || ''
-        const mailtoUrl = `mailto:${adminEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(
-          `${status === 'aprovado' ? 'ORÇAMENTO APROVADO' : 'ORÇAMENTO REJEITADO'}\n\n` +
+        const mailtoUrl = `mailto:${todosEmails.join(',')}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(
+          `${status === 'aprovado' ? '✅ ORÇAMENTO APROVADO' : '❌ ORÇAMENTO REJEITADO'}\n\n` +
           `Número: ${quoteNumber}\n` +
           `Cliente: ${clientName}\n` +
           `Título: ${quoteTitle}\n` +
