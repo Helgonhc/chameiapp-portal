@@ -21,6 +21,11 @@ const formatOrderId = (id: string, dateString: string) => {
 
 export async function generateServiceOrderPDF(order: any) {
   try {
+    // DEBUG
+    console.log('=== PDF DEBUG ===')
+    console.log('Order ID:', order.id)
+    console.log('Technician ID:', order.technician_id)
+    
     // 1. CARREGAMENTO DE DADOS
     const { data: config } = await supabase
       .from('app_config')
@@ -33,11 +38,14 @@ export async function generateServiceOrderPDF(order: any) {
     let technicianSignature = ''
     let technicianDoc = ''
     if (order.technician_id) {
-      const { data: tech } = await supabase
+      const { data: tech, error: techError } = await supabase
         .from('profiles')
         .select('full_name, signature_url, cpf')
         .eq('id', order.technician_id)
         .maybeSingle()
+
+      console.log('Tech data:', tech)
+      console.log('Tech error:', techError)
 
       if (tech) {
         technicianName = tech.full_name || technicianName
@@ -45,6 +53,11 @@ export async function generateServiceOrderPDF(order: any) {
         technicianDoc = tech.cpf || ''
       }
     }
+    
+    console.log('Final - Name:', technicianName)
+    console.log('Final - Signature:', technicianSignature)
+    console.log('Final - CPF:', technicianDoc)
+    console.log('=================')
 
     // Busca Checklist
     const { data: tasks } = await supabase
