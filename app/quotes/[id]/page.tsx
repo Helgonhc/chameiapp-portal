@@ -325,11 +325,11 @@ export default function QuoteDetailsPage() {
         .limit(1)
         .single()
 
-      // Buscar admins e técnicos para notificar
+      // Buscar APENAS admins para notificar (não técnicos)
       const { data: admins } = await supabase
         .from('profiles')
         .select('email, full_name, phone')
-        .in('role', ['admin', 'technician'])
+        .eq('role', 'admin')
         .eq('is_active', true)
 
       const companyName = config?.company_name || 'Empresa'
@@ -345,24 +345,37 @@ export default function QuoteDetailsPage() {
       const statusColor = status === 'aprovado' ? '#10B981' : '#EF4444'
       const statusBg = status === 'aprovado' ? '#D1FAE5' : '#FEE2E2'
 
-      // Coletar todos os emails dos admins
-      const adminEmails = (admins || [])
-        .map(a => a.email)
-        .filter((email): email is string => !!email)
+      // Coletar todos os emails dos admins com nomes
+      const adminsList = (admins || [])
+        .filter(a => !!a.email)
+        .map(a => ({ email: a.email!, name: a.full_name || 'Admin' }))
 
       // ========== EMAILS FIXOS ADICIONAIS (edite aqui se quiser) ==========
-      const emailsFixos: string[] = [
-        // 'gerente@empresa.com',
-        // 'financeiro@empresa.com',
+      const emailsFixos: { email: string; name: string }[] = [
+        // { email: 'gerente@empresa.com', name: 'Gerente' },
+        // { email: 'financeiro@empresa.com', name: 'Financeiro' },
       ]
       
-      // Combinar todos os emails (remover duplicados)
-      const todosEmails = [...new Set([...adminEmails, ...emailsFixos])]
+      // Combinar todos (remover duplicados por email)
+      const todosDestinatarios = [...adminsList, ...emailsFixos]
+        .filter((item, index, self) => 
+          index === self.findIndex(t => t.email === item.email)
+        )
 
-      if (todosEmails.length === 0) {
+      if (todosDestinatarios.length === 0) {
         alert('⚠️ Nenhum email de admin encontrado para enviar.')
         return
       }
+
+      // Mostrar confirmação com lista de destinatários
+      const listaEmails = todosDestinatarios.map(d => `• ${d.name}: ${d.email}`).join('\n')
+      const confirmar = confirm(
+        `📧 O email será enviado para:\n\n${listaEmails}\n\nDeseja continuar?`
+      )
+      
+      if (!confirmar) return
+
+      const todosEmails = todosDestinatarios.map(d => d.email)
 
       const emailSubject = status === 'aprovado' 
         ? `✅ Orçamento ${quoteNumber} APROVADO - ${clientName}`
