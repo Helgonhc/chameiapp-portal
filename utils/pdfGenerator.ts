@@ -38,16 +38,18 @@ export async function generateServiceOrderPDF(order: any) {
     // Busca dados do técnico
     let technicianName = 'Técnico Responsável'
     let technicianSignature = ''
+    let technicianDoc = ''
     if (order.technician_id) {
       const { data: tech } = await supabase
         .from('profiles')
-        .select('full_name, signature_url')
+        .select('full_name, signature_url, cpf')
         .eq('id', order.technician_id)
         .maybeSingle()
 
       if (tech) {
         technicianName = tech.full_name || technicianName
         technicianSignature = tech.signature_url || ''
+        technicianDoc = tech.cpf || ''
       }
     }
 
@@ -100,27 +102,45 @@ body {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  align-items: center;
+  align-items: stretch;
   background: linear-gradient(135deg, ${company.color}08 0%, ${company.color}15 100%);
   border-radius: 12px;
-  padding: 20px;
+  padding: 18px 20px;
   margin-bottom: 25px;
   border: 1px solid ${company.color}30;
 }
-.header-logo { width: 18%; }
-.header-logo img { width: 100%; max-height: 75px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
-.header-info { width: 52%; padding: 0 20px; }
+.header-logo { 
+  width: 15%; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.header-logo img { width: 100%; max-height: 70px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+.header-info { 
+  width: 55%; 
+  padding: 0 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 .header-info h1 {
-  margin: 0 0 8px 0;
-  font-size: 18px;
+  margin: 0 0 6px 0;
+  font-size: 16px;
   color: ${company.color};
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   font-weight: 700;
+  line-height: 1.2;
 }
-.header-info p { margin: 3px 0; font-size: 9px; color: #4a5568; }
+.header-info p { margin: 2px 0; font-size: 8px; color: #4a5568; line-height: 1.4; }
 .header-info p b { color: #2d3748; }
-.header-meta { width: 30%; text-align: right; }
+.header-meta { 
+  width: 30%; 
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+}
 .os-badge {
   background: linear-gradient(135deg, ${company.color} 0%, ${company.color}dd 100%);
   color: #FFF;
@@ -372,7 +392,7 @@ body {
         <td class="val">${order.clients?.address || 'Não informado'}</td>
       </tr>
       <tr>
-        <td class="lbl">Documento:</td>
+        <td class="lbl">CNPJ/CPF:</td>
         <td class="val">${order.clients?.cnpj_cpf || '-'}</td>
       </tr>
       <tr>
@@ -442,14 +462,14 @@ ${(order.photos_url && order.photos_url.length > 0) || (order.photos && order.ph
     <div class="sig-line"></div>
     <div class="sig-name">${technicianName}</div>
     <div class="sig-role">Técnico Responsável</div>
-    ${order.technician_doc ? `<div class="sig-doc">CPF/RG: ${order.technician_doc}</div>` : ''}
+    ${technicianDoc ? `<div class="sig-doc">CPF: ${technicianDoc}</div>` : ''}
   </div>
   <div class="sig-box">
     ${order.signature_url ? `<img src="${order.signature_url}" class="sig-img" />` : '<div style="height:40px"></div>'}
     <div class="sig-line"></div>
     <div class="sig-name">${order.signer_name || order.clients?.responsible_name || 'Responsável'}</div>
     <div class="sig-role">Responsável pelo Cliente</div>
-    ${order.signer_doc ? `<div class="sig-doc">CPF/RG: ${order.signer_doc}</div>` : ''}
+    ${order.signer_doc ? `<div class="sig-doc">CPF: ${order.signer_doc}</div>` : ''}
   </div>
 </div>
 
