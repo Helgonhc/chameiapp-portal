@@ -16,7 +16,7 @@ export default function NewAppointmentPage() {
   const [requestedTimeEnd, setRequestedTimeEnd] = useState('')
   const [serviceType, setServiceType] = useState('')
   const [description, setDescription] = useState('')
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium')
+  const [priority, setPriority] = useState<'baixa' | 'media' | 'alta' | 'urgente'>('media')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function NewAppointmentPage() {
           service_type: serviceType || null,
           description: description || null,
           priority,
-          status: 'pending'
+          status: 'pendente'
         })
 
       if (insertError) throw insertError
@@ -205,9 +205,9 @@ export default function NewAppointmentPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <button
                 type="button"
-                onClick={() => setPriority('low')}
+                onClick={() => setPriority('baixa')}
                 className={`p-3 rounded-xl border-2 transition-all ${
-                  priority === 'low'
+                  priority === 'baixa'
                     ? 'border-green-500 bg-green-50'
                     : 'border-gray-200 hover:border-green-300'
                 }`}
@@ -218,9 +218,9 @@ export default function NewAppointmentPage() {
 
               <button
                 type="button"
-                onClick={() => setPriority('medium')}
+                onClick={() => setPriority('media')}
                 className={`p-3 rounded-xl border-2 transition-all ${
-                  priority === 'medium'
+                  priority === 'media'
                     ? 'border-yellow-500 bg-yellow-50'
                     : 'border-gray-200 hover:border-yellow-300'
                 }`}
@@ -231,9 +231,9 @@ export default function NewAppointmentPage() {
 
               <button
                 type="button"
-                onClick={() => setPriority('high')}
+                onClick={() => setPriority('alta')}
                 className={`p-3 rounded-xl border-2 transition-all ${
-                  priority === 'high'
+                  priority === 'alta'
                     ? 'border-orange-500 bg-orange-50'
                     : 'border-gray-200 hover:border-orange-300'
                 }`}
@@ -244,9 +244,9 @@ export default function NewAppointmentPage() {
 
               <button
                 type="button"
-                onClick={() => setPriority('urgent')}
+                onClick={() => setPriority('urgente')}
                 className={`p-3 rounded-xl border-2 transition-all ${
-                  priority === 'urgent'
+                  priority === 'urgente'
                     ? 'border-red-500 bg-red-50'
                     : 'border-gray-200 hover:border-red-300'
                 }`}
