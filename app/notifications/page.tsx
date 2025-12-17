@@ -14,6 +14,7 @@ interface Notification {
   data: any
   is_read: boolean
   created_at: string
+  reference_id?: string
   order_id?: string
   quote_id?: string
 }
@@ -127,10 +128,41 @@ export default function NotificationsPage() {
   function handleNotificationClick(notification: Notification) {
     markAsRead(notification.id)
     
-    if (notification.order_id) {
-      router.push(`/order/${notification.order_id}`)
-    } else if (notification.quote_id) {
-      router.push(`/quotes/${notification.quote_id}`)
+    // Usar reference_id ou data para navegação
+    const refId = notification.reference_id || notification.data?.reference_id || notification.order_id || notification.quote_id
+    
+    // Navegar baseado no tipo
+    switch (notification.type) {
+      case 'quote':
+      case 'quote_created':
+      case 'quote_approved':
+      case 'quote_rejected':
+        if (refId) router.push(`/quotes/${refId}`)
+        break
+      case 'order':
+      case 'new_order':
+      case 'order_updated':
+      case 'order_completed':
+      case 'service_order':
+        if (refId) router.push(`/orders/${refId}`)
+        break
+      case 'ticket':
+      case 'new_ticket':
+      case 'ticket_updated':
+        if (refId) router.push(`/tickets/${refId}`)
+        break
+      case 'appointment':
+      case 'appointment_confirmed':
+      case 'appointment_cancelled':
+        if (refId) router.push(`/appointments`)
+        break
+      default:
+        // Se tiver order_id ou quote_id direto
+        if (notification.order_id) {
+          router.push(`/orders/${notification.order_id}`)
+        } else if (notification.quote_id) {
+          router.push(`/quotes/${notification.quote_id}`)
+        }
     }
   }
 
