@@ -118,10 +118,15 @@ export default function NotificationsPage() {
         .delete()
         .eq('id', notificationId)
 
-      if (error) throw error
+      if (error) {
+        console.error('Erro ao deletar notificação:', error)
+        alert('Erro ao excluir notificação: ' + error.message)
+        return
+      }
       await loadNotifications()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao deletar notificação:', error)
+      alert('Erro ao excluir notificação: ' + (error?.message || 'Erro desconhecido'))
     }
   }
 
