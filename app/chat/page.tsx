@@ -219,7 +219,7 @@ export default function ChatPage() {
               ) : (
                 messages.map((message) => {
                   const isOwnMessage = message.sender_id === currentUserId
-                  const isSupport = message.sender?.role === 'admin' || message.sender?.role === 'technician'
+                  const isSupport = message.sender?.role === 'super_admin' || message.sender?.role === 'admin' || message.sender?.role === 'technician'
 
                   return (
                     <div

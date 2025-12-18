@@ -2,16 +2,17 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { Home, FileText, DollarSign, Calendar, CalendarDays, History, Bell, User, LogOut, Menu, X, Building2, Ticket, MessageCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 interface SidebarProps {
   clientData?: any
+  userData?: any
   unreadNotifications?: number
   pendingQuotes?: number
 }
 
-export default function Sidebar({ clientData, unreadNotifications = 0, pendingQuotes = 0 }: SidebarProps) {
+export default function Sidebar({ clientData, userData, unreadNotifications = 0, pendingQuotes = 0 }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
@@ -67,34 +68,64 @@ export default function Sidebar({ clientData, unreadNotifications = 0, pendingQu
           shadow-2xl
         `}
       >
-        {/* Header com Logo */}
-        <div className="p-6 border-b border-slate-700/50">
-          <div className="flex items-center gap-4">
-            {clientData?.logo_url ? (
-              <div className="relative">
-                <div className="absolute inset-0 bg-blue-500/20 rounded-xl blur"></div>
-                <img
-                  src={clientData.logo_url}
-                  alt={clientData.name}
-                  className="relative h-12 w-12 object-contain rounded-xl bg-white/10 p-2"
-                />
-              </div>
+        {/* Header com Logo da Empresa + Usuário Logado */}
+        <div className="p-4 border-b border-slate-700/50">
+          {/* Logo da Empresa (pequena) */}
+          <div className="flex items-center gap-3 mb-3">
+            {clientData?.client_logo_url || clientData?.logo_url ? (
+              <img
+                src={clientData.client_logo_url || clientData.logo_url}
+                alt={clientData.name}
+                className="h-8 object-contain"
+              />
             ) : (
-              <div className="relative">
-                <div className="absolute inset-0 bg-blue-500/20 rounded-xl blur"></div>
-                <div className="relative h-12 w-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Building2 className="w-6 h-6 text-white" />
-                </div>
+              <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                <Building2 className="w-4 h-4 text-white" />
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h2 className="font-bold text-white truncate text-base">
+              <h2 className="font-semibold text-white truncate text-sm">
                 {clientData?.name || 'Portal Cliente'}
               </h2>
-              <p className="text-xs text-slate-400 truncate">
-                {clientData?.responsible_name || 'Bem-vindo'}
-              </p>
+              {clientData?.phone && (
+                <p className="text-xs text-slate-400">📞 {clientData.phone}</p>
+              )}
             </div>
+          </div>
+
+          {/* Separador */}
+          <div className="h-px bg-gradient-to-r from-transparent via-slate-600 to-transparent my-3"></div>
+
+          {/* Avatar e Info do Usuário Logado */}
+          <div className="flex flex-col items-center">
+            {/* Avatar Grande */}
+            <div className="relative mb-2">
+              {userData?.avatar_url ? (
+                <img 
+                  src={userData.avatar_url} 
+                  alt={userData.full_name || 'Avatar'} 
+                  className="w-16 h-16 rounded-full object-cover border-2 border-blue-400 shadow-lg"
+                />
+              ) : (
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                  <span className="text-white text-2xl font-bold">
+                    {userData?.full_name?.charAt(0)?.toUpperCase() || '?'}
+                  </span>
+                </div>
+              )}
+              {/* Badge de status online */}
+              <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-slate-800"></div>
+            </div>
+            
+            {/* Nome do Usuário */}
+            <p className="font-semibold text-white text-sm truncate max-w-[180px] text-center">
+              {userData?.full_name || 'Usuário'}
+            </p>
+            
+            {/* Badge Cliente */}
+            <span className="text-xs px-2 py-0.5 rounded-full mt-1 bg-blue-500/20 text-blue-300">
+              👤 Cliente
+            </span>
           </div>
         </div>
 

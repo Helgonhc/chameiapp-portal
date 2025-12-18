@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { User, Mail, Phone, MapPin, Building2, Save, Eye, EyeOff, Bell, Shield, Users, Sparkles, Crown } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Building2, Save, Eye, EyeOff, Bell, Shield, Users, Sparkles, Crown, Camera, Loader2 } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 
 interface ProfileData {
@@ -11,11 +11,13 @@ interface ProfileData {
   full_name: string
   email: string
   phone?: string
+  avatar_url?: string
   client_id?: string
   client?: {
     name: string
     address?: string
     responsible_name?: string
+    client_logo_url?: string
   }
 }
 
@@ -34,6 +36,9 @@ export default function ProfilePage() {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     checkAuth()
@@ -65,10 +70,54 @@ export default function ProfilePage() {
       setFullName(profileData.full_name || '')
       setEmail(user.email || '')
       setPhone(profileData.phone || '')
+      setAvatarUrl(profileData.avatar_url || '')
     } catch (error) {
       console.error('Erro ao carregar perfil:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleAvatarUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'Por favor, selecione uma imagem' })
+      return
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'A imagem deve ter no máximo 2MB' })
+      return
+    }
+
+    setUploadingAvatar(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Usuário não autenticado')
+
+      const fileExt = file.name.split('.').pop()
+      const fileName = `avatar-${user.id}-${Date.now()}.${fileExt}`
+      const filePath = `avatars/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('os-photos')
+        .upload(filePath, file, { cacheControl: '3600', upsert: true })
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage.from('os-photos').getPublicUrl(filePath)
+
+      // Atualizar profile com nova URL
+      await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id)
+
+      setAvatarUrl(publicUrl)
+      setMessage({ type: 'success', text: '✅ Foto atualizada com sucesso!' })
+    } catch (error: any) {
+      setMessage({ type: 'error', text: 'Erro ao enviar foto: ' + error.message })
+    } finally {
+      setUploadingAvatar(false)
     }
   }
 
@@ -93,7 +142,8 @@ export default function ProfilePage() {
         .from('profiles')
         .update({
           full_name: fullName.trim(),
-          phone: phone.trim() || null
+          phone: phone.trim() || null,
+          avatar_url: avatarUrl || null
         })
         .eq('id', user.id)
 
@@ -287,6 +337,49 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-4">
+            {/* Foto de Perfil */}
+            <div className="flex items-center gap-4 pb-4 border-b border-slate-200">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full border-2 border-slate-200 overflow-hidden bg-slate-100 flex items-center justify-center">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="text-slate-400 w-8 h-8" />
+                  )}
+                </div>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
+              </div>
+              <div>
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-medium text-slate-700 transition-colors"
+                >
+                  {uploadingAvatar ? (
+                    <Loader2 className="animate-spin w-4 h-4" />
+                  ) : (
+                    <Camera className="w-4 h-4" />
+                  )}
+                  {uploadingAvatar ? 'Enviando...' : 'Alterar Foto'}
+                </button>
+                <p className="text-xs text-slate-500 mt-1">JPG, PNG. Máximo 2MB.</p>
+                {avatarUrl && (
+                  <button
+                    onClick={() => setAvatarUrl('')}
+                    className="text-xs text-red-600 hover:underline"
+                  >
+                    Remover foto
+                  </button>
+                )}
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Nome Completo *

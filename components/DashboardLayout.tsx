@@ -81,6 +81,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="flex h-screen bg-slate-50">
       <Sidebar
         clientData={clientData}
+        userData={userData}
         unreadNotifications={unreadNotifications}
         pendingQuotes={pendingQuotes}
       />
