@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Calendar, Clock, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, CheckCircle2, Sparkles } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 
 export default function NewAppointmentPage() {
@@ -76,17 +76,17 @@ export default function NewAppointmentPage() {
   if (success) {
     return (
       <DashboardLayout>
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl p-12 max-w-md text-center">
-            <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center mx-auto shadow-2xl mb-8">
-              <CheckCircle2 className="w-14 h-14 text-white" />
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <div className="card p-12 max-w-md text-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-success-500 to-success-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-success-500/30 mb-6">
+              <CheckCircle2 className="w-10 h-10 text-white" />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">Agendamento Solicitado!</h2>
-            <p className="text-gray-600 mb-6">
+            <h2 className="text-2xl font-bold text-white mb-3">Agendamento Solicitado!</h2>
+            <p className="text-zinc-400 mb-6">
               Sua solicitação foi enviada. Aguarde a confirmação do técnico.
             </p>
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-              <p className="text-sm text-emerald-800 font-medium">
+            <div className="info-box info-box-green">
+              <p className="text-sm font-medium">
                 ✓ Você receberá uma notificação quando for confirmado
               </p>
             </div>
@@ -98,180 +98,133 @@ export default function NewAppointmentPage() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50">
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-8 py-12 shadow-lg">
-        <div className="max-w-4xl mx-auto">
-          <button 
-            onClick={() => router.back()} 
-            className="flex items-center gap-2 text-white mb-6 hover:text-emerald-100 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Voltar</span>
-          </button>
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white bg-opacity-20 rounded-lg">
-              <Calendar className="w-6 h-6 text-white" />
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <div className="page-header">
+          <div className="max-w-4xl mx-auto relative">
+            <button 
+              onClick={() => router.back()} 
+              className="flex items-center gap-2 text-zinc-400 mb-4 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Voltar</span>
+            </button>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-primary-500/20 border border-primary-500/30">
+                <Calendar className="w-5 h-5 text-primary-400" />
+              </div>
+              <span className="text-primary-400 text-sm font-medium">Novo</span>
             </div>
-            <div>
-              <h1 className="text-4xl font-bold text-white">Novo Agendamento</h1>
-              <p className="text-emerald-100 text-lg mt-1">Solicite uma visita técnica</p>
-            </div>
+            <h1 className="text-3xl lg:text-4xl font-bold text-white mb-1">Novo Agendamento</h1>
+            <p className="text-zinc-400">Solicite uma visita técnica</p>
           </div>
         </div>
-      </div>
 
-      <main className="max-w-4xl mx-auto px-8 -mt-8 pb-8">
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 space-y-6">
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-3">
-              Tipo de Serviço
-            </label>
-            <input
-              type="text"
-              value={serviceType}
-              onChange={(e) => setServiceType(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-              placeholder="Ex: Manutenção Preventiva, Instalação, Reparo..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-3">
-              Descrição (Opcional)
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none"
-              placeholder="Descreva o que precisa ser feito..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-3">
-              Data Desejada *
-            </label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <form onSubmit={handleSubmit} className="card p-6 lg:p-8 space-y-6">
+            <div>
+              <label className="form-label">Tipo de Serviço</label>
               <input
-                type="date"
-                value={requestedDate}
-                onChange={(e) => setRequestedDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
-                required
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                type="text"
+                value={serviceType}
+                onChange={(e) => setServiceType(e.target.value)}
+                className="form-input"
+                placeholder="Ex: Manutenção Preventiva, Instalação, Reparo..."
               />
             </div>
-          </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-3">
-                Horário Início *
-              </label>
+              <label className="form-label">Descrição (Opcional)</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+                className="form-textarea"
+                placeholder="Descreva o que precisa ser feito..."
+              />
+            </div>
+
+            <div>
+              <label className="form-label">Data Desejada *</label>
               <div className="relative">
-                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                 <input
-                  type="time"
-                  value={requestedTimeStart}
-                  onChange={(e) => setRequestedTimeStart(e.target.value)}
+                  type="date"
+                  value={requestedDate}
+                  onChange={(e) => setRequestedDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
                   required
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                  className="form-input pl-10"
                 />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="form-label">Horário Início *</label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                  <input
+                    type="time"
+                    value={requestedTimeStart}
+                    onChange={(e) => setRequestedTimeStart(e.target.value)}
+                    required
+                    className="form-input pl-10"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label">Horário Fim (Opcional)</label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                  <input
+                    type="time"
+                    value={requestedTimeEnd}
+                    onChange={(e) => setRequestedTimeEnd(e.target.value)}
+                    className="form-input pl-10"
+                  />
+                </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-3">
-                Horário Fim (Opcional)
-              </label>
-              <div className="relative">
-                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="time"
-                  value={requestedTimeEnd}
-                  onChange={(e) => setRequestedTimeEnd(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                />
+              <label className="form-label">Prioridade</label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { key: 'baixa', label: 'Baixa', emoji: '🟢' },
+                  { key: 'media', label: 'Média', emoji: '🟡' },
+                  { key: 'alta', label: 'Alta', emoji: '🟠' },
+                  { key: 'urgente', label: 'Urgente', emoji: '🔴' },
+                ].map((p) => (
+                  <button
+                    key={p.key}
+                    type="button"
+                    onClick={() => setPriority(p.key as any)}
+                    className={`priority-btn ${priority === p.key ? 'priority-btn-active' : 'priority-btn-inactive'}`}
+                  >
+                    <div className="text-2xl mb-1">{p.emoji}</div>
+                    <div className="text-xs font-bold text-zinc-300">{p.label}</div>
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-3">
-              Prioridade
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <button
-                type="button"
-                onClick={() => setPriority('baixa')}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  priority === 'baixa'
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-gray-200 hover:border-green-300'
-                }`}
-              >
-                <div className="text-2xl mb-1">🟢</div>
-                <div className="text-xs font-bold text-gray-700">Baixa</div>
-              </button>
+            {error && (
+              <div className="info-box info-box-red">
+                <p className="text-sm font-medium">{error}</p>
+              </div>
+            )}
 
-              <button
-                type="button"
-                onClick={() => setPriority('media')}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  priority === 'media'
-                    ? 'border-yellow-500 bg-yellow-50'
-                    : 'border-gray-200 hover:border-yellow-300'
-                }`}
-              >
-                <div className="text-2xl mb-1">🟡</div>
-                <div className="text-xs font-bold text-gray-700">Média</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPriority('alta')}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  priority === 'alta'
-                    ? 'border-orange-500 bg-orange-50'
-                    : 'border-gray-200 hover:border-orange-300'
-                }`}
-              >
-                <div className="text-2xl mb-1">🟠</div>
-                <div className="text-xs font-bold text-gray-700">Alta</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPriority('urgente')}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  priority === 'urgente'
-                    ? 'border-red-500 bg-red-50'
-                    : 'border-gray-200 hover:border-red-300'
-                }`}
-              >
-                <div className="text-2xl mb-1">🔴</div>
-                <div className="text-xs font-bold text-gray-700">Urgente</div>
-              </button>
-            </div>
-          </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-lg hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 transition-all shadow-lg hover:shadow-xl"
-          >
-            {loading ? 'Enviando...' : 'Solicitar Agendamento'}
-          </button>
-        </form>
-      </main>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full btn-primary py-4 text-lg"
+            >
+              {loading ? 'Enviando...' : 'Solicitar Agendamento'}
+            </button>
+          </form>
+        </main>
       </div>
     </DashboardLayout>
   )

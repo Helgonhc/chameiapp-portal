@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, UserPlus, Trash2, User, Mail, Calendar, AlertCircle, Users } from 'lucide-react'
+import { ArrowLeft, UserPlus, Trash2, User, Mail, Calendar, AlertCircle, Users, Sparkles, Crown, CheckCircle } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 
 interface PortalUser {
@@ -26,28 +26,14 @@ export default function ManageUsersPage() {
   const [newUserEmail, setNewUserEmail] = useState('')
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    checkAuth()
-    loadUsers()
-  }, [])
+  useEffect(() => { checkAuth(); loadUsers() }, [])
 
   async function checkAuth() {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/login')
-      return
-    }
+    if (!user) { router.push('/login'); return }
     setCurrentUserId(user.id)
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('client_id')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.client_id) {
-      setClientId(profile.client_id)
-    }
+    const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single()
+    if (profile?.client_id) setClientId(profile.client_id)
   }
 
   async function loadUsers() {
@@ -55,167 +41,56 @@ export default function ManageUsersPage() {
       setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('client_id')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile?.client_id) {
-        setError('Cliente não encontrado')
-        return
-      }
-
-      const { data: usersData, error: usersError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('client_id', profile.client_id)
-        .eq('role', 'client')
-        .order('created_at', { ascending: false })
-
+      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single()
+      if (!profile?.client_id) { setError('Cliente não encontrado'); return }
+      const { data: usersData, error: usersError } = await supabase.from('profiles').select('*').eq('client_id', profile.client_id).eq('role', 'client').order('created_at', { ascending: false })
       if (usersError) throw usersError
       setUsers(usersData || [])
-    } catch (error: any) {
-      console.error('Erro ao carregar usuários:', error)
-      setError('Erro ao carregar usuários')
-    } finally {
-      setLoading(false)
-    }
+    } catch (error: any) { setError('Erro ao carregar usuários') }
+    finally { setLoading(false) }
   }
 
   async function handleInviteUser(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-
-    if (!newUserName.trim()) {
-      setError('Nome é obrigatório')
-      return
-    }
-
-    if (!newUserEmail.trim()) {
-      setError('Email é obrigatório')
-      return
-    }
-
+    if (!newUserName.trim()) { setError('Nome é obrigatório'); return }
+    if (!newUserEmail.trim()) { setError('Email é obrigatório'); return }
     const activeUsers = users.filter(u => u.is_active)
-    if (activeUsers.length >= 2) {
-      setError('Limite de 2 usuários atingido')
-      return
-    }
-
+    if (activeUsers.length >= 2) { setError('Limite de 2 usuários atingido'); return }
     setInviting(true)
-
     try {
-      // Salvar sessão atual antes de criar novo usuário
       const { data: currentSession } = await supabase.auth.getSession()
-      
       const tempPassword = 'Portal@' + Math.random().toString(36).slice(-6)
-
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newUserEmail,
         password: tempPassword,
-        options: {
-          emailRedirectTo: 'https://chameiapp-portal.vercel.app/login',
-          data: {
-            full_name: newUserName,
-            role: 'client'
-          }
-        }
+        options: { emailRedirectTo: 'https://chameiapp-portal.vercel.app/login', data: { full_name: newUserName, role: 'client' } }
       })
-
       if (authError) throw new Error(authError.message)
       if (!authData.user) throw new Error('Usuário não foi criado')
-
-      // Criar profile diretamente (não depender do trigger)
-      const { error: insertError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          email: newUserEmail,
-          full_name: newUserName,
-          role: 'client',
-          client_id: clientId,
-          is_active: true
-        })
-
-      // Se já existe, tenta update
+      const { error: insertError } = await supabase.from('profiles').insert({ id: authData.user.id, email: newUserEmail, full_name: newUserName, role: 'client', client_id: clientId, is_active: true })
       if (insertError) {
-        console.log('Profile pode já existir, tentando update...')
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({
-            email: newUserEmail,
-            full_name: newUserName,
-            role: 'client',
-            client_id: clientId,
-            is_active: true
-          })
-          .eq('id', authData.user.id)
-
-        if (updateError) {
-          console.error('Erro ao criar/atualizar profile:', updateError)
-          throw new Error('Erro ao criar perfil do usuário')
-        }
+        await supabase.from('profiles').update({ email: newUserEmail, full_name: newUserName, role: 'client', client_id: clientId, is_active: true }).eq('id', authData.user.id)
       }
-
-      // Restaurar sessão do usuário atual (signUp pode ter trocado)
-      if (currentSession?.session) {
-        await supabase.auth.setSession(currentSession.session)
-      }
-
-      alert(`Usuário convidado!\nEmail: ${newUserEmail}\nSenha: ${tempPassword}\n\nO usuário receberá um email de confirmação.`)
-
-      setShowModal(false)
-      setNewUserName('')
-      setNewUserEmail('')
+      if (currentSession?.session) await supabase.auth.setSession(currentSession.session)
+      alert(`✅ Usuário convidado!\n\nEmail: ${newUserEmail}\nSenha: ${tempPassword}\n\nO usuário receberá um email de confirmação.`)
+      setShowModal(false); setNewUserName(''); setNewUserEmail('')
       loadUsers()
     } catch (error: any) {
-      console.error('Erro ao convidar usuário:', error)
       setError(`Erro: ${error.message}`)
-      
-      // Restaurar sessão em caso de erro também
       const { data: session } = await supabase.auth.getSession()
-      if (!session?.session) {
-        router.push('/login')
-      }
-    } finally {
-      setInviting(false)
-    }
+      if (!session?.session) router.push('/login')
+    } finally { setInviting(false) }
   }
 
   async function handleRemoveUser(user: PortalUser) {
-    if (user.id === currentUserId) {
-      alert('Você não pode remover a si mesmo')
-      return
-    }
-
-    if (!confirm(`Remover ${user.full_name}?`)) {
-      return
-    }
-
+    if (user.id === currentUserId) { alert('Você não pode remover a si mesmo'); return }
+    if (!confirm(`Remover ${user.full_name}?`)) return
     try {
-      const { error: authError } = await supabase.auth.admin.deleteUser(user.id)
-
-      if (authError) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .delete()
-          .eq('id', user.id)
-
-        if (profileError) throw profileError
-      }
-
-      alert('Usuário removido!')
+      await supabase.from('profiles').delete().eq('id', user.id)
+      alert('✅ Usuário removido!')
       loadUsers()
-    } catch (error: any) {
-      console.error('Erro ao remover usuário:', error)
-      alert(`Erro: ${error.message}`)
-    }
-  }
-
-  function formatDate(date: string) {
-    return new Date(date).toLocaleDateString('pt-BR')
+    } catch (error: any) { alert(`Erro: ${error.message}`) }
   }
 
   const activeUsers = users.filter(u => u.is_active)
@@ -224,10 +99,10 @@ export default function ManageUsersPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex items-center justify-center min-h-screen bg-background">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Carregando usuários...</p>
+            <div className="w-16 h-16 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-zinc-400">Carregando usuários...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -236,98 +111,90 @@ export default function ManageUsersPage() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-12">
-          <div className="max-w-6xl mx-auto">
-            <button
-              onClick={() => router.push('/profile')}
-              className="flex items-center gap-2 text-white mb-6 hover:text-purple-100 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span>Voltar ao Perfil</span>
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <div className="page-header">
+          <div className="max-w-6xl mx-auto relative">
+            <button onClick={() => router.push('/profile')} className="flex items-center gap-2 text-zinc-400 hover:text-white mb-6 transition-colors">
+              <ArrowLeft className="w-5 h-5" /> Voltar ao Perfil
             </button>
-            <h1 className="text-4xl font-bold text-white mb-2">Gerenciar Usuários</h1>
-            <p className="text-purple-100">Gerencie os usuários da sua empresa (máximo 2)</p>
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-accent-500 to-accent-600 rounded-xl flex items-center justify-center shadow-lg shadow-accent-500/30">
+                <Users className="w-7 h-7 text-dark-900" />
+              </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-2">Gerenciar Usuários <Crown className="w-6 h-6 text-accent-400" /></h1>
+                <p className="text-zinc-400">Gerencie os usuários da sua empresa (máximo 2)</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto px-8 -mt-8 pb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="stat-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-600 mb-1">Usuários Ativos</p>
-                  <p className="text-4xl font-bold text-slate-900">{activeUsers.length} / 2</p>
+                  <p className="text-sm text-zinc-400 mb-1">Usuários Ativos</p>
+                  <p className="text-4xl font-bold text-white">{activeUsers.length} <span className="text-lg text-zinc-500">/ 2</span></p>
                 </div>
-                <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center">
-                  <Users className="w-8 h-8 text-green-600" />
+                <div className="w-14 h-14 bg-success-500/20 rounded-xl flex items-center justify-center border border-success-500/30">
+                  <CheckCircle className="w-7 h-7 text-success-400" />
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="stat-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-600 mb-1">Vagas Disponíveis</p>
-                  <p className="text-4xl font-bold text-slate-900">{2 - activeUsers.length}</p>
+                  <p className="text-sm text-zinc-400 mb-1">Vagas Disponíveis</p>
+                  <p className="text-4xl font-bold text-white">{2 - activeUsers.length}</p>
                 </div>
-                <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <UserPlus className="w-8 h-8 text-blue-600" />
+                <div className="w-14 h-14 bg-primary-500/20 rounded-xl flex items-center justify-center border border-primary-500/30">
+                  <UserPlus className="w-7 h-7 text-primary-400" />
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Users List */}
           <div className="space-y-4 mb-6">
             {users.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-lg p-20 text-center">
-                <Users className="w-16 h-16 text-purple-300 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-slate-700 mb-3">Nenhum usuário</h3>
-                <p className="text-slate-500 mb-8">Adicione o primeiro usuário da sua empresa</p>
-                <button
-                  onClick={() => setShowModal(true)}
-                  className="inline-flex items-center gap-2 px-8 py-4 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700"
-                >
-                  <UserPlus className="w-5 h-5" />
-                  Convidar Usuário
+              <div className="empty-state">
+                <div className="w-20 h-20 bg-accent-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-accent-500/20">
+                  <Users className="w-10 h-10 text-accent-400" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-3">Nenhum usuário</h3>
+                <p className="text-zinc-400 mb-8">Adicione o primeiro usuário da sua empresa</p>
+                <button onClick={() => setShowModal(true)} className="btn-accent inline-flex items-center gap-2">
+                  <UserPlus className="w-5 h-5" /> Convidar Usuário
                 </button>
               </div>
             ) : (
               users.map((user) => (
-                <div key={user.id} className="bg-white rounded-xl shadow-lg p-6">
-                  <div className="flex items-start justify-between">
+                <div key={user.id} className="list-item">
+                  <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4 flex-1">
-                      <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center">
-                        <User className="w-7 h-7 text-purple-600" />
+                      <div className="w-14 h-14 bg-gradient-to-br from-primary-500/20 to-accent-500/20 rounded-full flex items-center justify-center border border-white/10">
+                        <User className="w-7 h-7 text-primary-400" />
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-3">
-                          <h3 className="text-xl font-bold text-slate-900">{user.full_name}</h3>
-                          {user.id === currentUserId && (
-                            <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
-                              Você
-                            </span>
-                          )}
-                          <span className={`px-3 py-1 text-xs font-bold rounded-full ${user.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                            {user.is_active ? 'Ativo' : 'Inativo'}
-                          </span>
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <h3 className="text-lg font-bold text-white">{user.full_name}</h3>
+                          {user.id === currentUserId && <span className="badge badge-primary">Você</span>}
+                          <span className={`badge ${user.is_active ? 'badge-success' : 'badge-neutral'}`}>{user.is_active ? 'Ativo' : 'Inativo'}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-600 mb-2">
-                          <Mail className="w-4 h-4" />
-                          <span>{user.email}</span>
+                        <div className="flex items-center gap-2 text-sm text-zinc-400 mb-1">
+                          <Mail className="w-4 h-4" /> {user.email}
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-500">
-                          <Calendar className="w-4 h-4" />
-                          <span>Criado em {formatDate(user.created_at)}</span>
+                        <div className="flex items-center gap-2 text-sm text-zinc-500">
+                          <Calendar className="w-4 h-4" /> Criado em {new Date(user.created_at).toLocaleDateString('pt-BR')}
                         </div>
                       </div>
                     </div>
                     {user.id !== currentUserId && (
-                      <button
-                        onClick={() => handleRemoveUser(user)}
-                        className="flex items-center gap-2 px-5 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Remover
+                      <button onClick={() => handleRemoveUser(user)} className="btn-danger flex items-center gap-2 text-sm">
+                        <Trash2 className="w-4 h-4" /> Remover
                       </button>
                     )}
                   </div>
@@ -336,94 +203,51 @@ export default function ManageUsersPage() {
             )}
           </div>
 
+          {/* Add User Button */}
           {users.length > 0 && (
-            <button
-              onClick={() => canAddUser ? setShowModal(true) : alert('Limite atingido')}
-              disabled={!canAddUser}
-              className={`w-full flex items-center justify-center gap-3 px-6 py-5 rounded-xl font-bold text-lg ${canAddUser ? 'bg-purple-600 text-white hover:bg-purple-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
-            >
+            <button onClick={() => canAddUser ? setShowModal(true) : alert('Limite atingido')} disabled={!canAddUser} className={`w-full flex items-center justify-center gap-3 py-5 rounded-xl font-bold text-lg transition-all ${canAddUser ? 'btn-accent' : 'bg-surface-light text-zinc-500 cursor-not-allowed border border-white/5'}`}>
               <UserPlus className="w-6 h-6" />
               {canAddUser ? 'Convidar Novo Usuário' : 'Limite de 2 Usuários Atingido'}
             </button>
           )}
-        </div>
+        </main>
       </div>
 
+      {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <UserPlus className="w-6 h-6 text-purple-600" />
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-accent-600 rounded-xl flex items-center justify-center shadow-lg shadow-accent-500/30">
+                <UserPlus className="w-6 h-6 text-dark-900" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-900">Convidar Usuário</h2>
+              <div>
+                <h2 className="text-xl font-bold text-white">Convidar Usuário</h2>
+                <p className="text-sm text-zinc-400">Adicione um novo usuário ao portal</p>
+              </div>
             </div>
 
-            <form onSubmit={handleInviteUser}>
-              <div className="mb-5">
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Nome Completo *
-                </label>
-                <input
-                  type="text"
-                  value={newUserName}
-                  onChange={(e) => setNewUserName(e.target.value)}
-                  placeholder="Nome do usuário"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  required
-                />
+            <form onSubmit={handleInviteUser} className="space-y-5">
+              <div>
+                <label className="form-label">Nome Completo *</label>
+                <input type="text" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} placeholder="Nome do usuário" className="form-input" required />
               </div>
-
-              <div className="mb-5">
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  value={newUserEmail}
-                  onChange={(e) => setNewUserEmail(e.target.value)}
-                  placeholder="email@empresa.com"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  required
-                />
+              <div>
+                <label className="form-label">Email *</label>
+                <input type="email" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} placeholder="email@empresa.com" className="form-input" required />
               </div>
 
               {error && (
-                <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5 text-red-600" />
-                    <p className="text-sm font-medium text-red-700">{error}</p>
-                  </div>
+                <div className="info-box info-box-red flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <p className="text-sm font-medium">{error}</p>
                 </div>
               )}
 
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false)
-                    setNewUserName('')
-                    setNewUserEmail('')
-                    setError('')
-                  }}
-                  disabled={inviting}
-                  className="flex-1 px-5 py-3 bg-slate-200 text-slate-700 rounded-xl font-semibold hover:bg-slate-300 disabled:opacity-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={inviting}
-                  className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 disabled:opacity-50"
-                >
-                  {inviting ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                  ) : (
-                    <>
-                      <UserPlus className="w-5 h-5" />
-                      Convidar
-                    </>
-                  )}
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => { setShowModal(false); setNewUserName(''); setNewUserEmail(''); setError('') }} disabled={inviting} className="btn-secondary flex-1">Cancelar</button>
+                <button type="submit" disabled={inviting} className="btn-accent flex-1 flex items-center justify-center gap-2">
+                  {inviting ? <div className="w-5 h-5 border-2 border-dark-900/30 border-t-dark-900 rounded-full animate-spin" /> : <><UserPlus className="w-5 h-5" /> Convidar</>}
                 </button>
               </div>
             </form>

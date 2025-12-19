@@ -1,8 +1,8 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, FileText, DollarSign, Calendar, CalendarDays, History, Bell, User, LogOut, Menu, X, Building2, Ticket, MessageCircle } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { Home, FileText, DollarSign, Calendar, CalendarDays, Bell, User, LogOut, Menu, X, Building2, Ticket, MessageCircle, ChevronRight, Zap } from 'lucide-react'
+import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 interface SidebarProps {
@@ -18,15 +18,15 @@ export default function Sidebar({ clientData, userData, unreadNotifications = 0,
   const [isOpen, setIsOpen] = useState(false)
 
   const menuItems = [
-    { icon: Home, label: 'Dashboard', path: '/dashboard', badge: null, tooltip: 'Visão geral do portal' },
-    { icon: FileText, label: 'Ordens de Serviço', path: '/service-orders', badge: null, tooltip: 'Acompanhe os serviços em execução' },
-    { icon: CalendarDays, label: 'Calendário', path: '/calendar', badge: null, tooltip: 'Visualize ordens por data' },
-    { icon: Calendar, label: 'Agendamentos', path: '/appointments', badge: null, tooltip: 'Agende visitas técnicas' },
-    { icon: Ticket, label: 'Meus Chamados', path: '/tickets', badge: null, tooltip: 'Abra chamados quando precisar de ajuda' },
-    { icon: MessageCircle, label: 'Chat Suporte', path: '/chat', badge: null, tooltip: 'Converse em tempo real com o suporte' },
-    { icon: DollarSign, label: 'Orçamentos', path: '/quotes', badge: pendingQuotes > 0 ? pendingQuotes : null, tooltip: 'Aprove orçamentos e acompanhe solicitações' },
-    { icon: Bell, label: 'Notificações', path: '/notifications', badge: unreadNotifications > 0 ? unreadNotifications : null, tooltip: 'Veja suas notificações' },
-    { icon: User, label: 'Meu Perfil', path: '/profile', badge: null, tooltip: 'Gerencie seu perfil e usuários' },
+    { icon: Home, label: 'Dashboard', path: '/dashboard', badge: null },
+    { icon: FileText, label: 'Ordens de Serviço', path: '/service-orders', badge: null },
+    { icon: CalendarDays, label: 'Calendário', path: '/calendar', badge: null },
+    { icon: Calendar, label: 'Agendamentos', path: '/appointments', badge: null },
+    { icon: Ticket, label: 'Meus Chamados', path: '/tickets', badge: null },
+    { icon: MessageCircle, label: 'Chat Suporte', path: '/chat', badge: null },
+    { icon: DollarSign, label: 'Orçamentos', path: '/quotes', badge: pendingQuotes > 0 ? pendingQuotes : null },
+    { icon: Bell, label: 'Notificações', path: '/notifications', badge: unreadNotifications > 0 ? unreadNotifications : null },
+    { icon: User, label: 'Meu Perfil', path: '/profile', badge: null },
   ]
 
   async function handleLogout() {
@@ -43,15 +43,16 @@ export default function Sidebar({ clientData, userData, unreadNotifications = 0,
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-3 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+        className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-white/10"
+        style={{ backgroundColor: '#1a1a2e' }}
       >
-        {isOpen ? <X className="w-6 h-6 text-gray-700" /> : <Menu className="w-6 h-6 text-gray-700" />}
+        {isOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
       </button>
 
       {/* Overlay */}
       {isOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity"
+          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -60,77 +61,78 @@ export default function Sidebar({ clientData, userData, unreadNotifications = 0,
       <aside
         className={`
           fixed top-0 left-0 h-full z-40
-          transition-all duration-300 ease-in-out
+          transition-all duration-300 ease-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:static
           w-72 flex flex-col
-          bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900
-          shadow-2xl
+          sidebar-gradient
+          border-r border-white/5
         `}
       >
-        {/* Header com Logo da Empresa + Usuário Logado */}
-        <div className="p-4 border-b border-slate-700/50">
-          {/* Logo da Empresa (pequena) */}
-          <div className="flex items-center gap-3 mb-3">
+        {/* Header */}
+        <div className="p-5 border-b border-white/5">
+          {/* Logo */}
+          <div className="flex items-center gap-3 mb-4">
             {clientData?.client_logo_url || clientData?.logo_url ? (
-              <img
-                src={clientData.client_logo_url || clientData.logo_url}
-                alt={clientData.name}
-                className="h-8 object-contain"
-              />
+              <div className="w-10 h-10 rounded-xl bg-white/5 p-1.5 flex items-center justify-center border border-white/10">
+                <img
+                  src={clientData.client_logo_url || clientData.logo_url}
+                  alt={clientData.name}
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
             ) : (
-              <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <Building2 className="w-4 h-4 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/30">
+                <Building2 className="w-5 h-5 text-white" />
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h2 className="font-semibold text-white truncate text-sm">
+              <h2 className="font-bold text-white truncate text-sm">
                 {clientData?.name || 'Portal Cliente'}
               </h2>
-              {clientData?.phone && (
-                <p className="text-xs text-slate-400">📞 {clientData.phone}</p>
-              )}
+              <p className="text-xs text-zinc-500 truncate">
+                {clientData?.phone || 'Bem-vindo'}
+              </p>
             </div>
           </div>
 
-          {/* Separador */}
-          <div className="h-px bg-gradient-to-r from-transparent via-slate-600 to-transparent my-3"></div>
-
-          {/* Avatar e Info do Usuário Logado */}
-          <div className="flex flex-col items-center">
-            {/* Avatar Grande */}
-            <div className="relative mb-2">
-              {userData?.avatar_url ? (
-                <img 
-                  src={userData.avatar_url} 
-                  alt={userData.full_name || 'Avatar'} 
-                  className="w-16 h-16 rounded-full object-cover border-2 border-blue-400 shadow-lg"
-                />
-              ) : (
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-                  <span className="text-white text-2xl font-bold">
-                    {userData?.full_name?.charAt(0)?.toUpperCase() || '?'}
-                  </span>
-                </div>
-              )}
-              {/* Badge de status online */}
-              <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-slate-800"></div>
+          {/* User Card */}
+          <div className="bg-gradient-to-br from-primary-500/10 to-accent-500/5 rounded-2xl p-4 border border-white/5">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                {userData?.avatar_url ? (
+                  <img 
+                    src={userData.avatar_url} 
+                    alt={userData.full_name || 'Avatar'} 
+                    className="w-12 h-12 rounded-xl object-cover ring-2 ring-primary-500/50"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-lg">
+                    <span className="text-white text-lg font-bold">
+                      {userData?.full_name?.charAt(0)?.toUpperCase() || '?'}
+                    </span>
+                  </div>
+                )}
+                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-success-500 rounded-full border-2 border-[#1a1a2e] status-online"></div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-white text-sm truncate">
+                  {userData?.full_name || 'Usuário'}
+                </p>
+                <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-primary-500/20 text-primary-300 mt-1 border border-primary-500/30">
+                  <Zap className="w-3 h-3" />
+                  Cliente
+                </span>
+              </div>
             </div>
-            
-            {/* Nome do Usuário */}
-            <p className="font-semibold text-white text-sm truncate max-w-[180px] text-center">
-              {userData?.full_name || 'Usuário'}
-            </p>
-            
-            {/* Badge Cliente */}
-            <span className="text-xs px-2 py-0.5 rounded-full mt-1 bg-blue-500/20 text-blue-300">
-              👤 Cliente
-            </span>
           </div>
         </div>
 
-        {/* Menu Items */}
+        {/* Navigation */}
         <nav className="flex-1 p-4 overflow-y-auto">
+          <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-3 px-3">
+            Menu Principal
+          </p>
           <ul className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon
@@ -143,29 +145,35 @@ export default function Sidebar({ clientData, userData, unreadNotifications = 0,
                       router.push(item.path)
                       setIsOpen(false)
                     }}
-                    title={item.tooltip}
                     className={`
-                      group relative w-full flex items-center gap-3 px-4 py-3 rounded-xl
+                      group relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
                       transition-all duration-200
                       ${active
-                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/50'
-                        : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                        ? 'bg-gradient-to-r from-primary-500/20 to-primary-500/10 text-white border border-primary-500/30'
+                        : 'text-zinc-400 hover:bg-white/5 hover:text-white border border-transparent'
                       }
                     `}
                   >
-                    {active && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full"></div>
-                    )}
-                    <Icon className={`w-5 h-5 ${active ? 'scale-110' : 'group-hover:scale-110'} transition-transform`} />
+                    <div className={`
+                      p-2 rounded-lg transition-all duration-200
+                      ${active 
+                        ? 'bg-primary-500/20 text-primary-400' 
+                        : 'bg-white/5 text-zinc-500 group-hover:bg-white/10 group-hover:text-zinc-300'
+                      }
+                    `}>
+                      <Icon className="w-4 h-4" />
+                    </div>
                     <span className="flex-1 text-left text-sm font-medium">{item.label}</span>
-                    {item.badge && (
-                      <span className="relative">
-                        <span className="absolute inset-0 bg-red-500 rounded-full blur animate-pulse"></span>
-                        <span className="relative bg-gradient-to-br from-red-500 to-red-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
-                          {item.badge > 9 ? '9+' : item.badge}
+                    {item.badge ? (
+                      <span className="relative flex items-center justify-center">
+                        <span className="absolute inset-0 bg-accent-500 rounded-full blur-sm animate-pulse"></span>
+                        <span className="relative bg-gradient-to-r from-accent-500 to-accent-600 text-dark-900 text-[10px] font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
+                          {item.badge > 99 ? '99+' : item.badge}
                         </span>
                       </span>
-                    )}
+                    ) : active ? (
+                      <ChevronRight className="w-4 h-4 text-primary-400" />
+                    ) : null}
                   </button>
                 </li>
               )
@@ -173,15 +181,23 @@ export default function Sidebar({ clientData, userData, unreadNotifications = 0,
           </ul>
         </nav>
 
-        {/* Footer com Logout */}
-        <div className="p-4 border-t border-slate-700/50">
+        {/* Footer */}
+        <div className="p-4 border-t border-white/5">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 group"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-500 hover:bg-danger-500/10 hover:text-danger-400 transition-all duration-200 group border border-transparent hover:border-danger-500/20"
           >
-            <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <div className="p-2 rounded-lg bg-white/5 group-hover:bg-danger-500/20 transition-all duration-200">
+              <LogOut className="w-4 h-4" />
+            </div>
             <span className="text-sm font-medium">Sair da Conta</span>
           </button>
+          
+          <div className="mt-4 pt-4 border-t border-white/5 text-center">
+            <p className="text-[10px] text-zinc-600">
+              Powered by <span className="font-bold bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent">ChameiApp</span>
+            </p>
+          </div>
         </div>
       </aside>
     </>

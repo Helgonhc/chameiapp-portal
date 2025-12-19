@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import Sidebar from './Sidebar'
 import NotificationBell from './NotificationBell'
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications'
+import { Building2, Sparkles } from 'lucide-react'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -30,7 +31,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       return
     }
 
-    // Buscar dados do profile do usuário logado
     const { data: profile } = await supabase
       .from('profiles')
       .select('*, client_id')
@@ -78,7 +78,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="flex h-screen bg-background">
       <Sidebar
         clientData={clientData}
         userData={userData}
@@ -86,43 +86,52 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         pendingQuotes={pendingQuotes}
       />
       <main className="flex-1 overflow-y-auto">
-        {/* Header com dados do cliente e NotificationBell */}
-        <div className="sticky top-0 z-30 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800 px-4 sm:px-6 md:px-8 py-4 flex items-center justify-between shadow-lg">
-          {/* Dados do Cliente */}
-          <div className="flex items-center gap-4">
-            {clientData?.client_logo_url ? (
-              <img 
-                src={clientData.client_logo_url} 
-                alt={clientData.name}
-                className="w-12 h-12 rounded-lg bg-white p-1 object-contain shadow-md"
-              />
-            ) : (
-              <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center shadow-md">
-                <span className="text-2xl font-bold text-blue-600">
-                  {clientData?.name?.[0] || '?'}
-                </span>
-              </div>
-            )}
-            <div>
-              <h1 className="text-lg font-bold text-white">
-                {clientData?.name || 'Carregando...'}
-              </h1>
-              <p className="text-sm text-blue-100">
-                👤 {
-                  // Se email do usuário = email do cliente → é o principal → mostra responsible_name
-                  // Se email diferente → é convidado → mostra full_name do profile
-                  userData?.email === clientData?.email
+        {/* Header Premium */}
+        <header className="sticky top-0 z-30 header-gradient px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            {/* Client Info */}
+            <div className="flex items-center gap-4 ml-14 lg:ml-0">
+              {clientData?.client_logo_url ? (
+                <div className="w-11 h-11 rounded-xl bg-white/5 backdrop-blur-sm p-1.5 flex items-center justify-center border border-white/10">
+                  <img 
+                    src={clientData.client_logo_url} 
+                    alt={clientData.name}
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary-500/20 to-accent-500/20 flex items-center justify-center border border-white/10">
+                  <Building2 className="w-5 h-5 text-primary-400" />
+                </div>
+              )}
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base sm:text-lg font-bold text-white">
+                    {clientData?.name || 'Carregando...'}
+                  </h1>
+                  <Sparkles className="w-4 h-4 text-accent-400" />
+                </div>
+                <p className="text-xs sm:text-sm text-zinc-400 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success-500 status-online"></span>
+                  {userData?.email === clientData?.email
                     ? (clientData?.responsible_name || userData?.full_name || 'Responsável')
                     : (userData?.full_name || 'Usuário')
-                }
-              </p>
+                  }
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-3">
+              <NotificationBell />
             </div>
           </div>
-
-          {/* NotificationBell */}
-          <NotificationBell />
+        </header>
+        
+        {/* Content */}
+        <div className="min-h-[calc(100vh-72px)]">
+          {children}
         </div>
-        {children}
       </main>
     </div>
   )

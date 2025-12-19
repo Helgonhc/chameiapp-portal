@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Calendar from '@/components/Calendar'
 import DashboardLayout from '@/components/DashboardLayout'
-import { Calendar as CalendarIcon, Filter, X } from 'lucide-react'
+import { Calendar as CalendarIcon, Filter, X, Sparkles, Clock, CheckCircle2, AlertTriangle } from 'lucide-react'
 
 interface ServiceOrder {
   id: string
@@ -44,7 +44,6 @@ export default function CalendarPage() {
   }, [])
 
   useEffect(() => {
-    // Converter ordens para eventos do calendário
     const calendarEvents = orders
       .filter(order => order.scheduled_at)
       .filter(order => {
@@ -61,7 +60,6 @@ export default function CalendarPage() {
         priority: order.priority,
         order_number: order.order_number,
       }))
-
     setEvents(calendarEvents)
   }, [orders, filters])
 
@@ -74,21 +72,9 @@ export default function CalendarPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('client_id')
-        .eq('id', user.id)
-        .single()
-
+      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single()
       if (!profile?.client_id) return
-
-      const { data, error } = await supabase
-        .from('service_orders')
-        .select('id, order_number, title, status, priority, scheduled_at, scheduled_end')
-        .eq('client_id', profile.client_id)
-        .order('scheduled_at', { ascending: true })
-
+      const { data, error } = await supabase.from('service_orders').select('id, order_number, title, status, priority, scheduled_at, scheduled_end').eq('client_id', profile.client_id).order('scheduled_at', { ascending: true })
       if (error) throw error
       setOrders(data || [])
     } catch (error) {
@@ -111,12 +97,10 @@ export default function CalendarPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="flex items-center justify-center min-h-screen bg-background">
           <div className="text-center">
-            <div className="relative">
-              <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
-            </div>
-            <p className="text-slate-600 font-medium">Carregando calendário...</p>
+            <div className="w-16 h-16 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-zinc-400 font-medium">Carregando calendário...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -125,147 +109,133 @@ export default function CalendarPage() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 sm:p-6 md:p-8">
+      <div className="min-h-screen bg-background">
         {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Calendário</h1>
-              <p className="text-sm sm:text-base text-slate-600">Visualize suas ordens de serviço por data</p>
-            </div>
-
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all shadow-sm"
-            >
-              <Filter className="w-4 h-4" />
-              <span className="text-sm font-medium">Filtros</span>
-              {hasActiveFilters && (
-                <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Filtros */}
-        {showFilters && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-slate-900">Filtros</h3>
-              {hasActiveFilters && (
-                <button
-                  onClick={handleClearFilters}
-                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium"
-                >
-                  <X className="w-4 h-4" />
-                  Limpar
-                </button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Status */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Status
-                </label>
-                <select
-                  value={filters.status}
-                  onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                >
-                  <option value="all">Todos</option>
-                  <option value="pending">Pendente</option>
-                  <option value="scheduled">Agendada</option>
-                  <option value="in_progress">Em Andamento</option>
-                  <option value="completed">Concluída</option>
-                  <option value="cancelled">Cancelada</option>
-                </select>
+        <div className="page-header">
+          <div className="max-w-7xl mx-auto relative">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/30">
+                  <CalendarIcon className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-2">
+                    Calendário <Sparkles className="w-5 h-5 text-accent-400" />
+                  </h1>
+                  <p className="text-zinc-400">Visualize suas ordens de serviço por data</p>
+                </div>
               </div>
-
-              {/* Prioridade */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Prioridade
-                </label>
-                <select
-                  value={filters.priority}
-                  onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                >
-                  <option value="all">Todas</option>
-                  <option value="low">Baixa</option>
-                  <option value="medium">Média</option>
-                  <option value="high">Alta</option>
-                  <option value="urgent">Urgente</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Legenda e Estatísticas */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          {/* Legenda */}
-          <div className="lg:col-span-2 bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-sm border border-slate-200 p-5">
-            <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <div className="w-1 h-5 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
-              Legenda de Status
-            </h3>
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              <div className="flex items-center gap-2 bg-yellow-50 px-3 py-2 rounded-lg border border-yellow-200">
-                <div className="w-3 h-3 bg-yellow-400 rounded-full shadow-sm"></div>
-                <span className="font-medium text-yellow-800">Pendente</span>
-              </div>
-              <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
-                <div className="w-3 h-3 bg-blue-500 rounded-full shadow-sm"></div>
-                <span className="font-medium text-blue-800">Agendada</span>
-              </div>
-              <div className="flex items-center gap-2 bg-purple-50 px-3 py-2 rounded-lg border border-purple-200">
-                <div className="w-3 h-3 bg-purple-500 rounded-full shadow-sm"></div>
-                <span className="font-medium text-purple-800">Em Andamento</span>
-              </div>
-              <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
-                <div className="w-3 h-3 bg-green-500 rounded-full shadow-sm"></div>
-                <span className="font-medium text-green-800">Concluída</span>
-              </div>
-              <div className="flex items-center gap-2 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
-                <div className="w-3 h-3 bg-red-500 rounded-full shadow-sm"></div>
-                <span className="font-medium text-red-800">Cancelada</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Resumo Rápido */}
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg p-5 text-white">
-            <h3 className="font-bold mb-3 flex items-center gap-2">
-              <CalendarIcon className="w-5 h-5" />
-              Resumo
-            </h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between items-center">
-                <span className="opacity-90">Total de Ordens:</span>
-                <span className="font-bold text-lg">{events.length}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="opacity-90">Agendadas:</span>
-                <span className="font-bold">{events.filter(e => e.status === 'scheduled').length}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="opacity-90">Em Andamento:</span>
-                <span className="font-bold">{events.filter(e => e.status === 'in_progress').length}</span>
-              </div>
+              <button onClick={() => setShowFilters(!showFilters)} className="btn-secondary flex items-center gap-2">
+                <Filter className="w-4 h-4" />
+                <span>Filtros</span>
+                {hasActiveFilters && <span className="w-2 h-2 bg-primary-500 rounded-full" />}
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Calendário */}
-        <Calendar
-          events={events}
-          onSelectEvent={handleSelectEvent}
-        />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Filtros */}
+          {showFilters && (
+            <div className="card p-6 mb-6 animate-fade-in">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-white">Filtros</h3>
+                {hasActiveFilters && (
+                  <button onClick={handleClearFilters} className="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1 font-medium">
+                    <X className="w-4 h-4" /> Limpar
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="form-label">Status</label>
+                  <select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} className="form-input">
+                    <option value="all">Todos</option>
+                    <option value="pending">Pendente</option>
+                    <option value="scheduled">Agendada</option>
+                    <option value="in_progress">Em Andamento</option>
+                    <option value="completed">Concluída</option>
+                    <option value="cancelled">Cancelada</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="form-label">Prioridade</label>
+                  <select value={filters.priority} onChange={(e) => setFilters({ ...filters, priority: e.target.value })} className="form-input">
+                    <option value="all">Todas</option>
+                    <option value="low">Baixa</option>
+                    <option value="medium">Média</option>
+                    <option value="high">Alta</option>
+                    <option value="urgent">Urgente</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
 
+          {/* Legenda e Estatísticas */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+            {/* Legenda */}
+            <div className="lg:col-span-2 card p-5">
+              <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                <div className="w-1 h-5 bg-gradient-to-b from-primary-500 to-accent-500 rounded-full" />
+                Legenda de Status
+              </h3>
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                <div className="flex items-center gap-2 bg-warning-500/10 px-3 py-2 rounded-lg border border-warning-500/20">
+                  <div className="w-3 h-3 bg-warning-500 rounded-full shadow-sm shadow-warning-500/50" />
+                  <span className="font-medium text-warning-400">Pendente</span>
+                </div>
+                <div className="flex items-center gap-2 bg-primary-500/10 px-3 py-2 rounded-lg border border-primary-500/20">
+                  <div className="w-3 h-3 bg-primary-500 rounded-full shadow-sm shadow-primary-500/50" />
+                  <span className="font-medium text-primary-400">Agendada</span>
+                </div>
+                <div className="flex items-center gap-2 bg-purple-500/10 px-3 py-2 rounded-lg border border-purple-500/20">
+                  <div className="w-3 h-3 bg-purple-500 rounded-full shadow-sm shadow-purple-500/50" />
+                  <span className="font-medium text-purple-400">Em Andamento</span>
+                </div>
+                <div className="flex items-center gap-2 bg-success-500/10 px-3 py-2 rounded-lg border border-success-500/20">
+                  <div className="w-3 h-3 bg-success-500 rounded-full shadow-sm shadow-success-500/50" />
+                  <span className="font-medium text-success-400">Concluída</span>
+                </div>
+                <div className="flex items-center gap-2 bg-danger-500/10 px-3 py-2 rounded-lg border border-danger-500/20">
+                  <div className="w-3 h-3 bg-danger-500 rounded-full shadow-sm shadow-danger-500/50" />
+                  <span className="font-medium text-danger-400">Cancelada</span>
+                </div>
+              </div>
+            </div>
 
+            {/* Resumo */}
+            <div className="stat-card bg-gradient-to-br from-primary-500/20 to-accent-500/10">
+              <h3 className="font-bold text-white mb-3 flex items-center gap-2">
+                <CalendarIcon className="w-5 h-5 text-primary-400" />
+                Resumo
+              </h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-400">Total de Ordens:</span>
+                  <span className="font-bold text-white text-lg">{events.length}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-400 flex items-center gap-1"><Clock className="w-3 h-3" /> Agendadas:</span>
+                  <span className="font-bold text-primary-400">{events.filter(e => e.status === 'scheduled').length}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-400 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Em Andamento:</span>
+                  <span className="font-bold text-purple-400">{events.filter(e => e.status === 'in_progress').length}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-400 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Concluídas:</span>
+                  <span className="font-bold text-success-400">{events.filter(e => e.status === 'completed').length}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Calendário */}
+          <div className="card p-4 lg:p-6">
+            <Calendar events={events} onSelectEvent={handleSelectEvent} />
+          </div>
+        </main>
       </div>
     </DashboardLayout>
   )

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Wrench, Clock, CheckCircle, XCircle, Calendar, User, Plus } from 'lucide-react'
+import { Wrench, Clock, CheckCircle, XCircle, Calendar, User, Plus, ArrowRight } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 import AdvancedSearch, { SearchFilters } from '@/components/AdvancedSearch'
 
@@ -20,9 +20,7 @@ interface ServiceOrder {
   technician_id: string | null
   estimated_cost: number | null
   final_cost: number | null
-  technician?: {
-    full_name: string
-  }
+  technician?: { full_name: string }
 }
 
 export default function ServiceOrdersPage() {
@@ -34,34 +32,14 @@ export default function ServiceOrdersPage() {
   const [searchFilters, setSearchFilters] = useState<SearchFilters | null>(null)
 
   useEffect(() => {
-    checkAuth()
-    loadOrders()
-
-    // Atualização em tempo real
-    const channel = supabase
-      .channel('service_orders_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'service_orders'
-        },
-        () => {
-          // Recarregar quando houver mudanças
-          loadOrders()
-        }
-      )
+    checkAuth(); loadOrders()
+    const channel = supabase.channel('service_orders_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'service_orders' }, () => loadOrders())
       .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
-  useEffect(() => {
-    applyFilters()
-  }, [orders, filter, searchFilters])
+  useEffect(() => { applyFilters() }, [orders, filter, searchFilters])
 
   async function checkAuth() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -72,38 +50,19 @@ export default function ServiceOrdersPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('client_id')
-        .eq('id', user.id)
-        .single()
-
+      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single()
       if (!profile?.client_id) return
-
-      const { data, error } = await supabase
-        .from('service_orders')
-        .select(`
-          *,
-          technician:profiles!service_orders_technician_id_fkey(full_name)
-        `)
-        .eq('client_id', profile.client_id)
-        .order('created_at', { ascending: false })
-
+      const { data, error } = await supabase.from('service_orders')
+        .select(`*, technician:profiles!service_orders_technician_id_fkey(full_name)`)
+        .eq('client_id', profile.client_id).order('created_at', { ascending: false })
       if (error) throw error
-      setOrders(data || [])
-      setFilteredOrders(data || [])
-    } catch (error) {
-      console.error('Erro ao carregar ordens:', error)
-    } finally {
-      setLoading(false)
-    }
+      setOrders(data || []); setFilteredOrders(data || [])
+    } catch (error) { console.error('Erro ao carregar ordens:', error) }
+    finally { setLoading(false) }
   }
 
   function applyFilters() {
     let filtered = [...orders]
-
-    // Filtro de status básico (considera português e inglês)
     if (filter !== 'all') {
       filtered = filtered.filter(o => {
         if (filter === 'pending') return o.status === 'pending' || o.status === 'pendente'
@@ -112,132 +71,57 @@ export default function ServiceOrdersPage() {
         return o.status === filter
       })
     }
-
-    // Filtros avançados
     if (searchFilters) {
-      // Busca por texto
       if (searchFilters.searchTerm) {
         const term = searchFilters.searchTerm.toLowerCase()
-        filtered = filtered.filter(o =>
-          o.title.toLowerCase().includes(term) ||
-          o.order_number.toLowerCase().includes(term) ||
-          o.description?.toLowerCase().includes(term)
-        )
+        filtered = filtered.filter(o => o.title.toLowerCase().includes(term) || o.order_number.toLowerCase().includes(term) || o.description?.toLowerCase().includes(term))
       }
-
-      // Filtro de status avançado
-      if (searchFilters.status) {
-        filtered = filtered.filter(o => o.status === searchFilters.status)
-      }
-
-      // Filtro de prioridade
-      if (searchFilters.priority) {
-        filtered = filtered.filter(o => o.priority === searchFilters.priority)
-      }
-
-      // Filtro de data inicial
-      if (searchFilters.dateFrom) {
-        filtered = filtered.filter(o => 
-          new Date(o.created_at) >= new Date(searchFilters.dateFrom!)
-        )
-      }
-
-      // Filtro de data final
-      if (searchFilters.dateTo) {
-        filtered = filtered.filter(o => 
-          new Date(o.created_at) <= new Date(searchFilters.dateTo!)
-        )
-      }
-
-      // Filtro de valor mínimo
-      if (searchFilters.minValue !== undefined) {
-        filtered = filtered.filter(o => 
-          o.final_cost && o.final_cost >= searchFilters.minValue!
-        )
-      }
-
-      // Filtro de valor máximo
-      if (searchFilters.maxValue !== undefined) {
-        filtered = filtered.filter(o => 
-          o.final_cost && o.final_cost <= searchFilters.maxValue!
-        )
-      }
-
-      // Filtro de técnico
+      if (searchFilters.status) filtered = filtered.filter(o => o.status === searchFilters.status)
+      if (searchFilters.priority) filtered = filtered.filter(o => o.priority === searchFilters.priority)
+      if (searchFilters.dateFrom) filtered = filtered.filter(o => new Date(o.created_at) >= new Date(searchFilters.dateFrom!))
+      if (searchFilters.dateTo) filtered = filtered.filter(o => new Date(o.created_at) <= new Date(searchFilters.dateTo!))
+      if (searchFilters.minValue !== undefined) filtered = filtered.filter(o => o.final_cost && o.final_cost >= searchFilters.minValue!)
+      if (searchFilters.maxValue !== undefined) filtered = filtered.filter(o => o.final_cost && o.final_cost <= searchFilters.maxValue!)
       if (searchFilters.technician) {
         const tech = searchFilters.technician.toLowerCase()
-        filtered = filtered.filter(o =>
-          o.technician?.full_name.toLowerCase().includes(tech)
-        )
+        filtered = filtered.filter(o => o.technician?.full_name.toLowerCase().includes(tech))
       }
     }
-
     setFilteredOrders(filtered)
   }
 
-  function handleSearch(filters: SearchFilters) {
-    setSearchFilters(filters)
-    setFilter('all') // Reset basic filter when using advanced search
-  }
-
-  function handleClearSearch() {
-    setSearchFilters(null)
-    setFilter('all')
-  }
+  function handleSearch(filters: SearchFilters) { setSearchFilters(filters); setFilter('all') }
+  function handleClearSearch() { setSearchFilters(null); setFilter('all') }
 
   function getStatusColor(status: string) {
     const colors: Record<string, string> = {
-      // Inglês
-      pending: 'bg-yellow-100 text-yellow-800',
-      scheduled: 'bg-blue-100 text-blue-800',
-      in_progress: 'bg-purple-100 text-purple-800',
-      paused: 'bg-orange-100 text-orange-800',
-      completed: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800',
-      // Português (app mobile)
-      pendente: 'bg-yellow-100 text-yellow-800',
-      agendada: 'bg-blue-100 text-blue-800',
-      em_andamento: 'bg-purple-100 text-purple-800',
-      pausada: 'bg-orange-100 text-orange-800',
-      concluido: 'bg-green-100 text-green-800',
-      concluida: 'bg-green-100 text-green-800',
-      cancelado: 'bg-red-100 text-red-800',
-      cancelada: 'bg-red-100 text-red-800',
+      pending: 'bg-warning-500/20 text-warning-400 border-warning-500/30', pendente: 'bg-warning-500/20 text-warning-400 border-warning-500/30',
+      scheduled: 'bg-primary-500/20 text-primary-400 border-primary-500/30', agendada: 'bg-primary-500/20 text-primary-400 border-primary-500/30',
+      in_progress: 'bg-purple-500/20 text-purple-400 border-purple-500/30', em_andamento: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+      paused: 'bg-orange-500/20 text-orange-400 border-orange-500/30', pausada: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+      completed: 'bg-success-500/20 text-success-400 border-success-500/30', concluido: 'bg-success-500/20 text-success-400 border-success-500/30', concluida: 'bg-success-500/20 text-success-400 border-success-500/30',
+      cancelled: 'bg-danger-500/20 text-danger-400 border-danger-500/30', cancelado: 'bg-danger-500/20 text-danger-400 border-danger-500/30', cancelada: 'bg-danger-500/20 text-danger-400 border-danger-500/30',
     }
-    return colors[status] || 'bg-gray-100 text-gray-800'
+    return colors[status] || 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'
   }
 
   function getStatusLabel(status: string) {
     const labels: Record<string, string> = {
-      // Inglês
-      pending: 'Pendente',
-      scheduled: 'Agendada',
-      in_progress: 'Em Andamento',
-      paused: 'Pausada',
-      completed: 'Concluída',
-      cancelled: 'Cancelada',
-      // Português (app mobile)
-      pendente: 'Pendente',
-      agendada: 'Agendada',
-      em_andamento: 'Em Andamento',
-      pausada: 'Pausada',
-      concluido: 'Concluída',
-      concluida: 'Concluída',
-      cancelado: 'Cancelada',
-      cancelada: 'Cancelada',
+      pending: 'Pendente', pendente: 'Pendente', scheduled: 'Agendada', agendada: 'Agendada',
+      in_progress: 'Em Andamento', em_andamento: 'Em Andamento', paused: 'Pausada', pausada: 'Pausada',
+      completed: 'Concluída', concluido: 'Concluída', concluida: 'Concluída',
+      cancelled: 'Cancelada', cancelado: 'Cancelada', cancelada: 'Cancelada',
     }
     return labels[status] || status
   }
 
-
-
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 font-medium">Carregando ordens...</p>
+            <div className="w-12 h-12 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-zinc-400 font-medium">Carregando ordens...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -246,130 +130,74 @@ export default function ServiceOrdersPage() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 sm:px-6 md:px-8 py-8 sm:py-10 md:py-12 shadow-lg">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-1.5 sm:p-2 bg-white bg-opacity-20 rounded-lg flex-shrink-0">
-                  <Wrench className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <div className="page-header">
+          <div className="max-w-7xl mx-auto relative">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-primary-500/20 border border-primary-500/30">
+                    <Wrench className="w-5 h-5 text-primary-400" />
+                  </div>
+                  <span className="text-primary-400 text-sm font-medium">Serviços</span>
                 </div>
-                <div>
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">Ordens de Serviço</h1>
-                  <p className="text-blue-100 text-sm sm:text-base md:text-lg mt-0.5 sm:mt-1">{orders.length} ordem{orders.length !== 1 ? 's' : ''} no total</p>
-                </div>
+                <h1 className="text-3xl lg:text-4xl font-bold text-white mb-1">Ordens de Serviço</h1>
+                <p className="text-zinc-400">{orders.length} ordem{orders.length !== 1 ? 's' : ''} no total</p>
               </div>
-              <button
-                onClick={() => router.push('/new-order')}
-                className="w-full sm:w-auto px-4 sm:px-6 py-3 sm:py-4 bg-white text-blue-600 rounded-xl font-bold hover:shadow-xl transition-all flex items-center justify-center gap-2"
-              >
-                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="hidden sm:inline">Nova Ordem</span>
-                <span className="sm:hidden">Nova</span>
+              <button onClick={() => router.push('/new-order')} className="btn-primary flex items-center gap-2">
+                <Plus className="w-5 h-5" /><span>Nova Ordem</span>
               </button>
             </div>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 -mt-6 sm:-mt-8 pb-6 sm:pb-8">
-          {/* Advanced Search */}
-          <div className="mb-4 sm:mb-6">
-            <AdvancedSearch
-              type="orders"
-              onSearch={handleSearch}
-              onClear={handleClearSearch}
-            />
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="mb-6"><AdvancedSearch type="orders" onSearch={handleSearch} onClear={handleClearSearch} /></div>
 
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+          <div className="flex flex-wrap justify-center gap-3 mb-6">
             {[
-              { key: 'all', label: 'Todas', count: orders.length, icon: '📋' },
-              { key: 'pending', label: 'Pendentes', count: orders.filter(o => o.status === 'pending' || o.status === 'pendente').length, icon: '⏳' },
-              { key: 'in_progress', label: 'Em Andamento', count: orders.filter(o => o.status === 'in_progress' || o.status === 'em_andamento').length, icon: '🔧' },
-              { key: 'completed', label: 'Concluídas', count: orders.filter(o => o.status === 'completed' || o.status === 'concluido' || o.status === 'concluida').length, icon: '✅' },
+              { key: 'all', label: 'Todas', count: orders.length },
+              { key: 'pending', label: 'Pendentes', count: orders.filter(o => o.status === 'pending' || o.status === 'pendente').length },
+              { key: 'in_progress', label: 'Em Andamento', count: orders.filter(o => o.status === 'in_progress' || o.status === 'em_andamento').length },
+              { key: 'completed', label: 'Concluídas', count: orders.filter(o => o.status === 'completed' || o.status === 'concluido' || o.status === 'concluida').length },
             ].map((btn) => (
-              <button
-                key={btn.key}
-                onClick={() => setFilter(btn.key as any)}
-                className={`px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl font-semibold transition-all shadow-sm text-xs sm:text-sm md:text-base ${
-                  filter === btn.key
-                    ? 'bg-white text-blue-600 shadow-lg border-2 border-blue-200'
-                    : 'bg-white text-gray-600 hover:bg-white hover:shadow-md border-2 border-transparent'
-                }`}
-              >
-                <span className="mr-1 md:mr-2">{btn.icon}</span>
-                <span className="hidden sm:inline">{btn.label} </span>
-                <span className="sm:hidden">{btn.label.split(' ')[0]} </span>
-                ({btn.count})
+              <button key={btn.key} onClick={() => setFilter(btn.key as any)} className={`filter-btn ${filter === btn.key ? 'filter-btn-active' : 'filter-btn-inactive'}`}>
+                {btn.label} ({btn.count})
               </button>
             ))}
           </div>
 
-          <div className="grid gap-4 sm:gap-6">
+          <div className="space-y-4">
             {filteredOrders.length === 0 ? (
-              <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-200 p-10 sm:p-16 md:p-20 text-center">
-                <div className="inline-flex p-4 sm:p-6 bg-blue-100 rounded-full mb-4 sm:mb-6">
-                  <Wrench className="w-12 h-12 sm:w-16 sm:h-16 text-blue-600" />
-                </div>
-                <p className="text-xl sm:text-2xl font-bold text-gray-700 mb-2 sm:mb-3">
-                  Nenhuma ordem encontrada
-                </p>
-                <p className="text-sm sm:text-base text-gray-500">
-                  {filter === 'all' 
-                    ? 'Quando houver ordens, elas aparecerão aqui' 
-                    : 'Nenhuma ordem com este status'}
-                </p>
+              <div className="empty-state">
+                <div className="inline-flex p-4 rounded-2xl bg-primary-500/10 border border-primary-500/20 mb-6"><Wrench className="w-12 h-12 text-primary-400" /></div>
+                <p className="text-xl font-bold text-white mb-2">Nenhuma ordem encontrada</p>
+                <p className="text-zinc-500">{filter === 'all' ? 'Quando houver ordens, elas aparecerão aqui' : 'Nenhuma ordem com este status'}</p>
               </div>
             ) : (
-              filteredOrders.map((order, index) => (
-                <div
-                  key={order.id}
-                  onClick={() => router.push(`/service-orders/${order.id}`)}
-                  className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-2xl transition-all cursor-pointer border border-gray-200 hover:border-blue-300"
-                >
-                  <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
-                    <div className="flex-1 w-full sm:w-auto">
+              filteredOrders.map((order) => (
+                <div key={order.id} onClick={() => router.push(`/service-orders/${order.id}`)} className="list-item cursor-pointer hover:border-primary-500/30">
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-3">
+                    <div className="flex-1">
                       <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <span className="font-mono text-xs sm:text-sm text-gray-500">{order.order_number}</span>
-                        <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${getStatusColor(order.status)}`}>
-                          {getStatusLabel(order.status)}
-                        </span>
+                        <span className="font-mono text-xs text-zinc-500">{order.order_number}</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusColor(order.status)}`}>{getStatusLabel(order.status)}</span>
                       </div>
-                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-1 sm:mb-2 hover:text-blue-600 transition-colors">
-                        {order.title}
-                      </h3>
-                      {order.description && (
-                        <p className="text-gray-600 text-xs sm:text-sm line-clamp-2">{order.description}</p>
-                      )}
+                      <h3 className="text-lg font-bold text-white mb-1 group-hover:text-primary-400 transition-colors">{order.title}</h3>
+                      {order.description && <p className="text-zinc-400 text-sm line-clamp-2">{order.description}</p>}
                     </div>
                     {order.final_cost && (
-                      <div className="w-full sm:w-auto text-left sm:text-right bg-green-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
-                        <p className="text-[10px] sm:text-xs text-gray-600 mb-0.5 sm:mb-1">Valor</p>
-                        <p className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">
-                          R$ {order.final_cost.toFixed(2)}
-                        </p>
+                      <div className="w-full sm:w-auto text-left sm:text-right bg-success-500/10 border border-success-500/20 rounded-xl p-3">
+                        <p className="text-xs text-zinc-500 mb-0.5">Valor</p>
+                        <p className="text-xl font-bold text-success-400">R$ {order.final_cost.toFixed(2)}</p>
                       </div>
                     )}
                   </div>
-
-                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-gray-100">
-                    {order.technician && (
-                      <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600">
-                        <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-                        <span className="truncate">{order.technician.full_name}</span>
-                      </div>
-                    )}
-                    {order.scheduled_at && (
-                      <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600">
-                        <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-                        <span>
-                          {new Date(order.scheduled_at).toLocaleDateString('pt-BR')}
-                        </span>
-                      </div>
-                    )}
-                    <div className="ml-auto text-xs sm:text-sm font-medium text-blue-600 whitespace-nowrap">
-                      Ver detalhes →
-                    </div>
+                  <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-white/5">
+                    {order.technician && <div className="flex items-center gap-2 text-xs text-zinc-500"><User className="w-3.5 h-3.5" /><span>{order.technician.full_name}</span></div>}
+                    {order.scheduled_at && <div className="flex items-center gap-2 text-xs text-zinc-500"><Calendar className="w-3.5 h-3.5" /><span>{new Date(order.scheduled_at).toLocaleDateString('pt-BR')}</span></div>}
+                    <div className="ml-auto text-xs font-medium text-primary-400 flex items-center gap-1">Ver detalhes <ArrowRight className="w-3 h-3" /></div>
                   </div>
                 </div>
               ))
