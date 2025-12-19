@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
 interface Notification {
@@ -6,6 +6,7 @@ interface Notification {
   type: string
   title: string
   body: string
+  message: string
   data: any
   is_read: boolean
   created_at: string
@@ -17,23 +18,30 @@ export function useRealtimeNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [latestNotification, setLatestNotification] = useState<Notification | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+  const channelRef = useRef<any>(null)
 
+  // Carregar user ID
   useEffect(() => {
-    loadNotifications()
-    subscribeToNotifications()
+    async function getUser() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setUserId(user.id)
+      }
+    }
+    getUser()
   }, [])
 
-  async function loadNotifications() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+  const loadNotifications = useCallback(async () => {
+    if (!userId) return
 
+    try {
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .limit(10)
+        .limit(20)
 
       if (error) throw error
       
@@ -42,64 +50,94 @@ export function useRealtimeNotifications() {
     } catch (error) {
       console.error('Erro ao carregar notificações:', error)
     }
-  }
+  }, [userId])
 
-  async function subscribeToNotifications() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const channel = supabase
-        .channel('notifications')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            const newNotification = payload.new as Notification
-            setLatestNotification(newNotification)
-            setNotifications(prev => [newNotification, ...prev].slice(0, 10))
-            setUnreadCount(prev => prev + 1)
-            
-            // Mostrar toast notification
-            showToast(newNotification)
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            const updatedNotification = payload.new as Notification
-            setNotifications(prev => 
-              prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
-            )
-            loadNotifications() // Recarregar para atualizar contador
-          }
-        )
-        .subscribe()
-
-      return () => {
-        supabase.removeChannel(channel)
-      }
-    } catch (error) {
-      console.error('Erro ao inscrever em notificações:', error)
+  // Carregar notificações quando userId mudar
+  useEffect(() => {
+    if (userId) {
+      loadNotifications()
     }
-  }
+  }, [userId, loadNotifications])
+
+  // Inscrever para realtime
+  useEffect(() => {
+    if (!userId) return
+
+    // Remover canal anterior se existir
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current)
+    }
+
+    const channelName = `notifications-client-${userId}-${Date.now()}`
+    
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          console.log('🔔 Nova notificação recebida:', payload)
+          const newNotification = payload.new as Notification
+          setLatestNotification(newNotification)
+          setNotifications(prev => [newNotification, ...prev].slice(0, 20))
+          setUnreadCount(prev => prev + 1)
+          
+          // Mostrar toast notification
+          showToast(newNotification)
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          console.log('🔔 Notificação atualizada:', payload)
+          const updatedNotification = payload.new as Notification
+          setNotifications(prev => 
+            prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
+          )
+          // Recalcular unread
+          setNotifications(prev => {
+            setUnreadCount(prev.filter(n => !n.is_read).length)
+            return prev
+          })
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Status do canal de notificações:', status)
+      })
+
+    channelRef.current = channel
+
+    // Pedir permissão para notificações do navegador
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current)
+        channelRef.current = null
+      }
+    }
+  }, [userId])
 
   function showToast(notification: Notification) {
+    const notificationBody = notification.body || notification.message || ''
+    
     // Verificar se o navegador suporta notificações
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(notification.title, {
-        body: notification.body,
+        body: notificationBody,
         icon: '/icon.png',
         badge: '/badge.png'
       })
@@ -107,7 +145,8 @@ export function useRealtimeNotifications() {
 
     // Toast visual na página
     const toast = document.createElement('div')
-    toast.className = 'fixed top-4 right-4 z-50 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 max-w-sm animate-slide-in'
+    toast.className = 'fixed top-20 right-4 z-[9999] bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 max-w-sm'
+    toast.style.animation = 'slideIn 0.3s ease-out'
     toast.innerHTML = `
       <div class="flex gap-3">
         <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -117,7 +156,7 @@ export function useRealtimeNotifications() {
         </div>
         <div class="flex-1 min-w-0">
           <p class="font-semibold text-slate-900 text-sm mb-1">${notification.title}</p>
-          <p class="text-sm text-slate-600 line-clamp-2">${notification.body}</p>
+          <p class="text-sm text-slate-600 line-clamp-2">${notificationBody}</p>
         </div>
         <button onclick="this.parentElement.parentElement.remove()" class="flex-shrink-0 text-slate-400 hover:text-slate-600">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,13 +165,31 @@ export function useRealtimeNotifications() {
         </button>
       </div>
     `
+    
+    // Adicionar estilo de animação se não existir
+    if (!document.getElementById('toast-animation-style')) {
+      const style = document.createElement('style')
+      style.id = 'toast-animation-style'
+      style.textContent = `
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+          from { transform: translateX(0); opacity: 1; }
+          to { transform: translateX(100%); opacity: 0; }
+        }
+      `
+      document.head.appendChild(style)
+    }
+    
     document.body.appendChild(toast)
 
-    // Remover após 5 segundos
+    // Remover após 6 segundos
     setTimeout(() => {
-      toast.style.animation = 'slide-out 0.3s ease-out'
+      toast.style.animation = 'slideOut 0.3s ease-out'
       setTimeout(() => toast.remove(), 300)
-    }, 5000)
+    }, 6000)
   }
 
   async function markAsRead(notificationId: string) {
