@@ -165,7 +165,7 @@ export default function LoginPage() {
             {/* Company Name */}
             <h1 className="text-3xl lg:text-4xl font-bold text-white mb-3">
               <span className="bg-gradient-to-r from-primary-400 via-accent-400 to-primary-400 bg-clip-text text-transparent">
-                Aec Serviços Especializados
+                AeC Serviços Especializados
               </span>
             </h1>
 
