@@ -1,8 +1,8 @@
 {
   "/not-found": "app/not-found.js",
+  "/maintenance/page": "app/maintenance/page.js",
+  "/calendar/page": "app/calendar/page.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/service-orders/page": "app/service-orders/page.js",
-  "/tickets/page": "app/tickets/page.js",
-  "/service-orders/[id]/page": "app/service-orders/[id]/page.js",
-  "/maintenance/page": "app/maintenance/page.js"
+  "/notifications/page": "app/notifications/page.js",
+  "/service-orders/page": "app/service-orders/page.js"
 }

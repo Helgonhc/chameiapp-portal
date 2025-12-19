@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Calendar, Clock, AlertTriangle, CheckCircle, Bell, ChevronRight, Plus, User, Send, X, CalendarPlus } from 'lucide-react';
+import { Calendar, Clock, AlertTriangle, CheckCircle, Bell, ChevronRight, Plus, User, Send, X, CalendarPlus, Edit, Trash2 } from 'lucide-react';
 
 interface MaintenanceContract {
   id: string;
@@ -62,6 +62,15 @@ export default function MaintenancePage() {
     title: '',
     description: '',
     maintenance_type_id: '',
+    suggested_date: '',
+    suggested_time_period: 'manha'
+  });
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingRequest, setEditingRequest] = useState<MaintenanceRequest | null>(null);
+  const [editForm, setEditForm] = useState({
+    title: '',
+    description: '',
     suggested_date: '',
     suggested_time_period: 'manha'
   });
@@ -220,6 +229,62 @@ export default function MaintenancePage() {
 
       if (error) throw error;
       alert('Solicitação cancelada.');
+      if (clientId) loadRequests(clientId);
+    } catch (error: any) {
+      alert('Erro: ' + error.message);
+    }
+  }
+
+  function openEditRequestModal(request: MaintenanceRequest) {
+    setEditingRequest(request);
+    setEditForm({
+      title: request.title,
+      description: request.description || '',
+      suggested_date: request.suggested_date,
+      suggested_time_period: request.suggested_time_period
+    });
+    setShowEditModal(true);
+  }
+
+  async function handleEditRequest(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingRequest) return;
+    
+    setSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('maintenance_requests')
+        .update({
+          title: editForm.title,
+          description: editForm.description || null,
+          suggested_date: editForm.suggested_date,
+          suggested_time_period: editForm.suggested_time_period,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingRequest.id);
+
+      if (error) throw error;
+      alert('✅ Solicitação atualizada!');
+      setShowEditModal(false);
+      setEditingRequest(null);
+      if (clientId) loadRequests(clientId);
+    } catch (error: any) {
+      alert('Erro: ' + error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDeleteRequest(requestId: string) {
+    if (!confirm('Deseja excluir esta solicitação?\n\nEsta ação não pode ser desfeita.')) return;
+    try {
+      const { error } = await supabase
+        .from('maintenance_requests')
+        .delete()
+        .eq('id', requestId);
+
+      if (error) throw error;
+      alert('Solicitação excluída.');
       if (clientId) loadRequests(clientId);
     } catch (error: any) {
       alert('Erro: ' + error.message);
@@ -538,13 +603,23 @@ export default function MaintenancePage() {
                             </button>
                           </>
                         )}
-                        {request.status === 'pendente' && (
-                          <button
-                            onClick={() => handleCancelRequest(request.id)}
-                            className="text-xs text-red-400 hover:text-red-300"
-                          >
-                            Cancelar
-                          </button>
+                        {(request.status === 'pendente' || request.status === 'reagendado') && (
+                          <>
+                            <button
+                              onClick={() => openEditRequestModal(request)}
+                              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                              title="Editar"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRequest(request.id)}
+                              className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
+                              title="Excluir"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -774,6 +849,116 @@ export default function MaintenancePage() {
                       <>
                         <Send className="w-5 h-5" />
                         Enviar Solicitação
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Edição de Solicitação */}
+        {showEditModal && editingRequest && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowEditModal(false)}>
+            <div className="card max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                    <Edit className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Editar Solicitação</h2>
+                    <p className="text-sm text-gray-400">{editingRequest.request_number}</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-white">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditRequest} className="space-y-4">
+                <div>
+                  <label className="form-label">Título *</label>
+                  <input
+                    type="text"
+                    value={editForm.title}
+                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                    className="form-input"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Descrição</label>
+                  <textarea
+                    value={editForm.description}
+                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                    className="form-textarea"
+                    rows={3}
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Data Sugerida *</label>
+                  <input
+                    type="date"
+                    value={editForm.suggested_date}
+                    onChange={(e) => setEditForm({ ...editForm, suggested_date: e.target.value })}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="form-input"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Período Preferido</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { key: 'manha', label: 'Manhã', emoji: '🌅' },
+                      { key: 'tarde', label: 'Tarde', emoji: '☀️' },
+                      { key: 'qualquer', label: 'Qualquer', emoji: '📅' }
+                    ].map((period) => (
+                      <button
+                        key={period.key}
+                        type="button"
+                        onClick={() => setEditForm({ ...editForm, suggested_time_period: period.key })}
+                        className={`p-3 rounded-xl border-2 transition-all text-center ${
+                          editForm.suggested_time_period === period.key
+                            ? 'border-primary bg-primary/10'
+                            : 'border-white/10 hover:border-white/20 bg-surface'
+                        }`}
+                      >
+                        <div className="text-xl mb-1">{period.emoji}</div>
+                        <div className="text-xs font-semibold text-white">{period.label}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    disabled={submitting}
+                    className="btn-secondary flex-1"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting || !editForm.title || !editForm.suggested_date}
+                    className="btn-primary flex-1 flex items-center justify-center gap-2"
+                  >
+                    {submitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-5 h-5" />
+                        Salvar
                       </>
                     )}
                   </button>
