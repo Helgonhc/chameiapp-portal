@@ -17,6 +17,7 @@ interface CalendarEvent {
   status: string
   priority: string
   order_number: string
+  type?: 'order' | 'maintenance'
 }
 
 interface CalendarProps {
@@ -31,11 +32,17 @@ export default function Calendar({ events, onSelectEvent, onSelectSlot }: Calend
 
   const getEventStyle = (event: CalendarEvent) => {
     const colors: { [key: string]: { bg: string; border: string; text: string } } = {
+      // Ordens de Serviço
       pending: { bg: 'rgba(245, 158, 11, 0.3)', border: '#f59e0b', text: '#fcd34d' },
       scheduled: { bg: 'rgba(99, 102, 241, 0.3)', border: '#6366f1', text: '#a5b4fc' },
       in_progress: { bg: 'rgba(168, 85, 247, 0.3)', border: '#a855f7', text: '#d8b4fe' },
       completed: { bg: 'rgba(16, 185, 129, 0.3)', border: '#10b981', text: '#6ee7b7' },
       cancelled: { bg: 'rgba(239, 68, 68, 0.3)', border: '#ef4444', text: '#fca5a5' },
+      // Manutenções Periódicas
+      vencido: { bg: 'rgba(239, 68, 68, 0.3)', border: '#ef4444', text: '#fca5a5' },
+      urgente: { bg: 'rgba(245, 158, 11, 0.3)', border: '#f59e0b', text: '#fcd34d' },
+      proximo: { bg: 'rgba(59, 130, 246, 0.3)', border: '#3b82f6', text: '#93c5fd' },
+      futuro: { bg: 'rgba(16, 185, 129, 0.3)', border: '#10b981', text: '#6ee7b7' },
     }
     const color = colors[event.status] || colors.pending
     return {
