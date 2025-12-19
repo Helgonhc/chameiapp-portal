@@ -9,7 +9,7 @@ import { useState } from 'react'
 const locales = { 'pt-BR': ptBR }
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales })
 
-interface CalendarEvent {
+export interface CalendarEvent {
   id: string
   title: string
   start: Date

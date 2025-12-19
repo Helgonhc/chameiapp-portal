@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import Calendar from '@/components/Calendar'
+import Calendar, { CalendarEvent } from '@/components/Calendar'
 import DashboardLayout from '@/components/DashboardLayout'
 import { Calendar as CalendarIcon, Filter, X, Sparkles, Clock, CheckCircle2, AlertTriangle } from 'lucide-react'
 
@@ -26,17 +26,6 @@ interface MaintenanceContract {
   urgency_status: string
   maintenance_type_name: string | null
   maintenance_color: string | null
-}
-
-interface CalendarEvent {
-  id: string
-  title: string
-  start: Date
-  end: Date
-  status: string
-  priority: string
-  order_number: string
-  type: 'order' | 'maintenance'
 }
 
 export default function CalendarPage() {
