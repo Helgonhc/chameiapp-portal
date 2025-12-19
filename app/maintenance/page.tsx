@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import { useAuthStore } from '../../store/authStore';
-import DashboardLayout from '../../components/DashboardLayout';
-import { Calendar, Clock, AlertTriangle, CheckCircle, Bell, Mail, MessageCircle, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import DashboardLayout from '@/components/DashboardLayout';
+import { Calendar, Clock, AlertTriangle, CheckCircle, Bell, ChevronRight } from 'lucide-react';
 
 interface MaintenanceContract {
   id: string;
@@ -14,30 +14,51 @@ interface MaintenanceContract {
   next_maintenance_date: string;
   last_maintenance_date?: string;
   status: string;
-  maintenance_types?: { name: string; color: string };
+  maintenance_type_name?: string;
+  maintenance_color?: string;
   urgency_status?: string;
   days_until_maintenance?: number;
 }
 
 export default function MaintenancePage() {
-  const { profile } = useAuthStore();
+  const router = useRouter();
   const [contracts, setContracts] = useState<MaintenanceContract[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedContract, setSelectedContract] = useState<MaintenanceContract | null>(null);
 
   useEffect(() => {
-    if (profile?.client_id) {
-      loadContracts();
-    }
-  }, [profile]);
+    checkAuthAndLoad();
+  }, []);
 
-  async function loadContracts() {
+  async function checkAuthAndLoad() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    
+    // Buscar profile para pegar client_id
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('client_id')
+      .eq('id', user.id)
+      .single();
+    
+    if (!profile?.client_id) {
+      setLoading(false);
+      return;
+    }
+    
+    await loadContracts(profile.client_id);
+  }
+
+  async function loadContracts(clientId: string) {
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('active_maintenance_contracts')
         .select('*')
-        .eq('client_id', profile?.client_id)
+        .eq('client_id', clientId)
         .order('days_until_maintenance', { ascending: true });
 
       if (error) throw error;
@@ -158,7 +179,7 @@ export default function MaintenancePage() {
                     {/* Ícone com cor */}
                     <div 
                       className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: contract.maintenance_types?.color || '#6366f1' }}
+                      style={{ backgroundColor: contract.maintenance_color || '#6366f1' }}
                     >
                       <Calendar className="w-6 h-6 text-white" />
                     </div>
@@ -168,7 +189,7 @@ export default function MaintenancePage() {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <h3 className="font-semibold text-white truncate">{contract.title}</h3>
-                          <p className="text-sm text-gray-400">{contract.maintenance_types?.name || 'Manutenção Preventiva'}</p>
+                          <p className="text-sm text-gray-400">{contract.maintenance_type_name || 'Manutenção Preventiva'}</p>
                         </div>
                         <span className={`badge ${getUrgencyColor(contract.urgency_status || 'futuro')} text-white text-xs`}>
                           {getUrgencyLabel(contract.urgency_status || 'futuro', contract.days_until_maintenance || 0)}
@@ -203,13 +224,13 @@ export default function MaintenancePage() {
               <div className="flex items-center gap-4 mb-6">
                 <div 
                   className="w-14 h-14 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: selectedContract.maintenance_types?.color || '#6366f1' }}
+                  style={{ backgroundColor: selectedContract.maintenance_color || '#6366f1' }}
                 >
                   <Calendar className="w-7 h-7 text-white" />
                 </div>
                 <div className="flex-1">
                   <h2 className="text-xl font-bold text-white">{selectedContract.title}</h2>
-                  <p className="text-gray-400">{selectedContract.maintenance_types?.name}</p>
+                  <p className="text-gray-400">{selectedContract.maintenance_type_name}</p>
                 </div>
                 <span className={`badge ${getUrgencyColor(selectedContract.urgency_status || 'futuro')} text-white`}>
                   {getUrgencyLabel(selectedContract.urgency_status || 'futuro', selectedContract.days_until_maintenance || 0)}
