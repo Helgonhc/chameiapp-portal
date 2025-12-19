@@ -17,6 +17,17 @@ interface ServiceOrder {
   scheduled_end: string | null
 }
 
+interface MaintenanceContract {
+  id: string
+  title: string
+  next_maintenance_date: string
+  last_maintenance_date: string | null
+  frequency: string
+  urgency_status: string
+  maintenance_type_name: string | null
+  maintenance_color: string | null
+}
+
 interface CalendarEvent {
   id: string
   title: string
@@ -25,43 +36,65 @@ interface CalendarEvent {
   status: string
   priority: string
   order_number: string
+  type: 'order' | 'maintenance'
 }
 
 export default function CalendarPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [orders, setOrders] = useState<ServiceOrder[]>([])
+  const [maintenances, setMaintenances] = useState<MaintenanceContract[]>([])
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
+    type: 'all', // 'all', 'orders', 'maintenance'
   })
 
   useEffect(() => {
     checkAuth()
     loadOrders()
+    loadMaintenances()
   }, [])
 
   useEffect(() => {
-    const calendarEvents = orders
+    // Eventos de Ordens de Serviço
+    const orderEvents = orders
       .filter(order => order.scheduled_at)
       .filter(order => {
+        if (filters.type === 'maintenance') return false
         if (filters.status !== 'all' && order.status !== filters.status) return false
         if (filters.priority !== 'all' && order.priority !== filters.priority) return false
         return true
       })
       .map(order => ({
         id: order.id,
-        title: `${order.order_number} - ${order.title}`,
+        title: `📋 ${order.order_number} - ${order.title}`,
         start: new Date(order.scheduled_at),
         end: order.scheduled_end ? new Date(order.scheduled_end) : new Date(order.scheduled_at),
         status: order.status,
         priority: order.priority,
         order_number: order.order_number,
+        type: 'order' as const,
       }))
-    setEvents(calendarEvents)
-  }, [orders, filters])
+    
+    // Eventos de Manutenções Periódicas
+    const maintenanceEvents = maintenances
+      .filter(() => filters.type !== 'orders')
+      .map(m => ({
+        id: m.id,
+        title: `🔧 ${m.maintenance_type_name || m.title}`,
+        start: new Date(m.next_maintenance_date),
+        end: new Date(m.next_maintenance_date),
+        status: m.urgency_status || 'futuro',
+        priority: m.urgency_status === 'vencido' ? 'urgent' : m.urgency_status === 'urgente' ? 'high' : 'medium',
+        order_number: '',
+        type: 'maintenance' as const,
+      }))
+    
+    setEvents([...orderEvents, ...maintenanceEvents])
+  }, [orders, maintenances, filters])
 
   async function checkAuth() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -84,15 +117,38 @@ export default function CalendarPage() {
     }
   }
 
+  async function loadMaintenances() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single()
+      if (!profile?.client_id) return
+      
+      const { data, error } = await supabase
+        .from('active_maintenance_contracts')
+        .select('id, title, next_maintenance_date, last_maintenance_date, frequency, urgency_status, maintenance_type_name, maintenance_color')
+        .eq('client_id', profile.client_id)
+      
+      if (error) throw error
+      setMaintenances(data || [])
+    } catch (error) {
+      console.error('Erro ao carregar manutenções:', error)
+    }
+  }
+
   function handleSelectEvent(event: CalendarEvent) {
-    router.push(`/service-orders/${event.id}`)
+    if (event.type === 'maintenance') {
+      router.push('/maintenance')
+    } else {
+      router.push(`/service-orders/${event.id}`)
+    }
   }
 
   function handleClearFilters() {
-    setFilters({ status: 'all', priority: 'all' })
+    setFilters({ status: 'all', priority: 'all', type: 'all' })
   }
 
-  const hasActiveFilters = filters.status !== 'all' || filters.priority !== 'all'
+  const hasActiveFilters = filters.status !== 'all' || filters.priority !== 'all' || filters.type !== 'all'
 
   if (loading) {
     return (
@@ -146,7 +202,15 @@ export default function CalendarPage() {
                   </button>
                 )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="form-label">Tipo</label>
+                  <select value={filters.type} onChange={(e) => setFilters({ ...filters, type: e.target.value })} className="form-input">
+                    <option value="all">Todos</option>
+                    <option value="orders">📋 Ordens de Serviço</option>
+                    <option value="maintenance">🔧 Manutenções Periódicas</option>
+                  </select>
+                </div>
                 <div>
                   <label className="form-label">Status</label>
                   <select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} className="form-input">
@@ -180,26 +244,44 @@ export default function CalendarPage() {
                 <div className="w-1 h-5 bg-gradient-to-b from-primary-500 to-accent-500 rounded-full" />
                 Legenda de Status
               </h3>
-              <div className="flex flex-wrap items-center gap-3 text-sm">
-                <div className="flex items-center gap-2 bg-warning-500/10 px-3 py-2 rounded-lg border border-warning-500/20">
-                  <div className="w-3 h-3 bg-warning-500 rounded-full shadow-sm shadow-warning-500/50" />
-                  <span className="font-medium text-warning-400">Pendente</span>
+              <div className="space-y-3">
+                <p className="text-xs text-zinc-500 font-medium">📋 Ordens de Serviço</p>
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 bg-warning-500/10 px-3 py-1.5 rounded-lg border border-warning-500/20">
+                    <div className="w-2.5 h-2.5 bg-warning-500 rounded-full" />
+                    <span className="text-warning-400 text-xs">Pendente</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-primary-500/10 px-3 py-1.5 rounded-lg border border-primary-500/20">
+                    <div className="w-2.5 h-2.5 bg-primary-500 rounded-full" />
+                    <span className="text-primary-400 text-xs">Agendada</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-purple-500/10 px-3 py-1.5 rounded-lg border border-purple-500/20">
+                    <div className="w-2.5 h-2.5 bg-purple-500 rounded-full" />
+                    <span className="text-purple-400 text-xs">Em Andamento</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-success-500/10 px-3 py-1.5 rounded-lg border border-success-500/20">
+                    <div className="w-2.5 h-2.5 bg-success-500 rounded-full" />
+                    <span className="text-success-400 text-xs">Concluída</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 bg-primary-500/10 px-3 py-2 rounded-lg border border-primary-500/20">
-                  <div className="w-3 h-3 bg-primary-500 rounded-full shadow-sm shadow-primary-500/50" />
-                  <span className="font-medium text-primary-400">Agendada</span>
-                </div>
-                <div className="flex items-center gap-2 bg-purple-500/10 px-3 py-2 rounded-lg border border-purple-500/20">
-                  <div className="w-3 h-3 bg-purple-500 rounded-full shadow-sm shadow-purple-500/50" />
-                  <span className="font-medium text-purple-400">Em Andamento</span>
-                </div>
-                <div className="flex items-center gap-2 bg-success-500/10 px-3 py-2 rounded-lg border border-success-500/20">
-                  <div className="w-3 h-3 bg-success-500 rounded-full shadow-sm shadow-success-500/50" />
-                  <span className="font-medium text-success-400">Concluída</span>
-                </div>
-                <div className="flex items-center gap-2 bg-danger-500/10 px-3 py-2 rounded-lg border border-danger-500/20">
-                  <div className="w-3 h-3 bg-danger-500 rounded-full shadow-sm shadow-danger-500/50" />
-                  <span className="font-medium text-danger-400">Cancelada</span>
+                <p className="text-xs text-zinc-500 font-medium mt-3">🔧 Manutenções Periódicas</p>
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 bg-red-500/10 px-3 py-1.5 rounded-lg border border-red-500/20">
+                    <div className="w-2.5 h-2.5 bg-red-500 rounded-full" />
+                    <span className="text-red-400 text-xs">Vencida</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-amber-500/10 px-3 py-1.5 rounded-lg border border-amber-500/20">
+                    <div className="w-2.5 h-2.5 bg-amber-500 rounded-full" />
+                    <span className="text-amber-400 text-xs">Urgente (7 dias)</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-500/20">
+                    <div className="w-2.5 h-2.5 bg-blue-500 rounded-full" />
+                    <span className="text-blue-400 text-xs">Próxima (30 dias)</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
+                    <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full" />
+                    <span className="text-emerald-400 text-xs">Futura</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -210,22 +292,24 @@ export default function CalendarPage() {
                 <CalendarIcon className="w-5 h-5 text-primary-400" />
                 Resumo
               </h3>
-              <div className="space-y-3 text-sm">
+              <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-zinc-400">Total de Ordens:</span>
-                  <span className="font-bold text-white text-lg">{events.length}</span>
+                  <span className="text-zinc-400">📋 Ordens:</span>
+                  <span className="font-bold text-white">{events.filter(e => e.type === 'order').length}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-zinc-400 flex items-center gap-1"><Clock className="w-3 h-3" /> Agendadas:</span>
-                  <span className="font-bold text-primary-400">{events.filter(e => e.status === 'scheduled').length}</span>
+                  <span className="text-zinc-400">🔧 Manutenções:</span>
+                  <span className="font-bold text-white">{events.filter(e => e.type === 'maintenance').length}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-zinc-400 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Em Andamento:</span>
-                  <span className="font-bold text-purple-400">{events.filter(e => e.status === 'in_progress').length}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-zinc-400 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Concluídas:</span>
-                  <span className="font-bold text-success-400">{events.filter(e => e.status === 'completed').length}</span>
+                <div className="border-t border-white/10 my-2 pt-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400 flex items-center gap-1"><AlertTriangle className="w-3 h-3 text-red-400" /> Vencidas:</span>
+                    <span className="font-bold text-red-400">{events.filter(e => e.type === 'maintenance' && e.status === 'vencido').length}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400 flex items-center gap-1"><Clock className="w-3 h-3 text-amber-400" /> Urgentes:</span>
+                    <span className="font-bold text-amber-400">{events.filter(e => e.type === 'maintenance' && e.status === 'urgente').length}</span>
+                  </div>
                 </div>
               </div>
             </div>
