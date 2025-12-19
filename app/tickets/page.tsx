@@ -293,7 +293,7 @@ export default function TicketsPage() {
         if (updateError) throw updateError
       } else {
         // Criar novo chamado
-        const { error: insertError } = await supabase
+        const { data: newTicket, error: insertError } = await supabase
           .from('tickets')
           .insert({
             client_id: profile.client_id,
@@ -304,8 +304,37 @@ export default function TicketsPage() {
             created_by: user.id,
             photos_url: photoUrls
           })
+          .select('id, ticket_number')
+          .single()
 
         if (insertError) throw insertError
+
+        // Buscar nome do cliente para a notificação
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('name')
+          .eq('id', profile.client_id)
+          .single()
+
+        // Criar notificações para TODOS os usuários da plataforma (admin, super_admin, técnicos)
+        const { data: allUsers } = await supabase
+          .from('profiles')
+          .select('id')
+          .in('role', ['admin', 'super_admin', 'technician'])
+          .eq('is_active', true)
+
+        if (allUsers && allUsers.length > 0) {
+          const notifications = allUsers.map(u => ({
+            user_id: u.id,
+            title: '🎫 Novo Chamado Aberto',
+            message: `Cliente: ${clientData?.name || 'N/A'} - ${title.trim()}`,
+            type: 'ticket',
+            reference_id: newTicket?.id,
+            is_read: false
+          }))
+
+          await supabase.from('notifications').insert(notifications)
+        }
       }
 
       setShowModal(false)

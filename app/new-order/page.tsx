@@ -76,7 +76,9 @@ export default function NewOrderPage() {
       const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id').eq('id', user.id).single()
       if (profileError) throw profileError
       if (!profile?.client_id) throw new Error('Cliente não encontrado')
-      const { error: ticketError } = await supabase.from('tickets').insert({
+      
+      // Criar o ticket
+      const { data: newTicket, error: ticketError } = await supabase.from('tickets').insert({
         client_id: profile.client_id,
         title: title.trim(),
         description: description.trim(),
@@ -86,8 +88,37 @@ export default function NewOrderPage() {
         maintenance_type_id: maintenanceTypeId || null,
         photos: photos.length > 0 ? photos : null,
         created_by: user.id
-      })
+      }).select('id, ticket_number').single()
+      
       if (ticketError) throw ticketError
+
+      // Buscar nome do cliente para a notificação
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('name')
+        .eq('id', profile.client_id)
+        .single()
+
+      // Criar notificações para TODOS os usuários da plataforma (admin, super_admin, técnicos)
+      const { data: allUsers } = await supabase
+        .from('profiles')
+        .select('id')
+        .in('role', ['admin', 'super_admin', 'technician'])
+        .eq('is_active', true)
+
+      if (allUsers && allUsers.length > 0) {
+        const notifications = allUsers.map(u => ({
+          user_id: u.id,
+          title: '🎫 Novo Chamado Aberto',
+          message: `Cliente: ${clientData?.name || 'N/A'} - ${title.trim()}`,
+          type: 'ticket',
+          reference_id: newTicket?.id,
+          is_read: false
+        }))
+
+        await supabase.from('notifications').insert(notifications)
+      }
+
       setSuccess(true)
       setTimeout(() => router.push('/dashboard'), 2500)
     } catch (error: any) {
