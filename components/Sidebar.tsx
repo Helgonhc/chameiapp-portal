@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, FileText, DollarSign, Calendar, CalendarDays, Bell, User, LogOut, Menu, X, Building2, Ticket, MessageCircle, ChevronRight, Zap } from 'lucide-react'
+import { Home, FileText, DollarSign, Calendar, CalendarDays, Bell, User, LogOut, Menu, X, Building2, Ticket, MessageCircle, ChevronRight, Zap, Wrench } from 'lucide-react'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
@@ -20,6 +20,7 @@ export default function Sidebar({ clientData, userData, unreadNotifications = 0,
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/dashboard', badge: null },
     { icon: FileText, label: 'Ordens de Serviço', path: '/service-orders', badge: null },
+    { icon: Wrench, label: 'Manutenções', path: '/maintenance', badge: null },
     { icon: CalendarDays, label: 'Calendário', path: '/calendar', badge: null },
     { icon: Calendar, label: 'Agendamentos', path: '/appointments', badge: null },
     { icon: Ticket, label: 'Meus Chamados', path: '/tickets', badge: null },
