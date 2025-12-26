@@ -198,25 +198,28 @@ body {
   margin-bottom: 0;
 }
 
-/* FOTOS - LAYOUT MELHORADO */
+/* FOTOS - LAYOUT 5 COLUNAS */
 .photos-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
   margin-top: 10px;
 }
 .photo-item {
-  border-radius: 8px;
+  aspect-ratio: 1;
+  border-radius: 16px;
   overflow: hidden;
   border: 1px solid #ddd;
   background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .photo-item img { 
-  width: 100%; 
-  height: auto;
-  max-height: 200px;
+  max-width: 100%; 
+  max-height: 100%;
   object-fit: contain;
-  display: block;
+  border-radius: 14px;
 }
 
 /* ASSINATURAS COMPACTAS */
