@@ -19,6 +19,29 @@ const formatOrderId = (id: string, dateString: string) => {
   return `${yearMonth}-${suffix}`
 }
 
+// Função para formatar texto em parágrafos HTML
+const formatReportText = (text: string) => {
+  if (!text || text.trim() === '') {
+    return '<p><i>Nenhuma observação registrada.</i></p>'
+  }
+  
+  // Dividir por quebras de linha duplas (parágrafos) ou simples
+  const paragraphs = text
+    .split(/\n\n+/) // Divide por linhas duplas primeiro
+    .map(p => p.trim())
+    .filter(p => p.length > 0)
+    .map(p => {
+      // Dentro de cada parágrafo, substituir quebras simples por <br>
+      return p.replace(/\n/g, '<br>')
+    })
+  
+  if (paragraphs.length === 0) {
+    return '<p><i>Nenhuma observação registrada.</i></p>'
+  }
+  
+  return paragraphs.map(p => `<p>${p}</p>`).join('')
+}
+
 export async function generateServiceOrderPDF(order: any) {
   try {
     // DEBUG
@@ -79,7 +102,7 @@ export async function generateServiceOrderPDF(order: any) {
     }
 
     const osNumber = formatOrderId(order.id, order.created_at)
-    const reportContent = order.execution_report || '<i>Nenhuma observação registrada.</i>'
+    const reportContent = formatReportText(order.execution_report || '')
     const photos = order.photos_url || order.photos || []
 
     // 3. HTML COMPACTO V4.0
@@ -156,16 +179,23 @@ body {
 .check-pending { color: #999; }
 .check-pending::before { content: "○ "; }
 
-/* RELATÓRIO */
+/* RELATÓRIO - FORMATAÇÃO PROFISSIONAL */
 .report-box {
   background: #fafafa;
   border: 1px solid #ddd;
-  padding: 10px;
-  border-radius: 4px;
-  font-size: 9px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  min-height: 50px;
+  padding: 15px;
+  border-radius: 6px;
+  font-size: 10px;
+  line-height: 1.7;
+  min-height: 60px;
+  text-align: justify;
+}
+.report-box p {
+  margin-bottom: 10px;
+  text-indent: 2em;
+}
+.report-box p:last-child {
+  margin-bottom: 0;
 }
 
 /* FOTOS - LAYOUT MELHORADO */
