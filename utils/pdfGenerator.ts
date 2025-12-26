@@ -1,386 +1,224 @@
 import { supabase } from '@/lib/supabase'
 
-// Função para formatar data e hora
+// Formatar data/hora - trata datas locais sem timezone
 const formatDateTime = (dateString: string) => {
   if (!dateString) return '-'
-  const d = new Date(dateString)
-  return `${d.toLocaleDateString('pt-BR')} às ${d.toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit'
-  })}hs`
-}
-
-// Função para ID bonito
-const formatOrderId = (id: string, dateString: string) => {
-  if (!dateString) return id.slice(0, 6).toUpperCase()
-  const d = new Date(dateString)
-  const yearMonth = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`
-  const suffix = id.slice(0, 4).toUpperCase()
-  return `${yearMonth}-${suffix}`
-}
-
-// Função para formatar texto em parágrafos HTML
-const formatReportText = (text: string) => {
-  if (!text || text.trim() === '') {
-    return '<p><i>Nenhuma observação registrada.</i></p>'
-  }
-  
-  // Dividir por quebras de linha duplas (parágrafos) ou simples
-  const paragraphs = text
-    .split(/\n\n+/) // Divide por linhas duplas primeiro
-    .map(p => p.trim())
-    .filter(p => p.length > 0)
-    .map(p => {
-      // Dentro de cada parágrafo, substituir quebras simples por <br>
-      return p.replace(/\n/g, '<br>')
+  try {
+    if (dateString.includes('T') && !dateString.includes('Z') && !dateString.includes('+')) {
+      const [datePart, timePart] = dateString.split('T')
+      const [year, month, day] = datePart.split('-')
+      const [hour, minute] = (timePart || '00:00').split(':')
+      return `${day}/${month}/${year} ${hour}:${minute}`
+    }
+    return new Date(dateString).toLocaleString('pt-BR', { 
+      timeZone: 'America/Sao_Paulo',
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
     })
-  
-  if (paragraphs.length === 0) {
-    return '<p><i>Nenhuma observação registrada.</i></p>'
-  }
-  
-  return paragraphs.map(p => `<p>${p}</p>`).join('')
+  } catch { return dateString }
 }
 
+const formatDate = (dateString: string) => {
+  if (!dateString) return '-'
+  try {
+    return new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+  } catch { return dateString }
+}
+
+const formatOrderId = (id: string, dateString: string) => {
+  if (!id) return 'OS'
+  if (!dateString) return id.slice(0, 6).toUpperCase()
+  try {
+    const d = new Date(dateString)
+    return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}-${id.slice(0, 4).toUpperCase()}`
+  } catch { return id.slice(0, 6).toUpperCase() }
+}
+
+async function getCompanyConfig() {
+  const { data: config } = await supabase.from('app_config').select('*').limit(1).maybeSingle()
+  return {
+    name: config?.company_name || 'PRESTADOR DE SERVIÇOS',
+    cnpj: config?.company_cnpj || config?.cnpj || '',
+    address: config?.company_address || config?.address || '',
+    phone: config?.company_phone || config?.phone || '',
+    email: config?.company_email || config?.email || '',
+    logo: config?.company_logo || config?.logo_url || '',
+    color: config?.primary_color || '#1e40af'
+  }
+}
+
+
+// ============================================
+// GERAR PDF DA ORDEM DE SERVIÇO - PÁGINA ÚNICA
+// ============================================
 export async function generateServiceOrderPDF(order: any) {
   try {
-    // DEBUG
-    console.log('=== PDF DEBUG ===')
-    console.log('Order ID:', order.id)
-    console.log('Technician ID:', order.technician_id)
+    const company = await getCompanyConfig()
+    let techName = 'Técnico Responsável', techSig = '', techDoc = ''
     
-    // 1. CARREGAMENTO DE DADOS
-    const { data: config } = await supabase
-      .from('app_config')
-      .select('*')
-      .limit(1)
-      .maybeSingle()
-
-    // Busca dados do técnico
-    let technicianName = 'Técnico Responsável'
-    let technicianSignature = ''
-    let technicianDoc = ''
     if (order.technician_id) {
-      const { data: tech, error: techError } = await supabase
-        .from('profiles')
-        .select('full_name, signature_url, cpf')
-        .eq('id', order.technician_id)
-        .maybeSingle()
-
-      console.log('Tech data:', tech)
-      console.log('Tech error:', techError)
-
-      if (tech) {
-        technicianName = tech.full_name || technicianName
-        technicianSignature = tech.signature_url || ''
-        technicianDoc = tech.cpf || ''
-      }
-    }
-    
-    console.log('Final - Name:', technicianName)
-    console.log('Final - Signature:', technicianSignature)
-    console.log('Final - CPF:', technicianDoc)
-    console.log('=================')
-
-    // Busca Checklist
-    const { data: tasks } = await supabase
-      .from('order_tasks')
-      .select('*')
-      .eq('order_id', order.id)
-      .order('created_at')
-
-    // 2. PREPARAÇÃO
-    const company = {
-      name: config?.company_name || 'PRESTADOR DE SERVIÇOS',
-      cnpj: config?.cnpj || '',
-      address: config?.address || '',
-      phone: config?.phone || '',
-      email: config?.email || '',
-      site: config?.website || '',
-      logo: config?.logo_url || '',
-      color: config?.primary_color || '#0044cc'
+      const { data: tech } = await supabase.from('profiles').select('full_name, signature_url, cpf').eq('id', order.technician_id).maybeSingle()
+      if (tech) { techName = tech.full_name || techName; techSig = tech.signature_url || ''; techDoc = tech.cpf || '' }
     }
 
+    const { data: tasks } = await supabase.from('order_tasks').select('*').eq('order_id', order.id).order('created_at')
     const osNumber = formatOrderId(order.id, order.created_at)
-    const reportContent = formatReportText(order.execution_report || '')
     const photos = order.photos_url || order.photos || []
+    const report = order.execution_report || order.description || 'Nenhuma observação registrada.'
+    const color = company.color || '#1e40af'
 
-    // 3. HTML COMPACTO V4.0
-    const html = `
-<!DOCTYPE html>
+    const w = window.open('', '_blank')
+    if (!w) { alert('Permita pop-ups para gerar o PDF'); return }
+
+    const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
+<title>OS #${osNumber}</title>
 <style>
-@page { margin: 20px 25px; size: A4; }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 9px;
-  color: #333;
-  line-height: 1.3;
-  -webkit-print-color-adjust: exact;
+@page { size: auto; margin: 8mm; }
+@media print {
+  html, body { height: auto !important; }
+  body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .no-print { display: none !important; }
 }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, sans-serif; font-size: 10px; color: #333; line-height: 1.3; background: white; }
 
-/* HEADER COMPACTO */
-.header {
-  display: table;
-  width: 100%;
-  border-bottom: 3px solid ${company.color};
-  padding-bottom: 12px;
-  margin-bottom: 15px;
-}
-.header-left { display: table-cell; width: 80px; vertical-align: middle; }
-.header-left img { max-width: 75px; max-height: 60px; }
-.header-center { display: table-cell; vertical-align: middle; padding: 0 15px; }
-.header-center h1 { font-size: 15px; color: ${company.color}; margin-bottom: 4px; }
-.header-center p { font-size: 8px; color: #555; margin: 1px 0; }
-.header-right { display: table-cell; width: 130px; vertical-align: middle; text-align: right; }
-.os-box {
-  background: ${company.color};
-  color: #fff;
-  padding: 8px 12px;
-  border-radius: 6px;
-  display: inline-block;
-}
+.header { display: flex; align-items: center; border-bottom: 3px solid ${color}; padding-bottom: 10px; margin-bottom: 12px; }
+.header-logo img { max-width: 60px; max-height: 45px; }
+.header-company { flex: 1; padding: 0 12px; }
+.header-company h1 { font-size: 14px; color: ${color}; margin-bottom: 2px; }
+.header-company p { font-size: 8px; color: #555; margin: 1px 0; }
+.os-box { background: ${color}; color: white; padding: 8px 12px; border-radius: 5px; display: inline-block; text-align: center; }
 .os-box small { font-size: 7px; display: block; opacity: 0.9; }
-.os-box strong { font-size: 14px; }
-.os-date { font-size: 8px; color: #666; margin-top: 5px; }
+.os-box strong { font-size: 12px; }
+.os-date { font-size: 8px; color: #666; margin-top: 4px; text-align: right; }
 
-/* SEÇÕES COMPACTAS */
-.section { margin-bottom: 12px; }
-.section-title {
-  background: #f5f5f5;
-  border-left: 3px solid ${company.color};
-  padding: 6px 10px;
-  font-size: 10px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 8px;
-}
+.grid-2 { display: flex; gap: 12px; margin-bottom: 10px; }
+.grid-2 > div { flex: 1; }
+.section { margin-bottom: 10px; }
+.section-title { background: #f0f0f0; border-left: 3px solid ${color}; padding: 4px 8px; font-size: 9px; font-weight: bold; margin-bottom: 6px; }
+.data-box { background: #fafafa; border-radius: 4px; padding: 8px; }
+.data-row { display: flex; padding: 3px 0; border-bottom: 1px solid #eee; font-size: 9px; }
+.data-row:last-child { border-bottom: none; }
+.data-label { width: 65px; color: #666; font-weight: 600; }
 
-/* GRID 2 COLUNAS */
-.two-cols { display: table; width: 100%; }
-.col { display: table-cell; width: 50%; vertical-align: top; padding-right: 10px; }
-.col:last-child { padding-right: 0; padding-left: 10px; }
-
-/* TABELA DE DADOS */
-.data-table { width: 100%; border-collapse: collapse; }
-.data-table td { padding: 4px 0; border-bottom: 1px solid #eee; font-size: 9px; }
-.data-table .label { color: #666; width: 80px; font-weight: 600; }
-.data-table .value { color: #222; }
-
-/* CHECKLIST COMPACTO */
-.checklist { margin: 8px 0; }
-.check-item { padding: 4px 0; border-bottom: 1px solid #f0f0f0; font-size: 9px; }
-.check-item:last-child { border-bottom: none; }
+.checklist { display: flex; flex-wrap: wrap; gap: 4px; }
+.check-item { width: calc(50% - 2px); display: flex; align-items: center; gap: 4px; padding: 3px 6px; background: #f9f9f9; border-radius: 3px; font-size: 8px; }
 .check-done { color: #16a34a; }
-.check-done::before { content: "✓ "; font-weight: bold; }
 .check-pending { color: #999; }
-.check-pending::before { content: "○ "; }
 
-/* RELATÓRIO - FORMATAÇÃO PROFISSIONAL */
-.report-box {
-  background: #fafafa;
-  border: 1px solid #ddd;
-  padding: 15px;
-  border-radius: 6px;
-  font-size: 10px;
-  line-height: 1.7;
-  min-height: 60px;
-  text-align: justify;
-}
-.report-box p {
-  margin-bottom: 10px;
-  text-indent: 2em;
-}
-.report-box p:last-child {
-  margin-bottom: 0;
-}
+.report-box { background: #fafafa; border: 1px solid #e0e0e0; padding: 8px; border-radius: 4px; font-size: 9px; line-height: 1.5; }
 
-/* FOTOS - LAYOUT 5 COLUNAS */
-.photos-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  margin-top: 10px;
-}
-.photo-item {
-  aspect-ratio: 1;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid #ddd;
-  background: #f5f5f5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.photo-item img { 
-  max-width: 100%; 
-  max-height: 100%;
-  object-fit: contain;
-  border-radius: 14px;
-}
+.photos-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.photos-grid img { width: 120px; height: 120px; object-fit: contain; border-radius: 15px; }
 
-/* ASSINATURAS COMPACTAS */
-.signatures {
-  display: table;
-  width: 100%;
-  margin-top: 25px;
-  page-break-inside: avoid;
-}
-.sig-col { display: table-cell; width: 50%; text-align: center; padding: 0 20px; }
-.sig-img { height: 45px; margin-bottom: -5px; }
-.sig-line { border-top: 1px solid #333; margin: 5px 0; }
+.signatures { display: flex; justify-content: space-around; margin-top: 15px; }
+.sig-col { text-align: center; width: 40%; }
+.sig-img { height: 35px; display: flex; align-items: flex-end; justify-content: center; }
+.sig-img img { max-height: 35px; max-width: 100px; }
+.sig-line { border-top: 1px solid #333; margin: 4px 0; }
 .sig-name { font-weight: bold; font-size: 9px; }
 .sig-role { font-size: 8px; color: #666; }
-.sig-doc { font-size: 7px; color: #999; margin-top: 2px; }
+.sig-doc { font-size: 7px; color: #999; }
 
-/* FOOTER */
-.footer {
-  margin-top: 20px;
-  padding-top: 10px;
-  border-top: 1px solid #ddd;
-  text-align: center;
-  font-size: 7px;
-  color: #888;
-}
+.footer { margin-top: 12px; padding-top: 6px; border-top: 1px solid #ddd; text-align: center; font-size: 7px; color: #999; }
+.print-btn { position: fixed; top: 10px; right: 10px; background: ${color}; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 13px; cursor: pointer; z-index: 1000; }
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
+<button class="print-btn no-print" onclick="window.print()">🖨️ Salvar PDF</button>
+
 <div class="header">
-  <div class="header-left">
-    ${company.logo ? `<img src="${company.logo}" />` : ''}
-  </div>
-  <div class="header-center">
+  <div class="header-logo">${company.logo ? `<img src="${company.logo}">` : ''}</div>
+  <div class="header-company">
     <h1>${company.name}</h1>
     ${company.cnpj ? `<p><b>CNPJ:</b> ${company.cnpj}</p>` : ''}
     ${company.address ? `<p>${company.address}</p>` : ''}
-    <p>${[company.phone, company.email].filter(Boolean).join(' | ')}</p>
+    <p>${[company.phone, company.email].filter(Boolean).join(' • ')}</p>
   </div>
-  <div class="header-right">
+  <div>
     <div class="os-box">
       <small>ORDEM DE SERVIÇO</small>
       <strong>#${osNumber}</strong>
     </div>
-    <div class="os-date">${new Date(order.created_at).toLocaleDateString('pt-BR')}</div>
+    <div class="os-date">${formatDate(order.created_at)}</div>
   </div>
 </div>
 
-<!-- DADOS CLIENTE + EXECUÇÃO EM 2 COLUNAS -->
-<div class="two-cols">
-  <div class="col">
-    <div class="section">
-      <div class="section-title">DADOS DO CLIENTE</div>
-      <table class="data-table">
-        <tr><td class="label">Cliente:</td><td class="value"><b>${order.clients?.name || '-'}</b></td></tr>
-        <tr><td class="label">CNPJ/CPF:</td><td class="value">${order.clients?.cnpj_cpf || '-'}</td></tr>
-        <tr><td class="label">Endereço:</td><td class="value">${order.clients?.address || '-'}</td></tr>
-        <tr><td class="label">Contato:</td><td class="value">${order.clients?.phone || '-'}</td></tr>
-      </table>
+<div class="grid-2">
+  <div class="section">
+    <div class="section-title">DADOS DO CLIENTE</div>
+    <div class="data-box">
+      <div class="data-row"><span class="data-label">Cliente:</span><span><b>${order.clients?.name || '-'}</b></span></div>
+      <div class="data-row"><span class="data-label">CNPJ/CPF:</span><span>${order.clients?.cnpj_cpf || '-'}</span></div>
+      <div class="data-row"><span class="data-label">Endereço:</span><span>${order.clients?.address || '-'}</span></div>
+      <div class="data-row"><span class="data-label">Contato:</span><span>${order.clients?.phone || '-'}</span></div>
     </div>
   </div>
-  <div class="col">
-    <div class="section">
-      <div class="section-title">DADOS DA EXECUÇÃO</div>
-      <table class="data-table">
-        <tr><td class="label">Serviço:</td><td class="value"><b>${order.title}</b></td></tr>
-        <tr><td class="label">Técnico:</td><td class="value">${technicianName}</td></tr>
-        <tr><td class="label">Início:</td><td class="value">${formatDateTime(order.checkin_at)}</td></tr>
-        <tr><td class="label">Término:</td><td class="value">${formatDateTime(order.completed_at)}</td></tr>
-      </table>
+  <div class="section">
+    <div class="section-title">DADOS DA EXECUÇÃO</div>
+    <div class="data-box">
+      <div class="data-row"><span class="data-label">Serviço:</span><span><b>${order.title || '-'}</b></span></div>
+      <div class="data-row"><span class="data-label">Técnico:</span><span>${techName}</span></div>
+      <div class="data-row"><span class="data-label">Início:</span><span>${formatDateTime(order.checkin_at)}</span></div>
+      <div class="data-row"><span class="data-label">Término:</span><span>${formatDateTime(order.completed_at)}</span></div>
     </div>
   </div>
 </div>
 
-<!-- CHECKLIST (se houver) -->
 ${tasks && tasks.length > 0 ? `
 <div class="section">
-  <div class="section-title">CHECKLIST DE VERIFICAÇÃO</div>
+  <div class="section-title">CHECKLIST</div>
   <div class="checklist">
-    ${tasks.map((t: any) => `
-      <div class="check-item ${t.is_completed ? 'check-done' : 'check-pending'}">${t.title}</div>
-    `).join('')}
+    ${tasks.map((t: any) => `<div class="check-item ${t.is_completed ? 'check-done' : 'check-pending'}">${t.is_completed ? '✓' : '○'} ${t.title}</div>`).join('')}
   </div>
 </div>
 ` : ''}
 
-<!-- RELATÓRIO -->
 <div class="section">
-  <div class="section-title">RELATÓRIO TÉCNICO / OBSERVAÇÕES</div>
-  <div class="report-box">${reportContent}</div>
+  <div class="section-title">RELATÓRIO TÉCNICO</div>
+  <div class="report-box">${report.replace(/\n/g, '<br>')}</div>
 </div>
 
-<!-- FOTOS (se houver) -->
 ${photos.length > 0 ? `
 <div class="section">
-  <div class="section-title">REGISTRO FOTOGRÁFICO (${photos.length} ${photos.length === 1 ? 'foto' : 'fotos'})</div>
+  <div class="section-title">FOTOS (${photos.length})</div>
   <div class="photos-grid">
-    ${photos.map((u: string) => `<div class="photo-item"><img src="${u}" /></div>`).join('')}
+    ${photos.map((p: string) => `<img src="${p}">`).join('')}
   </div>
 </div>
 ` : ''}
 
-<!-- ASSINATURAS -->
 <div class="signatures">
   <div class="sig-col">
-    ${technicianSignature ? `<img src="${technicianSignature}" class="sig-img" />` : '<div style="height:35px"></div>'}
+    <div class="sig-img">${techSig ? `<img src="${techSig}">` : ''}</div>
     <div class="sig-line"></div>
-    <div class="sig-name">${technicianName}</div>
+    <div class="sig-name">${techName}</div>
     <div class="sig-role">Técnico Responsável</div>
-    ${technicianDoc ? `<div class="sig-doc">CPF: ${technicianDoc}</div>` : ''}
+    ${techDoc ? `<div class="sig-doc">CPF: ${techDoc}</div>` : ''}
   </div>
   <div class="sig-col">
-    ${order.signature_url ? `<img src="${order.signature_url}" class="sig-img" />` : '<div style="height:35px"></div>'}
+    <div class="sig-img">${order.signature_url ? `<img src="${order.signature_url}">` : ''}</div>
     <div class="sig-line"></div>
-    <div class="sig-name">${order.signer_name || order.clients?.responsible_name || 'Responsável'}</div>
+    <div class="sig-name">${order.signer_name || 'Responsável'}</div>
     <div class="sig-role">Responsável pelo Cliente</div>
     ${order.signer_doc ? `<div class="sig-doc">CPF: ${order.signer_doc}</div>` : ''}
   </div>
 </div>
 
-<div class="footer">
-  Documento gerado em ${new Date().toLocaleString('pt-BR')} | Portal Chamei
-</div>
+<div class="footer">Documento gerado em ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</div>
 
 </body>
-</html>
-    `
+</html>`
 
-    // 4. ABRIR E IMPRIMIR
-    const printWindow = window.open('', '_blank')
-    if (!printWindow) {
-      alert('Por favor, permita pop-ups para gerar o PDF')
-      return
-    }
-
-    printWindow.document.write(html)
-    printWindow.document.close()
-
-    // Aguardar imagens
-    const waitForImages = () => {
-      return new Promise<void>((resolve) => {
-        const images = printWindow.document.querySelectorAll('img')
-        if (images.length === 0) { resolve(); return }
-        let loaded = 0
-        const check = () => { if (++loaded >= images.length) resolve() }
-        images.forEach((img) => {
-          if (img.complete) check()
-          else { img.onload = check; img.onerror = check }
-        })
-        setTimeout(resolve, 5000)
-      })
-    }
-
-    printWindow.onload = async () => {
-      await waitForImages()
-      setTimeout(() => printWindow.print(), 300)
-    }
+    w.document.write(html)
+    w.document.close()
 
   } catch (error) {
-    console.error('Erro ao gerar PDF:', error)
-    alert('Erro ao gerar PDF. Tente novamente.')
+    console.error('Erro PDF:', error)
+    alert('Erro ao gerar PDF')
   }
 }
