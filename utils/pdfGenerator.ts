@@ -168,20 +168,26 @@ body {
   min-height: 50px;
 }
 
-/* FOTOS COMPACTAS */
+/* FOTOS - LAYOUT MELHORADO */
 .photos-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-top: 8px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 10px;
 }
 .photo-item {
-  height: 120px;
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   border: 1px solid #ddd;
+  background: #f5f5f5;
 }
-.photo-item img { width: 100%; height: 100%; object-fit: cover; }
+.photo-item img { 
+  width: 100%; 
+  height: auto;
+  max-height: 200px;
+  object-fit: contain;
+  display: block;
+}
 
 /* ASSINATURAS COMPACTAS */
 .signatures {
