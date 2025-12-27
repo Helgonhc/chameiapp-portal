@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, UserPlus, Trash2, User, Mail, Calendar, AlertCircle, Users, Sparkles, Crown, CheckCircle } from 'lucide-react'
+import { ArrowLeft, UserPlus, Trash2, User, Mail, Calendar, AlertCircle, Users, Sparkles, Crown, CheckCircle, Shield } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 
 interface PortalUser {
@@ -12,6 +12,11 @@ interface PortalUser {
   full_name: string
   is_active: boolean
   created_at: string
+  permissions?: {
+    can_view_financial: boolean
+    can_open_tickets: boolean
+    can_approve_maintenance: boolean
+  }
 }
 
 export default function ManageUsersPage() {
@@ -20,10 +25,17 @@ export default function ManageUsersPage() {
   const [users, setUsers] = useState<PortalUser[]>([])
   const [currentUserId, setCurrentUserId] = useState<string>('')
   const [clientId, setClientId] = useState<string>('')
+
   const [showModal, setShowModal] = useState(false)
   const [inviting, setInviting] = useState(false)
   const [newUserName, setNewUserName] = useState('')
   const [newUserEmail, setNewUserEmail] = useState('')
+  const [permissions, setPermissions] = useState({
+    can_view_financial: true,
+    can_open_tickets: true,
+    can_approve_maintenance: true
+  })
+
   const [error, setError] = useState('')
 
   useEffect(() => { checkAuth(); loadUsers() }, [])
@@ -68,13 +80,26 @@ export default function ManageUsersPage() {
       })
       if (authError) throw new Error(authError.message)
       if (!authData.user) throw new Error('Usuário não foi criado')
-      const { error: insertError } = await supabase.from('profiles').insert({ id: authData.user.id, email: newUserEmail, full_name: newUserName, role: 'client', client_id: clientId, is_active: true })
-      if (insertError) {
-        await supabase.from('profiles').update({ email: newUserEmail, full_name: newUserName, role: 'client', client_id: clientId, is_active: true }).eq('id', authData.user.id)
+
+      const updateData = {
+        email: newUserEmail,
+        full_name: newUserName,
+        role: 'client',
+        client_id: clientId,
+        is_active: true,
+        permissions: permissions
       }
+
+      const { error: insertError } = await supabase.from('profiles').insert({ id: authData.user.id, ...updateData })
+      if (insertError) {
+        // If profile exists (maybe invite resent), update it
+        await supabase.from('profiles').update(updateData).eq('id', authData.user.id)
+      }
+
       if (currentSession?.session) await supabase.auth.setSession(currentSession.session)
+
       alert(`✅ Usuário convidado!\n\nEmail: ${newUserEmail}\nSenha: ${tempPassword}\n\nO usuário receberá um email de confirmação.`)
-      setShowModal(false); setNewUserName(''); setNewUserEmail('')
+      setShowModal(false); setNewUserName(''); setNewUserEmail(''); setPermissions({ can_view_financial: true, can_open_tickets: true, can_approve_maintenance: true })
       loadUsers()
     } catch (error: any) {
       setError(`Erro: ${error.message}`)
@@ -173,9 +198,9 @@ export default function ManageUsersPage() {
             ) : (
               users.map((user) => (
                 <div key={user.id} className="list-item">
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-start gap-4 flex-1">
-                      <div className="w-14 h-14 bg-gradient-to-br from-primary-500/20 to-accent-500/20 rounded-full flex items-center justify-center border border-white/10">
+                      <div className="w-14 h-14 bg-gradient-to-br from-primary-500/20 to-accent-500/20 rounded-full flex items-center justify-center border border-white/10 shrink-0">
                         <User className="w-7 h-7 text-primary-400" />
                       </div>
                       <div className="flex-1">
@@ -187,9 +212,16 @@ export default function ManageUsersPage() {
                         <div className="flex items-center gap-2 text-sm text-zinc-400 mb-1">
                           <Mail className="w-4 h-4" /> {user.email}
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-zinc-500">
-                          <Calendar className="w-4 h-4" /> Criado em {new Date(user.created_at).toLocaleDateString('pt-BR')}
-                        </div>
+
+                        {/* Display Permissions */}
+                        {user.permissions && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {user.permissions.can_view_financial && <span className="text-xs px-2 py-1 bg-white/5 rounded border border-white/10 text-zinc-300">💰 Financeiro</span>}
+                            {user.permissions.can_open_tickets && <span className="text-xs px-2 py-1 bg-white/5 rounded border border-white/10 text-zinc-300">🎫 Chamados</span>}
+                            {user.permissions.can_approve_maintenance && <span className="text-xs px-2 py-1 bg-white/5 rounded border border-white/10 text-zinc-300">🛠️ Manutenção</span>}
+                          </div>
+                        )}
+
                       </div>
                     </div>
                     {user.id !== currentUserId && (
@@ -235,6 +267,24 @@ export default function ManageUsersPage() {
               <div>
                 <label className="form-label">Email *</label>
                 <input type="email" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} placeholder="email@empresa.com" className="form-input" required />
+              </div>
+
+              <div className="bg-surface-light p-4 rounded-xl border border-white/5">
+                <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2"><Shield className="w-4 h-4" /> Permissões de Acesso</h3>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={permissions.can_view_financial} onChange={e => setPermissions({ ...permissions, can_view_financial: e.target.checked })} className="rounded border-gray-600 bg-surface text-accent-500 focus:ring-accent-500" />
+                    <span className="text-sm text-zinc-300">Ver Orçamentos e Valores</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={permissions.can_open_tickets} onChange={e => setPermissions({ ...permissions, can_open_tickets: e.target.checked })} className="rounded border-gray-600 bg-surface text-accent-500 focus:ring-accent-500" />
+                    <span className="text-sm text-zinc-300">Abrir e Gerenciar Chamados</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={permissions.can_approve_maintenance} onChange={e => setPermissions({ ...permissions, can_approve_maintenance: e.target.checked })} className="rounded border-gray-600 bg-surface text-accent-500 focus:ring-accent-500" />
+                    <span className="text-sm text-zinc-300">Aprovar Manutenções</span>
+                  </label>
+                </div>
               </div>
 
               {error && (

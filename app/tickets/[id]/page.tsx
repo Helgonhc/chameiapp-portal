@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Clock, CheckCircle, XCircle, AlertCircle, User, Calendar, Image as ImageIcon, X as XIcon } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
+import TicketChat from '@/components/TicketChat'
 
 interface TicketData {
   id: string
@@ -122,7 +123,7 @@ export default function TicketDetailPage() {
     <DashboardLayout>
       <div className="min-h-screen bg-gray-50">
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 sm:px-8 py-6 sm:py-8 shadow-lg">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <button onClick={() => router.push('/tickets')} className="flex items-center gap-2 text-white/80 hover:text-white mb-4 transition-colors">
               <ArrowLeft className="w-5 h-5" />
               <span>Voltar</span>
@@ -140,58 +141,68 @@ export default function TicketDetailPage() {
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-            <div className="p-6 space-y-6">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-500 mb-2">Descrição</h3>
-                <p className="text-gray-800 whitespace-pre-wrap">{ticket.description}</p>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-500 mb-1">Prioridade</h3>
-                  <p className="text-gray-800 font-medium">{getPriorityLabel(ticket.priority)}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-500 mb-1">Criado em</h3>
-                  <p className="text-gray-800">{new Date(ticket.created_at).toLocaleDateString('pt-BR')} às {new Date(ticket.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
-                </div>
-                {ticket.creator && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Detalhes do Ticket (Esquerda - 1/3) */}
+            <div className="lg:col-span-1 space-y-6">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                <div className="p-6 space-y-6">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-500 mb-1">Aberto por</h3>
-                    <p className="text-gray-800 flex items-center gap-1"><User className="w-4 h-4" /> {ticket.creator.full_name}</p>
+                    <h3 className="text-sm font-semibold text-gray-500 mb-2">Descrição</h3>
+                    <p className="text-gray-800 whitespace-pre-wrap">{ticket.description}</p>
                   </div>
-                )}
+
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-500 mb-1">Prioridade</h3>
+                      <p className="text-gray-800 font-medium">{getPriorityLabel(ticket.priority)}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-500 mb-1">Criado em</h3>
+                      <p className="text-gray-800">{new Date(ticket.created_at).toLocaleDateString('pt-BR')} às {new Date(ticket.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                    {ticket.creator && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-500 mb-1">Aberto por</h3>
+                        <p className="text-gray-800 flex items-center gap-1"><User className="w-4 h-4" /> {ticket.creator.full_name}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {ticket.rejection_reason && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                      <h3 className="text-sm font-semibold text-red-900 mb-1">Motivo da Rejeição</h3>
+                      <p className="text-red-800">{ticket.rejection_reason}</p>
+                    </div>
+                  )}
+
+                  {ticket.converted_to_order_id && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                      <p className="text-purple-900 font-semibold">✓ Este chamado foi convertido em Ordem de Serviço</p>
+                    </div>
+                  )}
+
+                  {ticket.photos_url && ticket.photos_url.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-500 mb-3 flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4" /> Fotos Anexadas ({ticket.photos_url.length})
+                      </h3>
+                      <div className="grid grid-cols-3 gap-2">
+                        {ticket.photos_url.map((url, index) => (
+                          <button key={index} onClick={() => setSelectedImage(url)} className="relative group overflow-hidden rounded-lg border-2 border-gray-200 hover:border-blue-400 transition-colors aspect-square">
+                            <img src={url} alt={`Foto ${index + 1}`} className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
+            </div>
 
-              {ticket.rejection_reason && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                  <h3 className="text-sm font-semibold text-red-900 mb-1">Motivo da Rejeição</h3>
-                  <p className="text-red-800">{ticket.rejection_reason}</p>
-                </div>
-              )}
-
-              {ticket.converted_to_order_id && (
-                <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
-                  <p className="text-purple-900 font-semibold">✓ Este chamado foi convertido em Ordem de Serviço</p>
-                </div>
-              )}
-
-              {ticket.photos_url && ticket.photos_url.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-500 mb-3 flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4" /> Fotos Anexadas ({ticket.photos_url.length})
-                  </h3>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {ticket.photos_url.map((url, index) => (
-                      <button key={index} onClick={() => setSelectedImage(url)} className="relative group overflow-hidden rounded-lg border-2 border-gray-200 hover:border-blue-400 transition-colors aspect-square">
-                        <img src={url} alt={`Foto ${index + 1}`} className="w-full h-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+            {/* Chat (Direita - 2/3) */}
+            <div className="lg:col-span-2">
+              <TicketChat ticketId={ticket.id} />
             </div>
           </div>
         </div>

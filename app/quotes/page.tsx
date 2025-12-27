@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { DollarSign, FileText, Calendar, CheckCircle, XCircle, Clock, AlertCircle, Trash2, Sparkles, Plus } from 'lucide-react'
+import { DollarSign, FileText, Calendar, CheckCircle, XCircle, Clock, AlertCircle, Trash2, Sparkles, Plus, Edit3 } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 import AdvancedSearch, { SearchFilters } from '@/components/AdvancedSearch'
 
@@ -116,17 +116,18 @@ export default function QuotesPage() {
       rejected: 'bg-danger-500/20 text-danger-400 border-danger-500/30',
       expired: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
       converted: 'bg-primary-500/20 text-primary-400 border-primary-500/30',
+      review_requested: 'bg-info-500/20 text-info-400 border-info-500/30',
     }
     return colors[status] || 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'
   }
 
   function getStatusLabel(status: string) {
-    const labels: Record<string, string> = { pending: 'Aguardando', approved: 'Aprovado', rejected: 'Rejeitado', expired: 'Expirado', converted: 'Convertido' }
+    const labels: Record<string, string> = { pending: 'Aguardando', approved: 'Aprovado', rejected: 'Rejeitado', expired: 'Expirado', converted: 'Convertido', review_requested: 'Revisão Solicitada' }
     return labels[status] || status
   }
 
   function getStatusIcon(status: string) {
-    const icons: Record<string, JSX.Element> = { pending: <Clock className="w-4 h-4" />, approved: <CheckCircle className="w-4 h-4" />, rejected: <XCircle className="w-4 h-4" />, expired: <AlertCircle className="w-4 h-4" />, converted: <FileText className="w-4 h-4" /> }
+    const icons: Record<string, JSX.Element> = { pending: <Clock className="w-4 h-4" />, approved: <CheckCircle className="w-4 h-4" />, rejected: <XCircle className="w-4 h-4" />, expired: <AlertCircle className="w-4 h-4" />, converted: <FileText className="w-4 h-4" />, review_requested: <Edit3 className="w-4 h-4" /> }
     return icons[status] || <FileText className="w-4 h-4" />
   }
 
