@@ -38,15 +38,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       .single()
 
     if (profile) {
+      if (profile.role !== 'client') {
+        await supabase.auth.signOut()
+        router.push('/login')
+        return
+      }
       setUserData(profile)
-      
+
       if (profile.client_id) {
         const { data: client } = await supabase
           .from('clients')
           .select('*')
           .eq('id', profile.client_id)
           .single()
-        
+
         if (client) setClientData(client)
       }
     }
@@ -93,8 +98,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="flex items-center gap-4 ml-14 lg:ml-0">
               {clientData?.client_logo_url ? (
                 <div className="w-11 h-11 rounded-xl bg-white/5 backdrop-blur-sm p-1.5 flex items-center justify-center border border-white/10">
-                  <img 
-                    src={clientData.client_logo_url} 
+                  <img
+                    src={clientData.client_logo_url}
                     alt={clientData.name}
                     className="max-h-full max-w-full object-contain"
                   />
@@ -127,7 +132,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </div>
         </header>
-        
+
         {/* Content */}
         <div className="min-h-[calc(100vh-72px)]">
           {children}

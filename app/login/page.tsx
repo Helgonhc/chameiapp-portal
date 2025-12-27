@@ -9,7 +9,7 @@ import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles, Zap, Shield, Clock, File
 interface ClientBranding {
   name: string;
   company_name: string;
-  logo_url: string | null;
+  client_logo_url: string | null;
   primary_color: string;
   portal_welcome_message: string | null;
 }
@@ -36,7 +36,7 @@ export default function LoginPage() {
     try {
       const { data, error } = await supabase
         .from('clients')
-        .select('name, company_name, logo_url, primary_color, portal_welcome_message')
+        .select('name, company_name, client_logo_url, primary_color, portal_welcome_message')
         .eq('is_active', true)
         .eq('portal_enabled', true)
         .limit(1)
@@ -45,7 +45,7 @@ export default function LoginPage() {
         setBranding({
           name: process.env.NEXT_PUBLIC_CLIENT_NAME || 'Portal do Cliente',
           company_name: process.env.NEXT_PUBLIC_CLIENT_NAME || 'Portal do Cliente',
-          logo_url: `/logos/${process.env.NEXT_PUBLIC_CLIENT_LOGO || 'client-logo.png'}`,
+          client_logo_url: `/logos/${process.env.NEXT_PUBLIC_CLIENT_LOGO || 'client-logo.png'}`,
           primary_color: `#${process.env.NEXT_PUBLIC_CLIENT_COLOR || '6366f1'}`,
           portal_welcome_message: null,
         });
@@ -147,9 +147,9 @@ export default function LoginPage() {
               <div className="relative inline-block">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-accent-500 rounded-3xl blur-2xl opacity-40 scale-110"></div>
                 <div className="relative w-24 h-24 lg:w-32 lg:h-32 rounded-3xl bg-gradient-to-br from-primary-500/20 to-accent-500/20 border border-white/10 flex items-center justify-center backdrop-blur-sm">
-                  {branding?.logo_url ? (
+                  {branding?.client_logo_url ? (
                     <Image
-                      src={branding.logo_url}
+                      src={branding.client_logo_url}
                       alt={branding.name}
                       fill
                       className="object-contain p-4"

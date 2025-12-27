@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { 
-  DollarSign, FileText, Calendar, CheckCircle, XCircle, Clock, 
+import {
+  DollarSign, FileText, Calendar, CheckCircle, XCircle, Clock,
   AlertCircle, ArrowLeft, Download, User, MapPin, Phone, Mail,
   Package, FileCheck, Send, MessageCircle
 } from 'lucide-react'
@@ -57,7 +57,7 @@ export default function QuoteDetailsPage() {
   const router = useRouter()
   const params = useParams()
   const quoteId = params.id as string
-  
+
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
   const [quote, setQuote] = useState<Quote | null>(null)
@@ -74,7 +74,7 @@ export default function QuoteDetailsPage() {
   async function loadQuote() {
     try {
       setLoading(true)
-      
+
       const { data: quoteData, error: quoteError } = await supabase
         .from('quotes')
         .select(`
@@ -107,7 +107,7 @@ export default function QuoteDetailsPage() {
   // Função para enviar notificações (email + WhatsApp)
   async function sendQuoteStatusNotifications(status: 'aprovado' | 'rejeitado', reason?: string) {
     if (!quote) return
-    
+
     try {
       // Buscar configurações da empresa
       const { data: config } = await supabase
@@ -129,7 +129,7 @@ export default function QuoteDetailsPage() {
       const quoteTotal = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(quote.total || 0)
 
       // ========== ENVIAR EMAIL ==========
-      const emailSubject = status === 'aprovado' 
+      const emailSubject = status === 'aprovado'
         ? `✅ Orçamento ${quoteNumber} APROVADO - ${clientName}`
         : `❌ Orçamento ${quoteNumber} REJEITADO - ${clientName}`
 
@@ -183,9 +183,9 @@ export default function QuoteDetailsPage() {
               ` : ''}
               
               <p style="margin-top: 20px;">
-                ${status === 'aprovado' 
-                  ? '🎉 Acesse o sistema para dar continuidade ao serviço.' 
-                  : 'Entre em contato com o cliente para mais informações.'}
+                ${status === 'aprovado'
+          ? '🎉 Acesse o sistema para dar continuidade ao serviço.'
+          : 'Entre em contato com o cliente para mais informações.'}
               </p>
             </div>
             <div class="footer">
@@ -220,29 +220,29 @@ export default function QuoteDetailsPage() {
       if (adminPhone) {
         const whatsappMessage = status === 'aprovado'
           ? `✅ *ORÇAMENTO APROVADO!*\n\n` +
-            `📋 *Número:* ${quoteNumber}\n` +
-            `👤 *Cliente:* ${clientName}\n` +
-            `📝 *Título:* ${quoteTitle}\n` +
-            `💰 *Valor:* ${quoteTotal}\n\n` +
-            `🎉 O cliente aprovou o orçamento! Acesse o sistema para dar continuidade.`
+          `📋 *Número:* ${quoteNumber}\n` +
+          `👤 *Cliente:* ${clientName}\n` +
+          `📝 *Título:* ${quoteTitle}\n` +
+          `💰 *Valor:* ${quoteTotal}\n\n` +
+          `🎉 O cliente aprovou o orçamento! Acesse o sistema para dar continuidade.`
           : `❌ *ORÇAMENTO REJEITADO*\n\n` +
-            `📋 *Número:* ${quoteNumber}\n` +
-            `👤 *Cliente:* ${clientName}\n` +
-            `📝 *Título:* ${quoteTitle}\n` +
-            `💰 *Valor:* ${quoteTotal}\n` +
-            (reason ? `\n📝 *Motivo:* ${reason}\n` : '') +
-            `\nEntre em contato com o cliente para mais informações.`
+          `📋 *Número:* ${quoteNumber}\n` +
+          `👤 *Cliente:* ${clientName}\n` +
+          `📝 *Título:* ${quoteTitle}\n` +
+          `💰 *Valor:* ${quoteTotal}\n` +
+          (reason ? `\n📝 *Motivo:* ${reason}\n` : '') +
+          `\nEntre em contato com o cliente para mais informações.`
 
         // Formatar telefone (remover caracteres especiais)
         const cleanPhone = adminPhone.replace(/\D/g, '')
         const whatsappUrl = `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(whatsappMessage)}`
-        
+
         // Perguntar se quer enviar WhatsApp
         if (confirm(`Deseja enviar notificação via WhatsApp para ${adminPhone}?`)) {
           window.open(whatsappUrl, '_blank')
         }
       }
-      
+
     } catch (error) {
       console.error('Erro ao enviar notificações:', error)
       // Não bloquear a aprovação/rejeição se as notificações falharem
@@ -251,7 +251,7 @@ export default function QuoteDetailsPage() {
 
   async function handleApprove() {
     if (!confirm('Deseja aprovar este orçamento?')) return
-    
+
     try {
       setActionLoading(true)
       const { error } = await supabase
@@ -263,10 +263,10 @@ export default function QuoteDetailsPage() {
         .eq('id', quoteId)
 
       if (error) throw error
-      
+
       // Enviar notificações (email + WhatsApp)
       await sendQuoteStatusNotifications('aprovado')
-      
+
       alert('✅ Orçamento aprovado com sucesso!')
       loadQuote()
     } catch (error: any) {
@@ -290,10 +290,10 @@ export default function QuoteDetailsPage() {
         .eq('id', quoteId)
 
       if (error) throw error
-      
+
       // Enviar notificações (email + WhatsApp)
       await sendQuoteStatusNotifications('rejeitado', rejectReason)
-      
+
       alert('Orçamento rejeitado.')
       setShowRejectModal(false)
       setRejectReason('')
@@ -316,7 +316,7 @@ export default function QuoteDetailsPage() {
   // Função para enviar email manualmente
   async function handleSendEmail() {
     if (!quote) return
-    
+
     try {
       // Buscar configurações da empresa
       const { data: config } = await supabase
@@ -355,10 +355,10 @@ export default function QuoteDetailsPage() {
         // { email: 'gerente@empresa.com', name: 'Gerente' },
         // { email: 'financeiro@empresa.com', name: 'Financeiro' },
       ]
-      
+
       // Combinar todos (remover duplicados por email)
       const todosDestinatarios = [...adminsList, ...emailsFixos]
-        .filter((item, index, self) => 
+        .filter((item, index, self) =>
           index === self.findIndex(t => t.email === item.email)
         )
 
@@ -372,12 +372,12 @@ export default function QuoteDetailsPage() {
       const confirmar = confirm(
         `📧 O email será enviado para:\n\n${listaEmails}\n\nDeseja continuar?`
       )
-      
+
       if (!confirmar) return
 
       const todosEmails = todosDestinatarios.map(d => d.email)
 
-      const emailSubject = status === 'aprovado' 
+      const emailSubject = status === 'aprovado'
         ? `✅ Orçamento ${quoteNumber} APROVADO - ${clientName}`
         : `❌ Orçamento ${quoteNumber} REJEITADO - ${clientName}`
 
@@ -427,10 +427,10 @@ export default function QuoteDetailsPage() {
               
               <div class="content">
                 <div class="alert-box">
-                  <p>${status === 'aprovado' 
-                    ? `🎉 Ótima notícia! O cliente ${clientName} APROVOU o orçamento.`
-                    : `O cliente ${clientName} rejeitou o orçamento.`
-                  }</p>
+                  <p>${status === 'aprovado'
+          ? `🎉 Ótima notícia! O cliente ${clientName} APROVOU o orçamento.`
+          : `O cliente ${clientName} rejeitou o orçamento.`
+        }</p>
                 </div>
 
                 <div class="info-section">
@@ -486,10 +486,10 @@ export default function QuoteDetailsPage() {
                 ` : ''}
 
                 <p style="text-align: center; color: #6b7280; margin-top: 25px;">
-                  ${status === 'aprovado' 
-                    ? 'Acesse o sistema para dar continuidade ao serviço.'
-                    : 'Entre em contato com o cliente para mais informações.'
-                  }
+                  ${status === 'aprovado'
+          ? 'Acesse o sistema para dar continuidade ao serviço.'
+          : 'Entre em contato com o cliente para mais informações.'
+        }
                 </p>
               </div>
               
@@ -506,9 +506,9 @@ export default function QuoteDetailsPage() {
       // Enviar para TODOS os emails de uma vez
       try {
         const { data, error } = await supabase.functions.invoke('send-email', {
-          body: { 
+          body: {
             to: todosEmails,  // Array de emails
-            subject: emailSubject, 
+            subject: emailSubject,
             html: emailHtml,
             replyTo: clientEmail || undefined
           }
@@ -519,7 +519,7 @@ export default function QuoteDetailsPage() {
         alert(`✅ Email enviado com sucesso para ${todosEmails.length} destinatário(s)!\n\n${todosEmails.join('\n')}`)
       } catch (e) {
         console.log('Edge function não disponível, usando fallback:', e)
-        
+
         // Fallback: abrir cliente de email
         const mailtoUrl = `mailto:${todosEmails.join(',')}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(
           `${status === 'aprovado' ? '✅ ORÇAMENTO APROVADO' : '❌ ORÇAMENTO REJEITADO'}\n\n` +
@@ -541,7 +541,7 @@ export default function QuoteDetailsPage() {
   // Função para enviar WhatsApp manualmente
   function handleSendWhatsApp() {
     if (!quote) return
-    
+
     const fetchAdminPhone = async () => {
       // Buscar telefone do admin
       const { data: config } = await supabase
@@ -569,24 +569,24 @@ export default function QuoteDetailsPage() {
 
       const message = status === 'aprovado'
         ? `✅ *ORÇAMENTO APROVADO!*\n\n` +
-          `📋 *Número:* ${quoteNumber}\n` +
-          `👤 *Cliente:* ${clientName}\n` +
-          `📝 *Título:* ${quoteTitle}\n` +
-          `💰 *Valor:* ${quoteTotal}\n\n` +
-          `🎉 O cliente aprovou o orçamento!`
+        `📋 *Número:* ${quoteNumber}\n` +
+        `👤 *Cliente:* ${clientName}\n` +
+        `📝 *Título:* ${quoteTitle}\n` +
+        `💰 *Valor:* ${quoteTotal}\n\n` +
+        `🎉 O cliente aprovou o orçamento!`
         : `❌ *ORÇAMENTO REJEITADO*\n\n` +
-          `📋 *Número:* ${quoteNumber}\n` +
-          `👤 *Cliente:* ${clientName}\n` +
-          `📝 *Título:* ${quoteTitle}\n` +
-          `💰 *Valor:* ${quoteTotal}\n` +
-          (quote.rejection_reason ? `\n📝 *Motivo:* ${quote.rejection_reason}` : '')
+        `📋 *Número:* ${quoteNumber}\n` +
+        `👤 *Cliente:* ${clientName}\n` +
+        `📝 *Título:* ${quoteTitle}\n` +
+        `💰 *Valor:* ${quoteTotal}\n` +
+        (quote.rejection_reason ? `\n📝 *Motivo:* ${quote.rejection_reason}` : '')
 
       // Formatar telefone
       const cleanPhone = adminPhone.replace(/\D/g, '')
-      const whatsappUrl = cleanPhone 
+      const whatsappUrl = cleanPhone
         ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(message)}`
         : `https://wa.me/?text=${encodeURIComponent(message)}`
-      
+
       window.open(whatsappUrl, '_blank')
     })
   }
@@ -594,18 +594,18 @@ export default function QuoteDetailsPage() {
 
   function getStatusColor(status: string) {
     const colors: Record<string, string> = {
-      pendente: 'bg-amber-50 text-amber-700 border-amber-200',
-      aprovado: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      rejeitado: 'bg-red-50 text-red-700 border-red-200',
-      expirado: 'bg-gray-50 text-gray-700 border-gray-200',
-      convertido: 'bg-blue-50 text-blue-700 border-blue-200',
-      pending: 'bg-amber-50 text-amber-700 border-amber-200',
-      approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      rejected: 'bg-red-50 text-red-700 border-red-200',
-      expired: 'bg-gray-50 text-gray-700 border-gray-200',
-      converted: 'bg-blue-50 text-blue-700 border-blue-200',
+      pendente: 'bg-warning-500/20 text-warning-400 border-warning-500/30',
+      aprovado: 'bg-success-500/20 text-success-400 border-success-500/30',
+      rejeitado: 'bg-danger-500/20 text-danger-400 border-danger-500/30',
+      expirado: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
+      convertido: 'bg-primary-500/20 text-primary-400 border-primary-500/30',
+      pending: 'bg-warning-500/20 text-warning-400 border-warning-500/30',
+      approved: 'bg-success-500/20 text-success-400 border-success-500/30',
+      rejected: 'bg-danger-500/20 text-danger-400 border-danger-500/30',
+      expired: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
+      converted: 'bg-primary-500/20 text-primary-400 border-primary-500/30',
     }
-    return colors[status] || 'bg-gray-50 text-gray-700 border-gray-200'
+    return colors[status] || 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'
   }
 
   function getStatusLabel(status: string) {
@@ -677,10 +677,10 @@ export default function QuoteDetailsPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-full bg-gray-50">
+        <div className="flex items-center justify-center min-h-screen bg-background">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-200 border-t-amber-600 mx-auto mb-4"></div>
-            <p className="text-sm font-medium text-gray-600">Carregando orçamento...</p>
+            <div className="w-16 h-16 border-4 border-accent-500/30 border-t-accent-500 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-zinc-400">Carregando orçamento...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -690,12 +690,12 @@ export default function QuoteDetailsPage() {
   if (!quote) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-full bg-gray-50">
-          <div className="text-center">
-            <p className="text-xl font-bold text-gray-700">Orçamento não encontrado</p>
+        <div className="flex items-center justify-center min-h-screen bg-background">
+          <div className="text-center empty-state">
+            <p className="text-xl font-bold text-white">Orçamento não encontrado</p>
             <button
               onClick={() => router.push('/quotes')}
-              className="mt-4 px-6 py-2 bg-amber-600 text-white rounded-lg"
+              className="mt-4 btn-primary"
             >
               Voltar
             </button>
@@ -707,36 +707,36 @@ export default function QuoteDetailsPage() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         {/* Header */}
-        <div className="bg-gradient-to-r from-amber-600 to-orange-600 px-4 sm:px-6 md:px-8 py-6 sm:py-8 shadow-lg">
+        <div className="page-header">
           <div className="max-w-5xl mx-auto">
             <button
               onClick={() => router.push('/quotes')}
-              className="flex items-center gap-2 text-white/80 hover:text-white mb-4 transition-colors"
+              className="flex items-center gap-2 text-zinc-400 hover:text-white mb-6 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>Voltar para Orçamentos</span>
             </button>
-            
+
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-white/20 rounded-lg">
+                  <div className="p-2 bg-white/10 rounded-lg border border-white/5">
                     <DollarSign className="w-6 h-6 text-white" />
                   </div>
-                  <span className="text-white/80 font-mono">{quote.quote_number}</span>
+                  <span className="text-zinc-400 font-mono text-sm border border-white/10 px-2 py-0.5 rounded-md bg-surface-light">{quote.quote_number}</span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-white">{quote.title}</h1>
               </div>
-              
+
               <div className="flex flex-col items-end gap-2">
-                <span className={`flex items-center gap-2 px-4 py-2 rounded-full font-semibold border ${getStatusColor(quote.status)}`}>
+                <span className={`badge ${getStatusColor(quote.status)} px-4 py-2 text-sm`}>
                   {getStatusIcon(quote.status)}
                   {getStatusLabel(quote.status)}
                 </span>
                 {expired && (
-                  <span className="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full font-medium">
+                  <span className="badge badge-danger">
                     ⚠️ Orçamento expirado
                   </span>
                 )}
@@ -745,16 +745,16 @@ export default function QuoteDetailsPage() {
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-6">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 md:px-8 -mt-8 pb-10">
           {/* Ações */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6 mb-6">
-            <div className="flex flex-wrap gap-3">
+          <div className="card p-4 sm:p-6 mb-6 flex flex-wrap gap-3 items-center justify-between bg-surface/80 backdrop-blur-md">
+            <div className="flex flex-wrap gap-3 w-full sm:w-auto">
               {canApprove && !expired && (
                 <>
                   <button
                     onClick={handleApprove}
                     disabled={actionLoading}
-                    className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-all disabled:opacity-50"
+                    className="btn-success flex items-center gap-2 bg-success-600 hover:bg-success-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-success-500/20 transition-all"
                   >
                     <CheckCircle className="w-5 h-5" />
                     Aprovar Orçamento
@@ -762,7 +762,7 @@ export default function QuoteDetailsPage() {
                   <button
                     onClick={() => setShowRejectModal(true)}
                     disabled={actionLoading}
-                    className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-all disabled:opacity-50"
+                    className="btn-danger flex items-center gap-2"
                   >
                     <XCircle className="w-5 h-5" />
                     Rejeitar
@@ -771,200 +771,233 @@ export default function QuoteDetailsPage() {
               )}
               <button
                 onClick={handleGeneratePDF}
-                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all"
+                className="btn-primary flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700"
               >
                 <Download className="w-5 h-5" />
                 Baixar PDF
               </button>
-              
-              {/* Botões de envio - aparecem quando orçamento foi aprovado ou rejeitado */}
-              {(quote.status === 'aprovado' || quote.status === 'approved' || 
-                quote.status === 'rejeitado' || quote.status === 'rejected') && (
-                <>
+            </div>
+
+            {/* Botões de envio - aparecem quando orçamento foi aprovado ou rejeitado */}
+            {(quote.status === 'aprovado' || quote.status === 'approved' ||
+              quote.status === 'rejeitado' || quote.status === 'rejected') && (
+                <div className="flex gap-3 w-full sm:w-auto mt-3 sm:mt-0">
                   <button
                     onClick={() => handleSendEmail()}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all"
+                    className="btn-secondary flex items-center gap-2"
                   >
-                    <Send className="w-5 h-5" />
-                    Enviar Email
+                    <Send className="w-4 h-4" />
+                    Email
                   </button>
                   <button
                     onClick={() => handleSendWhatsApp()}
-                    className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-all"
+                    className="btn-success flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2"
                   >
-                    <MessageCircle className="w-5 h-5" />
-                    Enviar WhatsApp
+                    <MessageCircle className="w-4 h-4" />
+                    WhatsApp
                   </button>
-                </>
+                </div>
               )}
-            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Coluna Principal */}
+            {/* Detalhes do Orçamento */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Itens */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-4 border-b border-amber-100">
-                  <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                    <Package className="w-5 h-5 text-amber-600" />
-                    Itens do Orçamento ({items.length})
-                  </h2>
+              {/* Descrição */}
+              {quote.description && (
+                <div className="card p-6">
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-zinc-400" /> Descrição
+                  </h3>
+                  <p className="text-zinc-300 whitespace-pre-wrap leading-relaxed">{quote.description}</p>
                 </div>
-                <div className="divide-y divide-gray-100">
-                  {items.map((item, index) => (
-                    <div key={item.id} className="p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-bold text-amber-600">#{index + 1}</span>
-                            <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
-                              {getItemTypeLabel(item.item_type)}
-                            </span>
-                          </div>
-                          <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                          {item.description && (
-                            <p className="text-sm text-gray-500 mt-1">{item.description}</p>
-                          )}
-                          <p className="text-sm text-gray-500 mt-2">
-                            {item.quantity}x {formatCurrency(item.unit_price)}
-                          </p>
+              )}
+
+              {/* Itens */}
+              <div className="card p-6">
+                <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                  <Package className="w-5 h-5 text-zinc-400" /> Itens do Orçamento
+                </h3>
+
+                <div className="space-y-4">
+                  {items.map((item) => (
+                    <div key={item.id} className="p-4 rounded-xl border border-white/5 bg-surface-light">
+                      <div className="flex justify-between items-start gap-4 mb-2">
+                        <div>
+                          <h4 className="font-semibold text-white">{item.name}</h4>
+                          <span className="text-xs text-zinc-500 uppercase tracking-wider">{getItemTypeLabel(item.item_type)}</span>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-emerald-600">
-                            {formatCurrency(item.total)}
-                          </p>
-                        </div>
+                        <p className="font-bold text-white">{formatCurrency(item.total)}</p>
+                      </div>
+
+                      {item.description && (
+                        <p className="text-sm text-zinc-400 mb-3">{item.description}</p>
+                      )}
+
+                      <div className="flex items-center gap-4 text-sm text-zinc-500 pt-3 border-t border-white/5">
+                        <span>Qtd: {item.quantity}</span>
+                        <span>Unit: {formatCurrency(item.unit_price)}</span>
                       </div>
                     </div>
                   ))}
+
+                  {items.length === 0 && (
+                    <p className="text-zinc-500 text-center py-4">Nenhum item listado.</p>
+                  )}
+                </div>
+
+                {/* Totais */}
+                <div className="mt-8 pt-6 border-t border-white/10 space-y-3">
+                  <div className="flex justify-between text-zinc-400">
+                    <span>Subtotal</span>
+                    <span>{formatCurrency(quote.subtotal)}</span>
+                  </div>
+
+                  {quote.discount > 0 && (
+                    <div className="flex justify-between text-success-400">
+                      <span>Desconto</span>
+                      <span>- {formatCurrency(quote.discount)}</span>
+                    </div>
+                  )}
+
+                  {quote.tax > 0 && (
+                    <div className="flex justify-between text-danger-400">
+                      <span>Impostos</span>
+                      <span>+ {formatCurrency(quote.tax)}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center pt-4 border-t border-white/10">
+                    <span className="text-lg font-bold text-white">Total</span>
+                    <span className="text-2xl font-bold text-accent-400">{formatCurrency(quote.total)}</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Observações */}
-              {quote.notes && (
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                  <h2 className="text-lg font-bold text-gray-900 mb-4">📝 Observações</h2>
-                  <p className="text-gray-600 whitespace-pre-wrap">{quote.notes}</p>
-                </div>
-              )}
-
-              {/* Termos */}
-              {quote.terms && (
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                  <h2 className="text-lg font-bold text-gray-900 mb-4">📜 Termos e Condições</h2>
-                  <p className="text-gray-500 text-sm whitespace-pre-wrap">{quote.terms}</p>
-                </div>
-              )}
-
-              {/* Motivo da Rejeição */}
-              {(quote.status === 'rejeitado' || quote.status === 'rejected') && quote.rejection_reason && (
-                <div className="bg-red-50 rounded-2xl border border-red-200 p-6">
-                  <h2 className="text-lg font-bold text-red-800 mb-4">❌ Motivo da Rejeição</h2>
-                  <p className="text-red-700">{quote.rejection_reason}</p>
+              {/* Termos e Notas */}
+              {(quote.terms || quote.notes) && (
+                <div className="card p-6 space-y-6">
+                  {quote.terms && (
+                    <div>
+                      <h3 className="font-bold text-white mb-2 text-sm uppercase tracking-wider text-zinc-500">Termos e Condições</h3>
+                      <p className="text-zinc-400 text-sm">{quote.terms}</p>
+                    </div>
+                  )}
+                  {quote.notes && (
+                    <div>
+                      <h3 className="font-bold text-white mb-2 text-sm uppercase tracking-wider text-zinc-500">Observações</h3>
+                      <p className="text-zinc-400 text-sm">{quote.notes}</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Valor Total */}
-              <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-lg p-6 text-white">
-                <p className="text-amber-100 text-sm mb-1">Valor Total</p>
-                <p className="text-3xl font-bold">{formatCurrency(quote.total)}</p>
-                
-                <div className="mt-4 pt-4 border-t border-white/20 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-amber-100">Subtotal:</span>
-                    <span>{formatCurrency(quote.subtotal)}</span>
+              {/* Status Info */}
+              <div className="card p-6">
+                <h3 className="font-bold text-white mb-4">Informações</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-surface-light flex items-center justify-center text-zinc-400 border border-white/5">
+                      <Calendar className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-500">Emitido em</p>
+                      <p className="text-white font-medium">{formatDate(quote.created_at)}</p>
+                    </div>
                   </div>
-                  {quote.discount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-amber-100">
-                        Desconto {quote.discount_type === 'percentage' ? `(${quote.discount}%)` : ''}:
-                      </span>
-                      <span>- {formatCurrency(quote.discount_type === 'percentage' ? quote.subtotal * (quote.discount / 100) : quote.discount)}</span>
-                    </div>
-                  )}
-                  {quote.tax > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-amber-100">Taxa:</span>
-                      <span>+ {formatCurrency(quote.tax)}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Validade */}
-              <div className={`rounded-2xl shadow-lg p-6 ${expired ? 'bg-red-50 border border-red-200' : 'bg-amber-50 border border-amber-200'}`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className={`w-5 h-5 ${expired ? 'text-red-600' : 'text-amber-600'}`} />
-                  <span className={`font-semibold ${expired ? 'text-red-800' : 'text-amber-800'}`}>
-                    Validade
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-surface-light flex items-center justify-center text-zinc-400 border border-white/5">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-500">Válido até</p>
+                      <p className="text-white font-medium">{formatDate(quote.valid_until)}</p>
+                    </div>
+                  </div>
+
+                  {quote.status === 'aprovado' && quote.approved_at && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-success-500/10 flex items-center justify-center text-success-400 border border-success-500/20">
+                        <CheckCircle className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-zinc-500">Aprovado em</p>
+                        <p className="text-success-400 font-medium">{formatDate(quote.approved_at)}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {quote.status === 'rejeitado' && quote.rejected_at && (
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-danger-500/10 flex items-center justify-center text-danger-400 border border-danger-500/20">
+                        <XCircle className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-zinc-500">Rejeitado em</p>
+                        <p className="text-danger-400 font-medium">{formatDate(quote.rejected_at)}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {quote.status === 'rejeitado' && quote.rejection_reason && (
+                    <div className="mt-4 p-3 bg-danger-500/10 border border-danger-500/20 rounded-lg">
+                      <p className="text-xs text-danger-300 font-bold mb-1">Motivo da Rejeição:</p>
+                      <p className="text-sm text-danger-200">{quote.rejection_reason}</p>
+                    </div>
+                  )}
                 </div>
-                <p className={`text-2xl font-bold ${expired ? 'text-red-700' : 'text-amber-700'}`}>
-                  {formatDate(quote.valid_until)}
-                </p>
-                {expired && (
-                  <p className="text-sm text-red-600 mt-2">Este orçamento expirou</p>
-                )}
               </div>
 
               {/* Cliente */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <User className="w-5 h-5 text-gray-400" />
-                  Cliente
-                </h3>
-                <div className="space-y-3">
-                  <p className="font-semibold text-gray-900">{quote.clients?.name}</p>
-                  {quote.clients?.cnpj_cpf && (
-                    <p className="text-sm text-gray-500">
-                      <span className="font-medium">CNPJ/CPF:</span> {quote.clients.cnpj_cpf}
-                    </p>
-                  )}
-                  {quote.clients?.address && (
-                    <p className="text-sm text-gray-500 flex items-start gap-2">
-                      <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                      {quote.clients.address}
-                    </p>
+              <div className="card p-6">
+                <h3 className="font-bold text-white mb-4">Dados do Cliente</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <User className="w-4 h-4 text-zinc-500" />
+                    <p className="text-zinc-300">{quote.clients?.name}</p>
+                  </div>
+                  {quote.clients?.email && (
+                    <div className="flex items-center gap-3">
+                      <Mail className="w-4 h-4 text-zinc-500" />
+                      <p className="text-zinc-300 text-sm">{quote.clients.email}</p>
+                    </div>
                   )}
                   {quote.clients?.phone && (
-                    <p className="text-sm text-gray-500 flex items-center gap-2">
-                      <Phone className="w-4 h-4" />
-                      {quote.clients.phone}
-                    </p>
+                    <div className="flex items-center gap-3">
+                      <Phone className="w-4 h-4 text-zinc-500" />
+                      <p className="text-zinc-300 text-sm">{quote.clients.phone}</p>
+                    </div>
                   )}
-                  {quote.clients?.email && (
-                    <p className="text-sm text-gray-500 flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      {quote.clients.email}
-                    </p>
+                  {quote.clients?.address && (
+                    <div className="flex items-start gap-3">
+                      <MapPin className="w-4 h-4 text-zinc-500 mt-1" />
+                      <p className="text-zinc-300 text-sm">{quote.clients.address}</p>
+                    </div>
+                  )}
+                  {quote.clients?.cnpj_cpf && (
+                    <div className="flex items-center gap-3 pt-3 border-t border-white/5 mt-3">
+                      <p className="text-xs text-zinc-500">CNPJ/CPF:</p>
+                      <p className="text-zinc-400 text-sm font-mono">{quote.clients.cnpj_cpf}</p>
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Datas */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <h3 className="font-bold text-gray-900 mb-4">📅 Datas</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Criado em:</span>
-                    <span className="font-medium">{formatDate(quote.created_at)}</span>
+              {/* Emissor */}
+              <div className="card p-6">
+                <h3 className="font-bold text-white mb-4">Emitido por</h3>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-surface-light border border-white/10 flex items-center justify-center">
+                    <User className="w-5 h-5 text-zinc-400" />
                   </div>
-                  {quote.approved_at && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Aprovado em:</span>
-                      <span className="font-medium text-emerald-600">{formatDate(quote.approved_at)}</span>
-                    </div>
-                  )}
-                  {quote.rejected_at && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Rejeitado em:</span>
-                      <span className="font-medium text-red-600">{formatDate(quote.rejected_at)}</span>
-                    </div>
-                  )}
+                  <div>
+                    <p className="text-white font-medium">{quote.profiles?.full_name || 'Equipe'}</p>
+                    <p className="text-xs text-zinc-500">Técnico Responsável</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -973,37 +1006,48 @@ export default function QuoteDetailsPage() {
 
         {/* Modal de Rejeição */}
         {showRejectModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
-              <div className="bg-red-600 p-6 rounded-t-2xl">
-                <h2 className="text-xl font-bold text-white">Rejeitar Orçamento</h2>
-                <p className="text-red-100 mt-1">Informe o motivo da rejeição (opcional)</p>
+          <div className="modal-overlay" onClick={() => setShowRejectModal(false)}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 bg-gradient-to-br from-danger-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-danger-500/20">
+                  <XCircle className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">Rejeitar Orçamento</h2>
+                  <p className="text-sm text-zinc-400">Por favor, informe o motivo</p>
+                </div>
               </div>
-              <div className="p-6">
-                <textarea
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder="Ex: Valor acima do orçamento disponível..."
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all resize-none"
-                  rows={4}
-                />
-                <div className="flex gap-3 mt-6">
+
+              <div className="space-y-4">
+                <div>
+                  <label className="form-label">Motivo da Rejeição *</label>
+                  <textarea
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    placeholder="Descreva o motivo da rejeição (preço, prazo, etc)..."
+                    className="form-textarea"
+                    rows={4}
+                    autoFocus
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
                   <button
                     onClick={() => {
                       setShowRejectModal(false)
                       setRejectReason('')
                     }}
                     disabled={actionLoading}
-                    className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all disabled:opacity-50"
+                    className="btn-secondary flex-1"
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={handleReject}
-                    disabled={actionLoading}
-                    className="flex-1 px-6 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-all disabled:opacity-50"
+                    disabled={actionLoading || !rejectReason.trim()}
+                    className="btn-danger flex-1"
                   >
-                    {actionLoading ? 'Rejeitando...' : 'Confirmar Rejeição'}
+                    {actionLoading ? 'Processando...' : 'Confirmar Rejeição'}
                   </button>
                 </div>
               </div>
