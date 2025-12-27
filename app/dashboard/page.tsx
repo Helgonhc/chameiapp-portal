@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({
     totalOrders: 0, pendingOrders: 0, completedOrders: 0, inProgressOrders: 0,
     totalQuotes: 0, pendingQuotes: 0, approvedQuotes: 0, ordersThisWeek: 0, ordersThisMonth: 0,
+    totalSpent: 0,
   })
 
   useEffect(() => { checkAuth() }, [])
@@ -45,20 +46,33 @@ export default function DashboardPage() {
       const { data: { user } } = await supabase.auth.getUser(); if (!user) return
       const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single()
       if (!profile?.client_id) return
-      const [ordersData, quotesData] = await Promise.all([
+      const [ordersResponse, quotesResponse] = await Promise.all([
         supabase.from('service_orders').select('status, created_at').eq('client_id', profile.client_id),
-        supabase.from('quotes').select('status').eq('client_id', profile.client_id)
+        supabase.from('quotes').select('status, total').eq('client_id', profile.client_id)
       ])
-      const orders = ordersData.data || []
-      const quotes = quotesData.data || []
+
+      const orders = ordersResponse.data || []
+      const quotes = quotesResponse.data || []
+
       const now = new Date()
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+
+      const totalSpent = quotes
+        .filter((q: any) => q.status === 'approved' || q.status === 'converted' || q.status === 'completed')
+        .reduce((acc: number, q: any) => acc + (Number(q.total) || 0), 0)
+
       setStats({
-        totalOrders: orders.length, pendingOrders: orders.filter(o => o.status === 'pending').length,
-        completedOrders: orders.filter(o => o.status === 'completed').length, inProgressOrders: orders.filter(o => o.status === 'in_progress').length,
-        totalQuotes: quotes.length, pendingQuotes: quotes.filter(q => q.status === 'pending').length, approvedQuotes: quotes.filter(q => q.status === 'approved').length,
-        ordersThisWeek: orders.filter((o: any) => new Date(o.created_at) >= weekAgo).length, ordersThisMonth: orders.filter((o: any) => new Date(o.created_at) >= monthAgo).length,
+        totalOrders: orders.length,
+        pendingOrders: orders.filter(o => o.status === 'pending').length,
+        completedOrders: orders.filter(o => o.status === 'completed').length,
+        inProgressOrders: orders.filter(o => o.status === 'in_progress').length,
+        totalQuotes: quotes.length,
+        pendingQuotes: quotes.filter(q => q.status === 'pending').length,
+        approvedQuotes: quotes.filter(q => q.status === 'approved').length,
+        ordersThisWeek: orders.filter((o: any) => new Date(o.created_at) >= weekAgo).length,
+        ordersThisMonth: orders.filter((o: any) => new Date(o.created_at) >= monthAgo).length,
+        totalSpent
       })
     } catch (error) { console.error('Erro:', error) }
     finally { setLoading(false) }
@@ -95,7 +109,7 @@ export default function DashboardPage() {
             if (daysUntil < 0) urgency = 'vencido'
             else if (daysUntil <= 7) urgency = 'urgente'
             else if (daysUntil <= 30) urgency = 'proximo'
-            
+
             if (urgency !== 'futuro' || daysUntil <= 60) {
               alerts.push({
                 id: c.id, title: c.title, maintenance_type_name: c.maintenance_types?.name || 'Manutenção',
@@ -126,7 +140,7 @@ export default function DashboardPage() {
             if (daysUntil < 0) urgency = 'vencido'
             else if (daysUntil <= 7) urgency = 'urgente'
             else if (daysUntil <= 30) urgency = 'proximo'
-            
+
             if (urgency !== 'futuro' || daysUntil <= 60) {
               alerts.push({
                 id: eq.id, title: `Manutenção: ${eq.name}`, maintenance_type_name: eq.type || 'Equipamento',
@@ -177,6 +191,7 @@ export default function DashboardPage() {
     { title: 'Orçamentos', value: stats.totalQuotes, icon: DollarSign, gradient: 'from-accent-500 to-accent-600', glow: 'shadow-accent-500/20' },
     { title: 'Aguardando', value: stats.pendingQuotes, icon: TrendingUp, gradient: 'from-purple-500 to-purple-600', glow: 'shadow-purple-500/20' },
     { title: 'Aprovados', value: stats.approvedQuotes, icon: CheckCircle, gradient: 'from-success-500 to-success-600', glow: 'shadow-success-500/20' },
+    { title: 'Total Investido', value: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.totalSpent), icon: DollarSign, gradient: 'from-emerald-500 to-emerald-600', glow: 'shadow-emerald-500/20' },
   ]
 
   return (
@@ -230,10 +245,10 @@ export default function DashboardPage() {
                         </div>
                         <div className="text-right">
                           <p className={`text-sm font-bold ${style.text}`}>
-                            {alert.days_until < 0 
-                              ? `${Math.abs(alert.days_until)} dias atrasado` 
-                              : alert.days_until === 0 
-                                ? 'Hoje!' 
+                            {alert.days_until < 0
+                              ? `${Math.abs(alert.days_until)} dias atrasado`
+                              : alert.days_until === 0
+                                ? 'Hoje!'
                                 : `Em ${alert.days_until} dias`}
                           </p>
                           <p className="text-xs text-zinc-500 flex items-center gap-1 justify-end">

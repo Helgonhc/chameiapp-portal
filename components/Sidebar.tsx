@@ -26,6 +26,7 @@ export default function Sidebar({ clientData, userData, unreadNotifications = 0,
     { icon: Ticket, label: 'Meus Chamados', path: '/tickets', badge: null },
     { icon: MessageCircle, label: 'Chat Suporte', path: '/chat', badge: null },
     { icon: DollarSign, label: 'Orçamentos', path: '/quotes', badge: pendingQuotes > 0 ? pendingQuotes : null },
+    { icon: FileText, label: 'Relatórios', path: '/reports', badge: null },
     { icon: Bell, label: 'Notificações', path: '/notifications', badge: unreadNotifications > 0 ? unreadNotifications : null },
     { icon: User, label: 'Meu Perfil', path: '/profile', badge: null },
   ]
@@ -102,9 +103,9 @@ export default function Sidebar({ clientData, userData, unreadNotifications = 0,
             <div className="flex items-center gap-3">
               <div className="relative">
                 {userData?.avatar_url ? (
-                  <img 
-                    src={userData.avatar_url} 
-                    alt={userData.full_name || 'Avatar'} 
+                  <img
+                    src={userData.avatar_url}
+                    alt={userData.full_name || 'Avatar'}
                     className="w-12 h-12 rounded-xl object-cover ring-2 ring-primary-500/50"
                   />
                 ) : (
@@ -138,7 +139,7 @@ export default function Sidebar({ clientData, userData, unreadNotifications = 0,
             {menuItems.map((item) => {
               const Icon = item.icon
               const active = isActive(item.path)
-              
+
               return (
                 <li key={item.path}>
                   <button
@@ -157,8 +158,8 @@ export default function Sidebar({ clientData, userData, unreadNotifications = 0,
                   >
                     <div className={`
                       p-2 rounded-lg transition-all duration-200
-                      ${active 
-                        ? 'bg-primary-500/20 text-primary-400' 
+                      ${active
+                        ? 'bg-primary-500/20 text-primary-400'
                         : 'bg-white/5 text-zinc-500 group-hover:bg-white/10 group-hover:text-zinc-300'
                       }
                     `}>
@@ -193,7 +194,7 @@ export default function Sidebar({ clientData, userData, unreadNotifications = 0,
             </div>
             <span className="text-sm font-medium">Sair da Conta</span>
           </button>
-          
+
           <div className="mt-4 pt-4 border-t border-white/5 text-center">
             <p className="text-[10px] text-zinc-600">
               Powered by <span className="font-bold bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent">ChameiApp</span>

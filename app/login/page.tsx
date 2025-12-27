@@ -33,30 +33,15 @@ export default function LoginPage() {
   }, []);
 
   async function loadClientBranding() {
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('name, company_name, client_logo_url, primary_color, portal_welcome_message')
-        .eq('is_active', true)
-        .eq('portal_enabled', true)
-        .limit(1)
-        .single();
-      if (error) {
-        setBranding({
-          name: process.env.NEXT_PUBLIC_CLIENT_NAME || 'Portal do Cliente',
-          company_name: process.env.NEXT_PUBLIC_CLIENT_NAME || 'Portal do Cliente',
-          client_logo_url: `/logos/${process.env.NEXT_PUBLIC_CLIENT_LOGO || 'client-logo.png'}`,
-          primary_color: `#${process.env.NEXT_PUBLIC_CLIENT_COLOR || '6366f1'}`,
-          portal_welcome_message: null,
-        });
-      } else {
-        setBranding(data);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar branding:', error);
-    } finally {
-      setLoadingBranding(false);
-    }
+    // Definindo branding fixo da AEC Serviços Especializados
+    setBranding({
+      name: 'AeC Serviços Especializados',
+      company_name: 'AeC Serviços Especializados',
+      client_logo_url: null, // Usará o ícone padrão se for null
+      primary_color: '#0ea5e9', // Cor primária (sky-500)
+      portal_welcome_message: 'Bem-vindo ao Portal do Cliente',
+    });
+    setLoadingBranding(false);
   }
 
   async function handleLogin(e: React.FormEvent) {

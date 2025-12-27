@@ -22,13 +22,53 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    loadNotifications()
-    
-    // Atualizar a cada 30 segundos
-    const interval = setInterval(loadNotifications, 30000)
-    
-    return () => clearInterval(interval)
-  }, [])
+    let channel: any;
+
+    async function setupRealtime() {
+      await loadNotifications();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      channel = supabase
+        .channel(`notifications:${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log('Nova notificação:', payload);
+            const newNotification = payload.new as any;
+
+            const mappedNotification: Notification = {
+              id: newNotification.id,
+              title: newNotification.title || 'Notificação',
+              message: newNotification.body || newNotification.message || '',
+              type: getNotificationType(newNotification.type || 'system'),
+              read: false,
+              created_at: newNotification.created_at,
+              link: getNotificationLink(newNotification),
+            };
+
+            setNotifications((prev) => [mappedNotification, ...prev]);
+
+            // Tocar som suave se desejar
+            // const audio = new Audio('/notification.mp3');
+            // audio.play().catch(e => console.log('Audio autoplay blocked'));
+          }
+        )
+        .subscribe();
+    }
+
+    setupRealtime();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, []);
 
   async function loadNotifications() {
     try {
@@ -47,7 +87,7 @@ export default function NotificationBell() {
         console.error('Erro na query:', error)
         throw error
       }
-      
+
       // Mapear notificações - usar is_read (não read) e body/message
       const mappedNotifications: Notification[] = (data || []).map(n => ({
         id: n.id,
@@ -76,7 +116,7 @@ export default function NotificationBell() {
   function getNotificationLink(notification: any): string | undefined {
     const refId = notification.reference_id || notification.data?.reference_id
     const type = notification.type || ''
-    
+
     // Baseado no tipo
     if (type.includes('quote') || type.includes('orcamento')) {
       return refId ? `/quotes/${refId}` : '/quotes'
@@ -90,12 +130,12 @@ export default function NotificationBell() {
     if (type.includes('appointment') || type.includes('agendamento')) {
       return '/appointments'
     }
-    
+
     // Fallback para campos específicos
     if (notification.service_order_id) return `/orders/${notification.service_order_id}`
     if (notification.quote_id) return `/quotes/${notification.quote_id}`
     if (notification.ticket_id) return `/tickets`
-    
+
     return undefined
   }
 
@@ -165,13 +205,13 @@ export default function NotificationBell() {
 
     if (diffInMinutes < 1) return 'Agora'
     if (diffInMinutes < 60) return `${diffInMinutes}m atrás`
-    
+
     const diffInHours = Math.floor(diffInMinutes / 60)
     if (diffInHours < 24) return `${diffInHours}h atrás`
-    
+
     const diffInDays = Math.floor(diffInHours / 24)
     if (diffInDays < 7) return `${diffInDays}d atrás`
-    
+
     return notificationDate.toLocaleDateString('pt-BR')
   }
 
@@ -243,9 +283,8 @@ export default function NotificationBell() {
                     <button
                       key={notification.id}
                       onClick={() => handleNotificationClick(notification)}
-                      className={`w-full p-4 text-left hover:bg-slate-50 transition-all ${
-                        !notification.read ? 'bg-blue-50/50' : ''
-                      }`}
+                      className={`w-full p-4 text-left hover:bg-slate-50 transition-all ${!notification.read ? 'bg-blue-50/50' : ''
+                        }`}
                     >
                       <div className="flex gap-3">
                         <div className="flex-shrink-0 mt-1">
