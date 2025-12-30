@@ -122,7 +122,7 @@ export default function NotificationBell() {
       return refId ? `/quotes/${refId}` : '/quotes'
     }
     if (type.includes('order') || type.includes('service')) {
-      return refId ? `/orders/${refId}` : '/orders'
+      return refId ? `/service-orders/${refId}` : `/service-orders`
     }
     if (type.includes('ticket') || type.includes('chamado')) {
       return refId ? `/tickets/${refId}` : '/tickets'
@@ -132,7 +132,7 @@ export default function NotificationBell() {
     }
 
     // Fallback para campos específicos
-    if (notification.service_order_id) return `/orders/${notification.service_order_id}`
+    if (notification.service_order_id) return `/service-orders/${notification.service_order_id}`
     if (notification.quote_id) return `/quotes/${notification.quote_id}`
     if (notification.ticket_id) return `/tickets`
 
