@@ -552,3 +552,71 @@ body {
 .bg-background {
   background-color: #0f0f23;
 }
+
+
+/* ========================================
+   HTML5 QR CODE SCANNER CUSTOM STYLES
+   ======================================== */
+
+#reader {
+  border: none !important;
+}
+
+#reader__dashboard_section_csr span,
+#reader__dashboard_section_swaplink {
+  display: none !important;
+}
+
+#reader select {
+  appearance: none;
+  background-color: #252542;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  margin-bottom: 1rem;
+  outline: none;
+  font-size: 0.875rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a1a1aa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem;
+}
+
+#reader button {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+#reader button:hover {
+  background-color: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: #818cf8;
+}
+
+#reader__status_span {
+  display: block;
+  margin-top: 1rem;
+  color: #a1a1aa;
+  font-size: 0.875rem;
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  border: none !important;
+}
+
+/* Hide the 'Scan using file' option if undesirable, or style it */
+#reader__dashboard_section_swaplink {
+  text-decoration: none;
+  color: #818cf8;
+  font-size: 0.875rem;
+  margin-top: 1rem;
+  display: block !important;
+  text-align: center;
+}
