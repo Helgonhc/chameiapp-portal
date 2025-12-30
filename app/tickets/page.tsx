@@ -192,12 +192,7 @@ export default function TicketsPage() {
           equipment_id: equipmentId
         }).select('id, ticket_number').single()
         if (insertError) throw insertError
-        const { data: clientData } = await supabase.from('clients').select('name').eq('id', profile.client_id).single()
-        const { data: allUsers } = await supabase.from('profiles').select('id').in('role', ['admin', 'super_admin', 'technician']).eq('is_active', true)
-        if (allUsers && allUsers.length > 0) {
-          const notifications = allUsers.map(u => ({ user_id: u.id, title: '🎫 Novo Chamado Aberto', message: `Cliente: ${clientData?.name || 'N/A'} - ${title.trim()}`, type: 'ticket', reference_id: newTicket?.id, is_read: false }))
-          await supabase.from('notifications').insert(notifications)
-        }
+        // Notificações são criadas automaticamente pelo trigger do banco
       }
       setShowModal(false); setEditingTicket(null); setTitle(''); setDescription(''); setPriority('media'); setSelectedFiles([]); setPreviewUrls([]); loadTickets()
     } catch (error: any) { setError(error.message || 'Erro ao salvar chamado') }
