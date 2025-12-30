@@ -61,7 +61,7 @@ export default function TicketsPage() {
       setEquipmentId(eqId)
       setShowModal(true)
       // Limpar o parâmetro da URL sem recarregar
-      router.replace('/dashboard/tickets')
+      router.replace('/tickets')
     }
   }, [searchParams])
 
