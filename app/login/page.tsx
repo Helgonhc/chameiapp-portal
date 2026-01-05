@@ -133,7 +133,7 @@ export default function LoginPage() {
 
             <div className="space-y-8">
               <h3 className="text-4xl font-bold leading-tight">
-                Toda a gestão técnica da sua empresa em <span className="text-indigo-400">suas mãos.</span>
+                Controle total e inteligência para <span className="text-indigo-400">sua operação.</span>
               </h3>
 
               <div className="space-y-6">
