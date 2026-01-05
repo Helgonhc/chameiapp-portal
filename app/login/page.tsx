@@ -102,11 +102,17 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex bg-[#0f172a]">
       {/* Lado Esquerdo - Intro da Plataforma (Oculto em Mobile) */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-indigo-950">
-        <div className="absolute inset-0 opacity-40 bg-[url('/auth-bg.png')] bg-cover bg-center mix-blend-overlay" />
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 via-[#0f172a]/90 to-[#0f172a]" />
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#0f172a]">
+        <img
+          src="/auth-bg.png"
+          alt="Eletricom OS Client"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        {/* Overlay para unificar com a marca - Combinando estilos do Admin */}
+        <div className="absolute inset-0 bg-indigo-900/50 mix-blend-multiply" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#0f172a]/40 to-[#0f172a]" />
 
-        {/* Animated Background Blobs */}
+        {/* Adicionando brilho extra (blobs) como no Admin */}
         <div className="absolute top-1/4 -left-20 w-80 h-80 bg-blue-500/20 rounded-full blur-[100px] animate-pulse" />
         <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-indigo-500/20 rounded-full blur-[100px] animate-pulse delay-700" />
 

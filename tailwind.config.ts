@@ -85,7 +85,7 @@ const config: Config = {
           900: '#18181b',
           950: '#09090b',
         },
-        background: '#0f0f23',
+        background: '#0f172a',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

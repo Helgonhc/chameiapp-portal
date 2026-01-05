@@ -49,7 +49,7 @@ export default function Sidebar({ clientData, userData, unreadNotifications = 0,
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-white/10"
-        style={{ backgroundColor: '#1a1a2e' }}
+        style={{ backgroundColor: '#0f172a' }}
       >
         {isOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
       </button>
