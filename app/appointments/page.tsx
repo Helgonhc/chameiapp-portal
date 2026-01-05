@@ -31,6 +31,11 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(true)
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [filter, setFilter] = useState<'all' | 'pending' | 'confirmed'>('all')
+  const [rescheduleModal, setRescheduleModal] = useState(false)
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
+  const [newDate, setNewDate] = useState('')
+  const [newTime, setNewTime] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     checkAuth()
@@ -107,13 +112,13 @@ export default function AppointmentsPage() {
 
   async function handleCancelAppointment(id: string) {
     if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return
-    
+
     try {
       const { error } = await supabase
         .from('appointment_requests')
         .update({ status: 'cancelado', cancellation_reason: 'Cancelado pelo cliente' })
         .eq('id', id)
-      
+
       if (error) throw error
       loadAppointments()
     } catch (error) {
@@ -124,13 +129,13 @@ export default function AppointmentsPage() {
 
   async function handleDeleteAppointment(id: string) {
     if (!confirm('Tem certeza que deseja EXCLUIR este agendamento? Esta ação não pode ser desfeita.')) return
-    
+
     try {
       const { error } = await supabase
         .from('appointment_requests')
         .delete()
         .eq('id', id)
-      
+
       if (error) throw error
       loadAppointments()
     } catch (error) {
@@ -139,11 +144,63 @@ export default function AppointmentsPage() {
     }
   }
 
-  const filteredAppointments = filter === 'all' 
-    ? appointments 
+  async function handleConfirmAppointment(id: string) {
+    if (!confirm('Deseja confirmar este agendamento para a data proposta?')) return
+
+    try {
+      const { error } = await supabase
+        .from('appointment_requests')
+        .update({ status: 'confirmed' })
+        .eq('id', id)
+
+      if (error) throw error
+      alert('Agendamento confirmado com sucesso!')
+      loadAppointments()
+    } catch (error) {
+      console.error('Erro ao confirmar:', error)
+      alert('Erro ao confirmar agendamento')
+    }
+  }
+
+  function handleReschedule(appointment: Appointment) {
+    setSelectedAppointment(appointment)
+    setNewDate(appointment.requested_date)
+    setNewTime(appointment.requested_time_start)
+    setRescheduleModal(true)
+  }
+
+  async function submitReschedule() {
+    if (!selectedAppointment || !newDate || !newTime) return
+    setSubmitting(true)
+
+    try {
+      const { error } = await supabase
+        .from('appointment_requests')
+        .update({
+          requested_date: newDate,
+          requested_time_start: newTime,
+          status: 'pending',
+          technician_notes: `Solicitado reagendamento pelo cliente para ${newDate} às ${newTime}`
+        })
+        .eq('id', selectedAppointment.id)
+
+      if (error) throw error
+      alert('Solicitação de reagendamento enviada!')
+      setRescheduleModal(false)
+      loadAppointments()
+    } catch (error) {
+      console.error('Erro ao reagendar:', error)
+      alert('Erro ao enviar solicitação de reagendamento')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const filteredAppointments = filter === 'all'
+    ? appointments
     : filter === 'pending'
-    ? appointments.filter(a => a.status === 'pending' || a.status === 'pendente')
-    : appointments.filter(a => a.status === 'confirmed' || a.status === 'confirmado')
+      ? appointments.filter(a => a.status === 'pending' || a.status === 'pendente')
+      : appointments.filter(a => a.status === 'confirmed' || a.status === 'confirmado')
 
   if (loading) {
     return (
@@ -216,8 +273,8 @@ export default function AppointmentsPage() {
                   Nenhum agendamento encontrado
                 </p>
                 <p className="text-zinc-500 mb-6">
-                  {filter === 'all' 
-                    ? 'Crie seu primeiro agendamento' 
+                  {filter === 'all'
+                    ? 'Crie seu primeiro agendamento'
                     : 'Nenhum agendamento com este status'}
                 </p>
                 <button
@@ -299,7 +356,6 @@ export default function AppointmentsPage() {
                     </div>
                   )}
 
-                  {/* Actions */}
                   <div className="flex flex-wrap gap-2 pt-4 border-t border-white/5">
                     {(appointment.status === 'pendente' || appointment.status === 'pending') && (
                       <button
@@ -310,16 +366,35 @@ export default function AppointmentsPage() {
                         Cancelar
                       </button>
                     )}
-                    
-                    {(appointment.status === 'cancelado' || appointment.status === 'cancelled' || 
-                      appointment.status === 'concluido' || appointment.status === 'completed') && (
-                      <button
-                        onClick={() => handleDeleteAppointment(appointment.id)}
-                        className="px-4 py-2 bg-white/5 text-zinc-400 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-2 border border-white/10"
-                      >
-                        🗑️ Excluir
-                      </button>
+
+                    {(appointment.status === 'pendente' || appointment.status === 'pending') && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleConfirmAppointment(appointment.id)}
+                          className="px-4 py-2 bg-success-500/10 text-success-400 rounded-lg text-sm font-medium hover:bg-success-500/20 transition-colors flex items-center gap-2 border border-success-500/20"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          Confirmar
+                        </button>
+                        <button
+                          onClick={() => handleReschedule(appointment)}
+                          className="px-4 py-2 bg-primary-500/10 text-primary-400 rounded-lg text-sm font-medium hover:bg-primary-500/20 transition-colors flex items-center gap-2 border border-primary-500/20"
+                        >
+                          <Clock className="w-4 h-4" />
+                          Reagendar
+                        </button>
+                      </div>
                     )}
+
+                    {(appointment.status === 'cancelado' || appointment.status === 'cancelled' ||
+                      appointment.status === 'concluido' || appointment.status === 'completed') && (
+                        <button
+                          onClick={() => handleDeleteAppointment(appointment.id)}
+                          className="px-4 py-2 bg-white/5 text-zinc-400 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-2 border border-white/10"
+                        >
+                          🗑️ Excluir
+                        </button>
+                      )}
                   </div>
                 </div>
               ))
@@ -327,6 +402,71 @@ export default function AppointmentsPage() {
           </div>
         </div>
       </div>
+
+      {/* Reschedule Modal */}
+      {rescheduleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-white/5">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Clock className="text-primary-400" />
+                Reagendar Atendimento
+              </h3>
+              <p className="text-zinc-400 text-sm mt-1">
+                Sugira uma nova data e horário para este serviço.
+              </p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Nova Data</label>
+                <input
+                  type="date"
+                  value={newDate}
+                  onChange={(e) => setNewDate(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50"
+                  min={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Novo Horário</label>
+                <input
+                  type="time"
+                  value={newTime}
+                  onChange={(e) => setNewTime(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50"
+                />
+              </div>
+
+              <div className="p-3 rounded-xl bg-primary-500/5 border border-primary-500/10">
+                <p className="text-xs text-primary-400">
+                  <Sparkles className="w-3 h-3 inline mr-1" />
+                  Sua solicitação será enviada para nossa equipe técnica para validação.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 bg-black/20 flex gap-3">
+              <button
+                onClick={() => setRescheduleModal(false)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-white font-medium hover:bg-white/5 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={submitReschedule}
+                disabled={submitting || !newDate || !newTime}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-primary-500 text-white font-bold hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {submitting ? (
+                  <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                ) : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   )
 }
