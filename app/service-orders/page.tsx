@@ -137,21 +137,21 @@ export default function ServiceOrdersPage() {
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Ordens de Serviço</h1>
-            <p className="text-gray-500">{orders.length} ordens registradas no total</p>
+            <p className="text-gray-500 text-responsive">{orders.length} ordens registradas no total</p>
           </div>
-          <button onClick={() => router.push('/new-order')} className="btn btn-primary self-start sm:self-center shadow-lg shadow-indigo-200">
-            <Plus className="w-5 h-5" />
+          <button onClick={() => router.push('/new-order')} className="btn btn-primary self-start sm:self-center shadow-lg shadow-indigo-200 text-sm">
+            <Plus className="w-4 h-4" />
             <span>Nova Ordem</span>
           </button>
         </div>
 
         {/* Filters */}
-        <div className="mb-6">
+        <div className="mb-6 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
           <AdvancedSearch type="orders" onSearch={handleSearch} onClear={handleClearSearch} />
         </div>
 
         {/* Tabs */}
-        <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200 pb-1">
+        <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200 pb-1 overflow-x-auto flex-nowrap sm:flex-wrap scrollbar-hide">
           {[
             { key: 'all', label: 'Todas', count: orders.length },
             { key: 'pending', label: 'Pendentes', count: orders.filter(o => o.status === 'pending' || o.status === 'pendente').length },

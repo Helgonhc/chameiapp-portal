@@ -269,14 +269,13 @@ export default function DashboardPage() {
           })}
         </div>
 
-        {/* Charts & Quick Actions */}
-        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Chart 1: Distribution */}
-          <div className="card lg:col-span-1">
+          <div className="card lg:col-span-1 min-h-[350px]">
             <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-gray-400" /> Ordens de Serviço
             </h3>
-            <div className="h-64 flex items-center justify-center">
+            <div className="h-64 flex items-center justify-center relative">
               {stats.totalOrders > 0 ? (
                 <Doughnut
                   data={{
@@ -292,11 +291,11 @@ export default function DashboardPage() {
           </div>
 
           {/* Chart 2: Activity */}
-          <div className="card lg:col-span-2">
+          <div className="card lg:col-span-2 min-h-[350px]">
             <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-gray-400" /> Volume Recente
             </h3>
-            <div className="h-64">
+            <div className="h-64 relative w-full">
               <Bar
                 data={{ labels: ['Semana', 'Mês', 'Total'], datasets: [{ label: 'Ordens', data: [stats.ordersThisWeek, stats.ordersThisMonth, stats.totalOrders], backgroundColor: ['#6366F1', '#F59E0B', '#10B981'], borderRadius: 6 }] }}
                 options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(0,0,0,0.05)' } }, x: { grid: { display: false } } } }}
