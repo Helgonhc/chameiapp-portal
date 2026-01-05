@@ -1,0 +1,35 @@
+═══════════════════════════════════════════════════════════
+  📸 ONDE COLOCAR AS LOGOS - INSTRUÇÕES RÁPIDAS
+═══════════════════════════════════════════════════════════
+
+1️⃣ CRIE A PASTA:
+   client-portal/public/logos/
+
+2️⃣ ADICIONE 2 ARQUIVOS:
+   
+   📁 client-portal/public/logos/
+   ├── client-logo.png       ← Logo da Aec (empresa cliente)
+   └── chameiapp-logo.png    ← Logo do ChameiApp
+
+3️⃣ FORMATO DAS IMAGENS:
+   ✅ PNG com fundo transparente (recomendado)
+   ✅ JPG ou SVG também funcionam
+   ✅ Tamanho: 200x200px ou maior
+   ✅ Logos quadradas funcionam melhor
+
+4️⃣ NOMES EXATOS (não mude!):
+   - client-logo.png
+   - chameiapp-logo.png
+
+5️⃣ REINICIE O SERVIDOR:
+   cd client-portal
+   npm run dev
+
+═══════════════════════════════════════════════════════════
+
+PRONTO! As logos vão aparecer automaticamente na tela de login!
+
+Se não tiver as logos ainda, o sistema vai mostrar um erro.
+Você pode criar logos temporárias ou usar as que já tem.
+
+═══════════════════════════════════════════════════════════
