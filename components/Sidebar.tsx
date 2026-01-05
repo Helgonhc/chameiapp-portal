@@ -22,7 +22,9 @@ import {
   Zap,
   Wrench,
   Camera,
-  Server
+  Server,
+  History,
+  ClipboardList
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -50,13 +52,15 @@ export default function Sidebar({
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', badge: null },
     { icon: Camera, label: 'Escanear QR', path: 'scanner', badge: null, action: true },
     { icon: FileText, label: 'Ordens de Serviço', path: '/service-orders', badge: null },
+    { icon: ClipboardList, label: 'Solicitações', path: '/quote-requests', badge: null },
+    { icon: DollarSign, label: 'Orçamentos', path: '/quotes', badge: pendingQuotes > 0 ? pendingQuotes : null },
     { icon: Server, label: 'Equipamentos', path: '/equipments', badge: null },
     { icon: Wrench, label: 'Manutenções', path: '/maintenance', badge: null },
+    { icon: History, label: 'Histórico', path: '/history', badge: null },
     { icon: CalendarDays, label: 'Calendário', path: '/calendar', badge: null },
     { icon: Calendar, label: 'Agendamentos', path: '/appointments', badge: null },
     { icon: Ticket, label: 'Meus Chamados', path: '/tickets', badge: null },
     { icon: MessageCircle, label: 'Chat Suporte', path: '/chat', badge: null },
-    { icon: DollarSign, label: 'Orçamentos', path: '/quotes', badge: pendingQuotes > 0 ? pendingQuotes : null },
     { icon: FileText, label: 'Relatórios', path: '/reports', badge: null },
     { icon: Bell, label: 'Notificações', path: '/notifications', badge: unreadNotifications > 0 ? unreadNotifications : null },
   ];
@@ -99,15 +103,15 @@ export default function Sidebar({
         <div className={`${collapsed ? 'p-2' : 'p-6'} bg-gradient-to-br from-indigo-50 via-white to-purple-50 border-b border-indigo-100 transition-all duration-300`}>
           {collapsed ? (
             // Collapsed: Show Logo Icon or Avatar
-            <div className="flex justify-center">
+            <div className="flex justify-center cursor-pointer" onClick={() => router.push('/profile')}>
               {clientData?.client_logo_url || clientData?.logo_url ? (
                 <img
                   src={clientData.client_logo_url || clientData.logo_url}
                   alt="Logo"
-                  className="w-10 h-10 object-contain"
+                  className="w-10 h-10 object-contain hover:scale-110 transition-transform"
                 />
               ) : (
-                <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">
+                <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold hover:bg-indigo-700 transition-colors">
                   {clientData?.name?.charAt(0) || 'C'}
                 </div>
               )}
@@ -116,7 +120,7 @@ export default function Sidebar({
             // Expanded: Full Info
             <div className="text-center animate-fadeIn">
               {/* Logo */}
-              <div className="flex justify-center mb-4">
+              <div className="flex justify-center mb-4 cursor-pointer" onClick={() => router.push('/dashboard')}>
                 {clientData?.client_logo_url || clientData?.logo_url ? (
                   <img
                     src={clientData.client_logo_url || clientData.logo_url}
@@ -139,9 +143,12 @@ export default function Sidebar({
 
               <div className="h-px bg-gradient-to-r from-transparent via-indigo-200 to-transparent my-4"></div>
 
-              {/* User Avatar */}
-              <div className="flex flex-col items-center">
-                <div className="relative mb-2">
+              {/* User Avatar - CLICKABLE */}
+              <div
+                className="flex flex-col items-center cursor-pointer group p-2 rounded-xl hover:bg-indigo-50/50 transition-colors"
+                onClick={() => router.push('/profile')}
+              >
+                <div className="relative mb-2 group-hover:scale-105 transition-transform">
                   {userData?.avatar_url ? (
                     <img
                       src={userData.avatar_url}
@@ -155,9 +162,9 @@ export default function Sidebar({
                   )}
                   <div className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
                 </div>
-                <p className="font-semibold text-gray-900 text-sm">{userData?.full_name}</p>
-                <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full mt-1 border border-indigo-100">
-                  Cliente VIP
+                <p className="font-semibold text-gray-900 text-sm group-hover:text-indigo-600 transition-colors">{userData?.full_name}</p>
+                <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full mt-1 border border-indigo-100 group-hover:bg-indigo-100">
+                  Editar Perfil
                 </span>
               </div>
             </div>
