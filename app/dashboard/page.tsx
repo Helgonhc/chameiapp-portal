@@ -180,7 +180,7 @@ export default function DashboardPage() {
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[60vh] text-center">
           <div className="w-12 h-12 spinner mb-4"></div>
-          <p className="text-gray-500 font-medium">Carregando informações...</p>
+          <p className="text-gray-600 font-medium">Carregando informações...</p>
         </div>
       </DashboardLayout>
     );
@@ -202,7 +202,7 @@ export default function DashboardPage() {
         {/* Header Section */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-800">Dashboard de Controle</h1>
-          <p className="text-gray-500">Visão geral da sua operação em tempo real</p>
+          <p className="text-gray-600">Visão geral da sua operação em tempo real</p>
         </div>
 
         {/* Maintenance Alerts */}
@@ -227,8 +227,8 @@ export default function DashboardPage() {
                           {alert.maintenance_type_name}
                           {alert.urgency === 'vencido' && <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full uppercase tracking-wider">Vencido</span>}
                         </h3>
-                        <p className="text-sm text-gray-600">{alert.title}</p>
-                        {alert.equipment_name && <p className="text-xs text-gray-500 mt-1">Equipamento: {alert.equipment_name}</p>}
+                        <p className="text-sm text-gray-700">{alert.title}</p>
+                        {alert.equipment_name && <p className="text-xs text-gray-600 mt-1">Equipamento: {alert.equipment_name}</p>}
                       </div>
                     </div>
 
@@ -236,7 +236,7 @@ export default function DashboardPage() {
                       <div className="text-sm font-bold text-gray-700">
                         {alert.days_until < 0 ? `${Math.abs(alert.days_until)} dias atrasado` : alert.days_until === 0 ? 'Hoje' : `Em ${alert.days_until} dias`}
                       </div>
-                      <div className="text-xs text-gray-400 flex items-center gap-1">
+                      <div className="text-xs text-gray-500 flex items-center gap-1">
                         <Calendar size={12} />
                         {new Date(alert.next_maintenance_date).toLocaleDateString('pt-BR')}
                       </div>
@@ -266,7 +266,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold text-gray-800">{card.value}</h3>
-                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mt-1">{card.title}</p>
+                  <p className="text-xs text-gray-600 font-medium uppercase tracking-wide mt-1">{card.title}</p>
                 </div>
               </div>
             );
@@ -312,7 +312,7 @@ export default function DashboardPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-gray-400" /> Últimas Atualizações
+              <Clock className="w-5 h-5 text-gray-500" /> Últimas Atualizações
             </h2>
             <button onClick={() => router.push('/service-orders')} className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
               Ver tudo
@@ -336,7 +336,7 @@ export default function DashboardPage() {
                       <tr key={order.id} onClick={() => router.push(`/service-orders/${order.id}`)} className="hover:bg-gray-50 cursor-pointer transition-colors">
                         <td className="px-4 py-3 text-left">
                           <div className="font-bold text-gray-800">{order.title}</div>
-                          <div className="text-xs text-gray-500">#{order.order_number}</div>
+                          <div className="text-xs text-gray-600">#{order.order_number}</div>
                         </td>
                         <td className="px-4 py-3 text-left">
                           <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${order.status === 'completed' ? 'bg-green-100 text-green-700' :

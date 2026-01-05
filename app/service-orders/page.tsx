@@ -7,20 +7,21 @@ import { Wrench, Clock, CheckCircle, XCircle, Calendar, User, Plus, ArrowRight, 
 import DashboardLayout from '@/components/DashboardLayout';
 import AdvancedSearch, { SearchFilters } from '@/components/AdvancedSearch';
 
-id: string;
-order_number: string;
-title: string;
-description: string;
-status: string;
-priority: string;
-created_at: string;
-scheduled_at: string | null;
-completed_at: string | null;
-technician_id: string | null;
-estimated_cost: number | null;
-final_cost: number | null;
-technician ?: { full_name: string };
-equipments ?: { name: string };
+interface ServiceOrder {
+  id: string;
+  order_number: string;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  created_at: string;
+  scheduled_at: string | null;
+  completed_at: string | null;
+  technician_id: string | null;
+  estimated_cost: number | null;
+  final_cost: number | null;
+  technician?: { full_name: string };
+  equipments?: { name: string };
 }
 
 export default function ServiceOrdersPage() {
@@ -137,7 +138,7 @@ export default function ServiceOrdersPage() {
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Ordens de Serviço</h1>
-            <p className="text-gray-500 text-responsive">{orders.length} ordens registradas no total</p>
+            <p className="text-gray-600 text-responsive">{orders.length} ordens registradas no total</p>
           </div>
           <button onClick={() => router.push('/new-order')} className="btn btn-primary self-start sm:self-center shadow-lg shadow-indigo-200 text-sm">
             <Plus className="w-4 h-4" />
@@ -165,11 +166,11 @@ export default function ServiceOrdersPage() {
                 px-4 py-2 rounded-t-lg text-sm font-medium transition-colors relative top-[1px]
                 ${filter === tab.key
                   ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                 }
               `}
             >
-              {tab.label} <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${filter === tab.key ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}`}>{tab.count}</span>
+              {tab.label} <span className={`ml-1 text-xs px-1.5 py-0.5 rounded-full ${filter === tab.key ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'}`}>{tab.count}</span>
             </button>
           ))}
         </div>
@@ -194,7 +195,7 @@ export default function ServiceOrdersPage() {
                 <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="font-mono text-xs text-gray-400 font-medium">#{order.order_number}</span>
+                      <span className="font-mono text-xs text-gray-500 font-medium">#{order.order_number}</span>
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusColor(order.status)}`}>
                         {getStatusLabel(order.status)}
                       </span>
@@ -203,30 +204,30 @@ export default function ServiceOrdersPage() {
                       {order.title}
                     </h3>
                     {order.description && (
-                      <p className="text-gray-500 text-sm line-clamp-2 mb-3">
+                      <p className="text-gray-600 text-sm line-clamp-2 mb-3">
                         {order.description}
                       </p>
                     )}
 
                     {order.equipments?.name && (
                       <div className="mb-3">
-                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded inline-flex items-center gap-1">
+                        <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded inline-flex items-center gap-1">
                           <Wrench size={12} /> {order.equipments.name}
                         </span>
                       </div>
                     )}
 
 
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
                       {order.technician && (
                         <div className="flex items-center gap-1.5">
-                          <User size={14} className="text-gray-400" />
+                          <User size={14} className="text-gray-500" />
                           {order.technician.full_name}
                         </div>
                       )}
                       {order.scheduled_at && (
                         <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-md border border-gray-100">
-                          <Calendar size={14} className="text-gray-400" />
+                          <Calendar size={14} className="text-gray-500" />
                           {new Date(order.scheduled_at).toLocaleDateString('pt-BR')}
                         </div>
                       )}

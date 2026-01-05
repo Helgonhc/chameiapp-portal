@@ -140,7 +140,7 @@ export default function Sidebar({
               <h2 className="font-bold text-gray-800 leading-tight">
                 {clientData?.name || 'Portal do Cliente'}
               </h2>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-600 mt-1">
                 {clientData?.phone || 'Painel de Gestão'}
               </p>
 
@@ -177,7 +177,7 @@ export default function Sidebar({
         {/* Navigation Items */}
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-hide">
           {!collapsed && (
-            <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            <p className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
               Menu Principal
             </p>
           )}
@@ -203,7 +203,7 @@ export default function Sidebar({
                   rounded-xl transition-all duration-200
                   ${active
                     ? 'bg-indigo-50 text-indigo-700 font-medium'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-indigo-600'
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600'
                   }
                 `}
                 title={collapsed ? item.label : undefined}
@@ -217,7 +217,7 @@ export default function Sidebar({
                   size={collapsed ? 24 : 20}
                   className={`
                     transition-all duration-200
-                    ${active ? 'text-indigo-600' : 'text-gray-400 group-hover:text-indigo-500'}
+                    ${active ? 'text-indigo-600' : 'text-gray-500 group-hover:text-indigo-500'}
                   `}
                 />
 
