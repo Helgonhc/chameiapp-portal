@@ -101,7 +101,12 @@ export default function DocumentsPage() {
 
             // Level 2 (Laudo): Years
             if (currentPath.length === 2) {
-                const years = Array.from(new Set(docs.map(d => d.reference_date ? d.reference_date.substring(0, 4) : 'Sem Data')));
+                const currentYear = new Date().getFullYear();
+                const allowedYears = [currentYear.toString(), (currentYear + 1).toString()];
+
+                const years = Array.from(new Set(docs.map(d => d.reference_date ? d.reference_date.substring(0, 4) : 'Sem Data')))
+                    .filter(year => allowedYears.includes(year));
+
                 return years.sort().reverse().map(year => ({ type: 'folder', name: year, count: docs.filter(d => (d.reference_date ? d.reference_date.substring(0, 4) : 'Sem Data') === year).length }));
             }
 
@@ -134,7 +139,12 @@ export default function DocumentsPage() {
         // Generic Categories (ART, NF, etc) -> Year -> Month -> Files
         // Level 1: Years
         if (currentPath.length === 1) {
-            const years = Array.from(new Set(docs.map(d => d.reference_date ? d.reference_date.substring(0, 4) : 'Sem Data')));
+            const currentYear = new Date().getFullYear();
+            const allowedYears = [currentYear.toString(), (currentYear + 1).toString()];
+
+            const years = Array.from(new Set(docs.map(d => d.reference_date ? d.reference_date.substring(0, 4) : 'Sem Data')))
+                .filter(year => allowedYears.includes(year));
+
             return years.sort().reverse().map(year => ({ type: 'folder', name: year, count: docs.filter(d => (d.reference_date ? d.reference_date.substring(0, 4) : 'Sem Data') === year).length }));
         }
 
