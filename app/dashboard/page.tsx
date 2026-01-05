@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { FileText, DollarSign, Clock, CheckCircle, TrendingUp, BarChart3, ArrowRight, Sparkles, Zap, AlertTriangle, Calendar, Wrench, Bell, Camera } from 'lucide-react';
+import { FileText, DollarSign, Clock, CheckCircle, TrendingUp, BarChart3, ArrowRight, Sparkles, Zap, AlertTriangle, Calendar, Wrench, Bell, Camera, ChevronRight } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import ScannerModal from '@/components/ScannerModal';
 import { Doughnut, Bar } from 'react-chartjs-2';
@@ -232,8 +232,8 @@ export default function DashboardPage() {
                       {new Date(alert.next_maintenance_date).toLocaleDateString('pt-BR')}
                     </span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase ${alert.urgency === 'vencido' ? 'bg-red-100 text-red-700' :
-                        alert.urgency === 'urgente' ? 'bg-amber-100 text-amber-700' :
-                          alert.urgency === 'proximo' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'
+                      alert.urgency === 'urgente' ? 'bg-amber-100 text-amber-700' :
+                        alert.urgency === 'proximo' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'
                       }`}>
                       {alert.urgency === 'vencido' ? 'Vencida' : alert.urgency === 'urgente' ? 'Urgente' : 'Próxima'}
                     </span>
@@ -303,7 +303,7 @@ export default function DashboardPage() {
                   maintainAspectRatio: false,
                   plugins: { legend: { display: false } },
                   scales: {
-                    y: { grid: { color: 'rgba(0,0,0,0.03)', drawBorder: false }, ticks: { display: false } },
+                    y: { grid: { color: 'rgba(0,0,0,0.03)' }, ticks: { display: false } },
                     x: { grid: { display: false }, ticks: { font: { size: 12 } } }
                   }
                 }}
@@ -346,7 +346,7 @@ export default function DashboardPage() {
                       {new Date(order.created_at).toLocaleDateString('pt-BR')}
                     </span>
                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${order.status === 'completed' ? 'bg-green-100 text-green-700' :
-                        order.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+                      order.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
                       }`}>
                       {order.status === 'completed' ? 'Concluído' : order.status === 'in_progress' ? 'Andamento' : 'Pendente'}
                     </span>

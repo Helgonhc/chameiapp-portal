@@ -24,7 +24,8 @@ import {
   Camera,
   Server,
   History,
-  ClipboardList
+  ClipboardList,
+  FolderOpen
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -57,6 +58,7 @@ export default function Sidebar({
     { icon: FileText, label: 'Ordens de Serviço', path: '/service-orders', badge: null },
     { icon: ClipboardList, label: 'Solicitações', path: '/quote-requests', badge: null },
     { icon: DollarSign, label: 'Orçamentos', path: '/quotes', badge: pendingQuotes > 0 ? pendingQuotes : null },
+    { icon: FolderOpen, label: 'Documentos', path: '/documents', badge: null },
     { icon: Server, label: 'Equipamentos', path: '/equipments', badge: null },
     { icon: Wrench, label: 'Manutenções', path: '/maintenance', badge: null },
     { icon: History, label: 'Histórico', path: '/history', badge: null },
