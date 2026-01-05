@@ -33,6 +33,8 @@ interface SidebarProps {
   unreadNotifications?: number;
   pendingQuotes?: number;
   onScanOpen?: () => void;
+  collapsed: boolean;
+  setCollapsed: (v: boolean) => void;
 }
 
 export default function Sidebar({
@@ -40,11 +42,12 @@ export default function Sidebar({
   userData,
   unreadNotifications = 0,
   pendingQuotes = 0,
-  onScanOpen
+  onScanOpen,
+  collapsed,
+  setCollapsed
 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Mapeamento de itens do menu

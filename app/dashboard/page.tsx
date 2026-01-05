@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [maintenanceAlerts, setMaintenanceAlerts] = useState<MaintenanceAlert[]>([]);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalOrders: 0, pendingOrders: 0, completedOrders: 0, inProgressOrders: 0,
     totalQuotes: 0, pendingQuotes: 0, approvedQuotes: 0, ordersThisWeek: 0, ordersThisMonth: 0,
@@ -48,13 +49,16 @@ export default function DashboardPage() {
       const { data: { user } } = await supabase.auth.getUser(); if (!user) return;
       const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single();
       if (!profile?.client_id) return;
+
       const [ordersResponse, quotesResponse] = await Promise.all([
-        supabase.from('service_orders').select('status, created_at').eq('client_id', profile.client_id),
+        supabase.from('service_orders').select('*').eq('client_id', profile.client_id).order('created_at', { ascending: false }),
         supabase.from('quotes').select('status, total').eq('client_id', profile.client_id)
       ]);
 
       const orders = ordersResponse.data || [];
       const quotes = quotesResponse.data || [];
+
+      setRecentOrders(orders.slice(0, 5));
 
       const now = new Date();
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -249,7 +253,7 @@ export default function DashboardPage() {
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 mb-8">
           {statCards.map((card, index) => {
             const Icon = card.icon;
             return (
@@ -300,6 +304,64 @@ export default function DashboardPage() {
                 data={{ labels: ['Semana', 'Mês', 'Total'], datasets: [{ label: 'Ordens', data: [stats.ordersThisWeek, stats.ordersThisMonth, stats.totalOrders], backgroundColor: ['#6366F1', '#F59E0B', '#10B981'], borderRadius: 6 }] }}
                 options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(0,0,0,0.05)' } }, x: { grid: { display: false } } } }}
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Orders List (Restored) */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-gray-400" /> Últimas Atualizações
+            </h2>
+            <button onClick={() => router.push('/service-orders')} className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+              Ver tudo
+            </button>
+          </div>
+
+          <div className="card overflow-hidden !p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-center">
+                <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-100">
+                  <tr>
+                    <th className="px-4 py-3 text-left">Ordem</th>
+                    <th className="px-4 py-3 text-left">Status</th>
+                    <th className="px-4 py-3 text-left hidden sm:table-cell">Atualizado em</th>
+                    <th className="px-4 py-3 text-right">Valor</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {recentOrders.length > 0 ? (
+                    recentOrders.map((order) => (
+                      <tr key={order.id} onClick={() => router.push(`/service-orders/${order.id}`)} className="hover:bg-gray-50 cursor-pointer transition-colors">
+                        <td className="px-4 py-3 text-left">
+                          <div className="font-bold text-gray-800">{order.title}</div>
+                          <div className="text-xs text-gray-500">#{order.order_number}</div>
+                        </td>
+                        <td className="px-4 py-3 text-left">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${order.status === 'completed' ? 'bg-green-100 text-green-700' :
+                            order.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+                            }`}>
+                            {order.status === 'completed' ? 'Concluído' : order.status === 'in_progress' ? 'Em Andamento' : 'Pendente'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-left hidden sm:table-cell text-gray-500">
+                          {new Date(order.created_at).toLocaleDateString('pt-BR')}
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium text-gray-700">
+                          {order.final_cost ? `R$ ${order.final_cost.toFixed(2)}` : '-'}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                        Nenhuma ordem recente encontrada.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

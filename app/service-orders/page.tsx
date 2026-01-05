@@ -7,20 +7,20 @@ import { Wrench, Clock, CheckCircle, XCircle, Calendar, User, Plus, ArrowRight, 
 import DashboardLayout from '@/components/DashboardLayout';
 import AdvancedSearch, { SearchFilters } from '@/components/AdvancedSearch';
 
-interface ServiceOrder {
-  id: string;
-  order_number: string;
-  title: string;
-  description: string;
-  status: string;
-  priority: string;
-  created_at: string;
-  scheduled_at: string | null;
-  completed_at: string | null;
-  technician_id: string | null;
-  estimated_cost: number | null;
-  final_cost: number | null;
-  technician?: { full_name: string };
+id: string;
+order_number: string;
+title: string;
+description: string;
+status: string;
+priority: string;
+created_at: string;
+scheduled_at: string | null;
+completed_at: string | null;
+technician_id: string | null;
+estimated_cost: number | null;
+final_cost: number | null;
+technician ?: { full_name: string };
+equipments ?: { name: string };
 }
 
 export default function ServiceOrdersPage() {
@@ -54,7 +54,7 @@ export default function ServiceOrdersPage() {
       const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single();
       if (!profile?.client_id) return;
       const { data, error } = await supabase.from('service_orders')
-        .select(`*, technician:profiles!service_orders_technician_id_fkey(full_name)`)
+        .select(`*, technician:profiles!service_orders_technician_id_fkey(full_name), equipments(name)`)
         .eq('client_id', profile.client_id).order('created_at', { ascending: false });
       if (error) throw error;
       setOrders(data || []); setFilteredOrders(data || []);
@@ -207,6 +207,15 @@ export default function ServiceOrdersPage() {
                         {order.description}
                       </p>
                     )}
+
+                    {order.equipments?.name && (
+                      <div className="mb-3">
+                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded inline-flex items-center gap-1">
+                          <Wrench size={12} /> {order.equipments.name}
+                        </span>
+                      </div>
+                    )}
+
 
                     <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
                       {order.technician && (

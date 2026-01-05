@@ -19,6 +19,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [userData, setUserData] = useState<any>(null);
   const [pendingQuotes, setPendingQuotes] = useState(0);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { unreadCount: unreadNotifications } = useRealtimeNotifications();
 
   useEffect(() => {
@@ -85,16 +86,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-100 transition-colors duration-300">
+    <div className="min-h-screen flex bg-gray-50 transition-colors duration-300">
       <Sidebar
         clientData={clientData}
         userData={userData}
         unreadNotifications={unreadNotifications}
         pendingQuotes={pendingQuotes}
         onScanOpen={() => setIsScannerOpen(true)}
+        collapsed={sidebarCollapsed}
+        setCollapsed={setSidebarCollapsed}
       />
 
-      <main className="flex-1 overflow-auto relative">
+      {/* Main Content Wrapper - Adjusts margin based on sidebar state */}
+      <main
+        className={`flex-1 overflow-auto relative transition-all duration-300 ease-in-out
+          ${sidebarCollapsed ? 'lg:ml-[80px]' : 'lg:ml-[280px]'}
+        `}
+      >
         {/* Top Floating Actions (Notifications) */}
         <div className="absolute top-4 right-4 z-40 flex items-center gap-2">
           <div className="bg-white/80 backdrop-blur-sm p-1.5 rounded-xl shadow-sm border border-gray-200">
