@@ -3,16 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import Image from 'next/image';
-import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles, Zap, Shield, Clock, FileText, Wrench } from 'lucide-react';
-
-interface ClientBranding {
-  name: string;
-  company_name: string;
-  client_logo_url: string | null;
-  primary_color: string;
-  portal_welcome_message: string | null;
-}
+import { Eye, EyeOff, Mail, Lock, LogIn, Loader2, AlertCircle, Sparkles, Zap, Shield, Clock, FileText, Wrench, ChevronRight } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,64 +12,66 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
-  const [branding, setBranding] = useState<ClientBranding | null>(null);
-  const [loadingBranding, setLoadingBranding] = useState(true);
 
   useEffect(() => {
-    loadClientBranding();
+    checkUser();
   }, []);
 
-  async function loadClientBranding() {
-    // Definindo branding fixo da AEC Serviços Especializados
-    setBranding({
-      name: 'AeC Serviços Especializados',
-      company_name: 'AeC Serviços Especializados',
-      client_logo_url: null, // Usará o ícone padrão se for null
-      primary_color: '#0ea5e9', // Cor primária (sky-500)
-      portal_welcome_message: 'Bem-vindo ao Portal do Cliente',
-    });
-    setLoadingBranding(false);
+  async function checkUser() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      router.push('/dashboard');
+    }
   }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+    if (!email || !password) {
+      toast.error('Preencha todos os campos');
+      return;
+    }
+
     setLoading(true);
-    setError('');
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('role, client_id, is_active')
         .eq('id', data.user.id)
         .single();
+
       if (profile?.role !== 'client') {
         await supabase.auth.signOut();
         throw new Error('Acesso negado. Este portal é apenas para clientes.');
       }
+
       if (profile.is_active === false) {
         await supabase.auth.signOut();
         throw new Error('Sua conta está desativada.');
       }
+
       if (profile.client_id) {
         const { data: client } = await supabase
           .from('clients')
           .select('portal_blocked, portal_blocked_reason')
           .eq('id', profile.client_id)
           .single();
+
         if (client?.portal_blocked) {
           await supabase.auth.signOut();
           throw new Error(client.portal_blocked_reason || 'Acesso bloqueado.');
         }
       }
+
+      toast.success('Login realizado com sucesso!');
       router.push('/dashboard');
     } catch (error: any) {
-      setError(error.message);
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }
@@ -85,278 +79,258 @@ export default function LoginPage() {
 
   async function handleResetPassword(e: React.FormEvent) {
     e.preventDefault();
+    if (!resetEmail) {
+      toast.error('Informe seu email');
+      return;
+    }
+
     setResetLoading(true);
-    setError('');
-    setSuccess('');
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
-      setSuccess('Email enviado! Verifique sua caixa.');
-      setResetEmail('');
-      setTimeout(() => {
-        setShowResetPassword(false);
-        setSuccess('');
-      }, 3000);
+      toast.success('Email de redefinição enviado!');
+      setShowResetPassword(false);
     } catch (error: any) {
-      setError(error.message);
+      toast.error(error.message);
     } finally {
       setResetLoading(false);
     }
   }
 
-  if (loadingBranding) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-12 h-12 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-grid opacity-20"></div>
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary-500/10 rounded-full blur-[150px]"></div>
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-accent-500/10 rounded-full blur-[150px]"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-br from-primary-500/5 to-accent-500/5 rounded-full blur-[100px]"></div>
+    <div className="min-h-screen flex bg-[#0f172a]">
+      {/* Lado Esquerdo - Intro da Plataforma (Oculto em Mobile) */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-indigo-950">
+        <div className="absolute inset-0 opacity-20 bg-[url('/auth-bg.png')] bg-cover bg-center mix-blend-overlay" />
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 via-[#0f172a]/90 to-[#0f172a]" />
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:flex-row relative z-10">
-        {/* Left Side - Branding */}
-        <div className="lg:w-1/2 flex flex-col items-center justify-center p-8 lg:p-16">
-          <div className="max-w-md w-full text-center lg:text-left">
-            {/* Company Logo/Icon */}
-            <div className="mb-8">
-              <div className="relative inline-block">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-accent-500 rounded-3xl blur-2xl opacity-40 scale-110"></div>
-                <div className="relative w-24 h-24 lg:w-32 lg:h-32 rounded-3xl bg-gradient-to-br from-primary-500/20 to-accent-500/20 border border-white/10 flex items-center justify-center backdrop-blur-sm">
-                  {branding?.client_logo_url ? (
-                    <Image
-                      src={branding.client_logo_url}
-                      alt={branding.name}
-                      fill
-                      className="object-contain p-4"
-                      priority
-                    />
-                  ) : (
-                    <Zap className="w-12 h-12 lg:w-16 lg:h-16 text-primary-400" />
-                  )}
+        {/* Animated Background Blobs */}
+        <div className="absolute top-1/4 -left-20 w-80 h-80 bg-blue-500/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-indigo-500/20 rounded-full blur-[100px] animate-pulse delay-700" />
+
+        <div className="relative z-10 flex flex-col justify-center p-20 text-white w-full">
+          <div className="max-w-md space-y-12">
+            <div className="flex flex-col space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-indigo-500 rounded-2xl shadow-lg shadow-indigo-500/20">
+                  <Zap className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-black tracking-tighter">Eletricom-OS</h2>
+                  <p className="text-xs uppercase tracking-[4px] text-indigo-400 font-bold">Portal do Cliente</p>
                 </div>
               </div>
             </div>
 
-            {/* Company Name */}
-            <h1 className="text-3xl lg:text-4xl font-bold text-white mb-3">
-              <span className="bg-gradient-to-r from-primary-400 via-accent-400 to-primary-400 bg-clip-text text-transparent">
-                AeC Serviços Especializados
-              </span>
-            </h1>
+            <div className="space-y-8">
+              <h3 className="text-4xl font-bold leading-tight">
+                Toda a gestão técnica da sua empresa em <span className="text-indigo-400">suas mãos.</span>
+              </h3>
 
-            {/* Tagline */}
-            <p className="text-lg lg:text-xl text-zinc-400 mb-8">
-              Portal de Gerenciamento de Ordens de Serviço
-            </p>
+              <div className="space-y-6">
+                <div className="flex gap-4 items-start group">
+                  <div className="p-2 bg-white/5 border border-white/10 rounded-xl group-hover:bg-indigo-500/20 transition-colors">
+                    <FileText className="w-5 h-5 text-indigo-400" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-lg">Acompanhamento Real</h4>
+                    <p className="text-slate-400 text-sm">Visualize o status de suas Ordens de Serviço em tempo real, do início à conclusão.</p>
+                  </div>
+                </div>
 
-            {/* Features */}
-            <div className="hidden lg:grid grid-cols-2 gap-4 mt-8">
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/5">
-                <div className="w-10 h-10 rounded-lg bg-primary-500/20 flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-primary-400" />
+                <div className="flex gap-4 items-start group">
+                  <div className="p-2 bg-white/5 border border-white/10 rounded-xl group-hover:bg-indigo-500/20 transition-colors">
+                    <Wrench className="w-5 h-5 text-indigo-400" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-lg">Gestão de Equipamentos</h4>
+                    <p className="text-slate-400 text-sm">Histórico completo de manutenções e documentação técnica de cada ativo.</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Ordens de Serviço</p>
-                  <p className="text-xs text-zinc-500">Acompanhe em tempo real</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/5">
-                <div className="w-10 h-10 rounded-lg bg-accent-500/20 flex items-center justify-center">
-                  <Wrench className="w-5 h-5 text-accent-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Manutenções</p>
-                  <p className="text-xs text-zinc-500">Preventivas e corretivas</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/5">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Agendamentos</p>
-                  <p className="text-xs text-zinc-500">Solicite datas</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/5">
-                <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                  <Shield className="w-5 h-5 text-amber-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Segurança</p>
-                  <p className="text-xs text-zinc-500">Dados protegidos</p>
+
+                <div className="flex gap-4 items-start group">
+                  <div className="p-2 bg-white/5 border border-white/10 rounded-xl group-hover:bg-indigo-500/20 transition-colors">
+                    <Clock className="w-5 h-5 text-indigo-400" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-lg">Solicitações Rápidas</h4>
+                    <p className="text-slate-400 text-sm">Agende manutenções e preventivas diretamente pela plataforma com facilidade.</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Right Side - Login Form */}
-        <div className="lg:w-1/2 flex items-center justify-center p-8">
-          <div className="max-w-md w-full">
-            <div className="card p-8 border border-white/10 backdrop-blur-xl bg-surface/80">
-              {/* Form Header */}
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 mb-4">
-                  <Zap className="w-7 h-7 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Bem-vindo de volta!</h2>
-                <p className="text-zinc-400 text-sm">
-                  {branding?.portal_welcome_message || 'Acesse sua conta para gerenciar suas ordens de serviço'}
-                </p>
-              </div>
+      {/* Lado Direito - Formulário */}
+      <div className="flex-1 flex items-center justify-center p-6 md:p-12 relative bg-[#0f172a]">
+        {/* Background blobs sutis */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/10 blur-[100px] -mr-48 -mt-48" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-600/10 blur-[80px] -ml-32 -mb-32" />
 
-              {!showResetPassword ? (
-                <form onSubmit={handleLogin} className="space-y-5">
-                  {error && (
-                    <div className="info-box info-box-red">
-                      <p className="text-sm font-medium whitespace-pre-line">{error}</p>
-                    </div>
-                  )}
+        <div className="w-full max-w-md space-y-10 relative z-10">
+          <div className="flex flex-col items-center text-center">
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-8">
+              <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+              <span className="text-[10px] uppercase font-black tracking-[3px]">Acesso ao Cliente</span>
+            </div>
 
-                  <div>
-                    <label className="form-label">Email</label>
-                    <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="form-input pl-12"
-                        placeholder="seu@email.com"
-                      />
-                    </div>
-                  </div>
+            <h1 className="text-4xl font-black text-white tracking-tighter mb-2">
+              BEM-VINDO
+            </h1>
+            <p className="text-slate-400 font-light tracking-wide">
+              {showResetPassword ? 'Recupere seu acesso à plataforma' : 'Acesse o portal do cliente da Eletricom'}
+            </p>
+          </div>
 
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="form-label mb-0">Senha</label>
-                      <button
-                        type="button"
-                        onClick={() => setShowResetPassword(true)}
-                        className="text-xs text-primary-400 font-semibold hover:text-primary-300 transition-colors"
-                      >
-                        Esqueceu a senha?
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="form-input pl-12 pr-12"
-                        placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base font-semibold"
-                  >
-                    {loading ? (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    ) : (
-                      <>
-                        <span>Entrar no Portal</span>
-                        <ArrowRight className="w-5 h-5" />
-                      </>
-                    )}
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleResetPassword} className="space-y-5">
-                  {error && <div className="info-box info-box-red text-sm">{error}</div>}
-                  {success && (
-                    <div className="info-box info-box-green text-sm flex items-center gap-2">
-                      <Sparkles className="w-4 h-4" />
-                      {success}
-                    </div>
-                  )}
-                  <div>
-                    <h2 className="text-xl font-bold text-white mb-2">Redefinir Senha</h2>
-                    <p className="text-sm text-zinc-400 mb-4">
-                      Digite seu email para receber o link de redefinição.
-                    </p>
-                  </div>
+          {!showResetPassword ? (
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div className="space-y-5">
+                <div className="group">
+                  <label className="text-sm font-semibold text-slate-300 ml-1 block mb-2 group-focus-within:text-indigo-400 transition-colors font-inter">
+                    Email de Acesso
+                  </label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                     <input
                       type="email"
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      required
-                      className="form-input pl-12"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full h-14 pl-12 pr-5 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:border-indigo-500/50 focus:bg-white/[0.08] focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-600"
                       placeholder="seu@email.com"
+                      disabled={loading}
+                      required
                     />
                   </div>
-                  <div className="flex gap-3">
+                </div>
+
+                <div className="group">
+                  <label className="text-sm font-semibold text-slate-300 ml-1 block mb-2 group-focus-within:text-indigo-400 transition-colors font-inter">
+                    Sua Senha
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full h-14 pl-12 pr-12 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:border-indigo-500/50 focus:bg-white/[0.08] focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-600"
+                      placeholder="••••••••"
+                      disabled={loading}
+                      required
+                    />
                     <button
                       type="button"
-                      onClick={() => {
-                        setShowResetPassword(false);
-                        setError('');
-                        setSuccess('');
-                      }}
-                      className="btn-secondary flex-1"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-indigo-400 transition-colors"
                     >
-                      Voltar
-                    </button>
-                    <button type="submit" disabled={resetLoading} className="btn-primary flex-1">
-                      {resetLoading ? 'Enviando...' : 'Enviar Link'}
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                   </div>
-                </form>
-              )}
-
-              {!showResetPassword && (
-                <div className="mt-6 text-center">
-                  <p className="text-sm text-zinc-500">
-                    Não tem conta?{' '}
-                    <button
-                      onClick={() => router.push('/register')}
-                      className="text-primary-400 font-semibold hover:text-primary-300 transition-colors"
-                    >
-                      Criar conta
-                    </button>
-                  </p>
                 </div>
-              )}
-            </div>
+              </div>
+
+              <div className="flex items-center justify-between text-sm py-1">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <div className="relative">
+                    <input type="checkbox" className="peer sr-only" />
+                    <div className="w-5 h-5 border-2 border-white/10 rounded-md peer-checked:bg-indigo-500 peer-checked:border-indigo-500 transition-all" />
+                    <svg className="absolute top-0.5 left-0.5 w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-slate-400 group-hover:text-slate-200 transition-colors">Lembrar acesso</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowResetPassword(true)}
+                  className="font-bold text-indigo-400 hover:text-indigo-300 transition-colors"
+                >
+                  Esqueceu a senha?
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-14 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-lg shadow-2xl shadow-indigo-600/30 hover:shadow-indigo-600/40 transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-3"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={22} />
+                    <span>Conectando...</span>
+                  </>
+                ) : (
+                  <>
+                    <LogIn size={22} />
+                    <span>Entrar no Portal</span>
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleResetPassword} className="space-y-6">
+              <div className="group">
+                <label className="text-sm font-semibold text-slate-300 ml-1 block mb-2 group-focus-within:text-indigo-400 transition-colors font-inter">
+                  Email Cadastrado
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <input
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    className="w-full h-14 pl-12 pr-5 bg-white/5 border border-white/10 rounded-2xl text-white outline-none focus:border-indigo-500/50 focus:bg-white/[0.08] focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-600"
+                    placeholder="seu@email.com"
+                    disabled={resetLoading}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowResetPassword(false)}
+                  className="flex-1 h-14 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-bold transition-all border border-white/5"
+                  disabled={resetLoading}
+                >
+                  Voltar
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetLoading}
+                  className="flex-[2] h-14 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold shadow-2xl shadow-indigo-600/30 transition-all"
+                >
+                  {resetLoading ? <Loader2 className="animate-spin mx-auto" /> : 'Enviar Link'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          <div className="text-center">
+            <p className="text-slate-500 text-sm">
+              Ainda não tem acesso? <br className="md:hidden" />
+              <button
+                onClick={() => router.push('/register')}
+                className="text-indigo-400 font-bold hover:text-indigo-300 transition-colors ml-1"
+              >
+                Solicite sua conta
+              </button>
+            </p>
+          </div>
+
+          {/* Footer Minimalista */}
+          <div className="pt-8 text-center border-t border-white/5">
+            <p className="text-slate-500 text-[11px] font-medium uppercase tracking-[2px]">
+              © {new Date().getFullYear()} Eletricom-OS-Cliente — Intelligent Service
+            </p>
           </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="relative z-10 py-6 text-center border-t border-white/5">
-        <p className="text-xs text-zinc-600">
-          Desenvolvido por{' '}
-          <span className="font-bold bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent">
-            Helgon Henrique
-          </span>
-        </p>
-      </footer>
     </div>
   );
 }

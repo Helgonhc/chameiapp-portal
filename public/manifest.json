@@ -1,6 +1,6 @@
 {
-    "name": "Eletricom OS - Portal do Cliente",
-    "short_name": "Eletricom OS",
+    "name": "Eletricom-OS-Cliente",
+    "short_name": "Eletricom-OS",
     "description": "Portal de Gerenciamento de Ordens de Serviço e Manutenção",
     "start_url": "/",
     "display": "standalone",
