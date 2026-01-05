@@ -103,7 +103,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex bg-[#0f172a]">
       {/* Lado Esquerdo - Intro da Plataforma (Oculto em Mobile) */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-indigo-950">
-        <div className="absolute inset-0 opacity-20 bg-[url('/auth-bg.png')] bg-cover bg-center mix-blend-overlay" />
+        <div className="absolute inset-0 opacity-40 bg-[url('/auth-bg.png')] bg-cover bg-center mix-blend-overlay" />
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/80 via-[#0f172a]/90 to-[#0f172a]" />
 
         {/* Animated Background Blobs */}
@@ -113,13 +113,17 @@ export default function LoginPage() {
         <div className="relative z-10 flex flex-col justify-center p-20 text-white w-full">
           <div className="max-w-md space-y-12">
             <div className="flex flex-col space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-indigo-500 rounded-2xl shadow-lg shadow-indigo-500/20">
-                  <Zap className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-3xl font-black tracking-tighter">Eletricom-OS</h2>
-                  <p className="text-xs uppercase tracking-[4px] text-indigo-400 font-bold">Portal do Cliente</p>
+              <div className="flex flex-col mb-4">
+                <img
+                  src="/logo-official.png"
+                  alt="Eletricom-OS"
+                  className="w-64 h-auto object-contain mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+                />
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-px bg-indigo-500" />
+                  <span className="text-[10px] uppercase tracking-[4px] text-white font-black opacity-80">
+                    Portal do Cliente
+                  </span>
                 </div>
               </div>
             </div>
@@ -173,6 +177,12 @@ export default function LoginPage() {
 
         <div className="w-full max-w-md space-y-10 relative z-10">
           <div className="flex flex-col items-center text-center">
+            <img
+              src="/logo-official.png"
+              alt="Eletricom-OS"
+              className="w-48 h-auto object-contain mb-8 drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+            />
+
             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 mb-8">
               <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
               <span className="text-[10px] uppercase font-black tracking-[3px]">Acesso ao Cliente</span>
