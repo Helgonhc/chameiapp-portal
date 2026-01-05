@@ -85,10 +85,22 @@ export default function DocumentsPage() {
 
     async function handleDownload(doc: DocFile) {
         try {
-            const { data, error } = await supabase.storage.from('documents').createSignedUrl(doc.file_url, 60);
+            const { data, error } = await supabase.storage
+                .from('documents')
+                .createSignedUrl(doc.file_url, 60, {
+                    download: doc.title || 'documento'
+                });
+
             if (error) throw error;
-            window.open(data.signedUrl, '_blank');
+
+            const link = document.createElement('a');
+            link.href = data.signedUrl;
+            link.download = doc.title || 'documento';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         } catch (error) {
+            console.error('Download error:', error);
             toast.error('Erro ao baixar documento');
         }
     }
