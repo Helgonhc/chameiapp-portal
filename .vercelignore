@@ -1,5 +1,0 @@
-# Arquivos para ignorar no deploy
-.git
-.vscode
-*.md
-!README.md
