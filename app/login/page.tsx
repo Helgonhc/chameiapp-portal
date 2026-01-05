@@ -108,69 +108,31 @@ export default function LoginPage() {
           alt="Eletricom OS Client"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        {/* Overlay para unificar com a marca - Combinando estilos do Admin */}
-        <div className="absolute inset-0 bg-indigo-900/50 mix-blend-multiply" />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#0f172a]/40 to-[#0f172a]" />
+        {/* Overlay Indigo para unificar com a marca */}
+        <div className="absolute inset-0 bg-indigo-900/40 mix-blend-multiply" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#0f172a]/20 to-[#0f172a]" />
 
-        {/* Adicionando brilho extra (blobs) como no Admin */}
-        <div className="absolute top-1/4 -left-20 w-80 h-80 bg-blue-500/20 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-indigo-500/20 rounded-full blur-[100px] animate-pulse delay-700" />
-
-        <div className="relative z-10 flex flex-col justify-center p-20 text-white w-full">
-          <div className="max-w-md space-y-12">
-            <div className="flex flex-col space-y-4">
-              <div className="flex flex-col mb-4">
-                <img
-                  src="/logo-official.png"
-                  alt="Eletricom-OS"
-                  className="w-64 h-auto object-contain mb-2 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
-                />
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-px bg-indigo-500" />
-                  <span className="text-[10px] uppercase tracking-[4px] text-white font-black opacity-80">
-                    Portal do Cliente
-                  </span>
-                </div>
+        {/* Conteúdo sobre a imagem - Minimalista e Profissional */}
+        <div className="relative z-10 flex flex-col justify-end p-20 text-white h-full">
+          <div className="max-w-md">
+            <div className="flex flex-col mb-12">
+              <img
+                src="/logo-official.png"
+                alt="Eletricom-OS"
+                className="w-72 h-auto object-contain mb-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+              />
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-px bg-indigo-500" />
+                <span className="text-[10px] uppercase tracking-[4px] text-white font-black opacity-80">
+                  Portal do Cliente
+                </span>
               </div>
             </div>
 
-            <div className="space-y-8">
-              <h3 className="text-4xl font-bold leading-tight">
-                Toda a gestão técnica da sua empresa em <span className="text-indigo-400">suas mãos.</span>
-              </h3>
-
-              <div className="space-y-6">
-                <div className="flex gap-4 items-start group">
-                  <div className="p-2 bg-white/5 border border-white/10 rounded-xl group-hover:bg-indigo-500/20 transition-colors">
-                    <FileText className="w-5 h-5 text-indigo-400" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-lg">Acompanhamento Real</h4>
-                    <p className="text-slate-400 text-sm">Visualize o status de suas Ordens de Serviço em tempo real, do início à conclusão.</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 items-start group">
-                  <div className="p-2 bg-white/5 border border-white/10 rounded-xl group-hover:bg-indigo-500/20 transition-colors">
-                    <Wrench className="w-5 h-5 text-indigo-400" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-lg">Gestão de Equipamentos</h4>
-                    <p className="text-slate-400 text-sm">Histórico completo de manutenções e documentação técnica de cada ativo.</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 items-start group">
-                  <div className="p-2 bg-white/5 border border-white/10 rounded-xl group-hover:bg-indigo-500/20 transition-colors">
-                    <Clock className="w-5 h-5 text-indigo-400" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-lg">Solicitações Rápidas</h4>
-                    <p className="text-slate-400 text-sm">Agende manutenções e preventivas diretamente pela plataforma com facilidade.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <p className="text-2xl text-indigo-100/90 leading-relaxed font-light">
+              Acesso exclusivo para <br />
+              <span className="font-semibold text-white">Acompanhamento Técnico.</span>
+            </p>
           </div>
         </div>
       </div>
