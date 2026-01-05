@@ -76,88 +76,68 @@ export default function DocumentsPage() {
 
     // --- Logic to filter/group based on currentPath ---
     const getCurrentItems = () => {
-        // Level 0: Categories (Root)
+        let docs = documents;
+
+        // Level 0: YEARS (Root)
         if (currentPath.length === 0) {
-            const categories = Array.from(new Set(documents.map(d => d.category || 'Outros')));
-            return categories.map(cat => ({ type: 'folder', name: cat, count: documents.filter(d => (d.category || 'Outros') === cat).length }));
+            const currentYear = new Date().getFullYear();
+            const allowedYears = [currentYear.toString(), (currentYear + 1).toString()]; // Filter 2 years
+
+            const years = Array.from(new Set(docs.map(d => d.reference_date ? d.reference_date.substring(0, 4) : 'Sem Data')))
+                .filter(y => allowedYears.includes(y));
+
+            return years.sort().reverse().map(year => ({
+                type: 'folder',
+                name: year,
+                count: docs.filter(d => (d.reference_date?.substring(0, 4) || 'Sem Data') === year).length
+            }));
         }
 
-        const category = currentPath[0];
+        const year = currentPath[0];
+        docs = docs.filter(d => (d.reference_date?.substring(0, 4) || 'Sem Data') === year);
 
-        // Filter docs by current category
-        let docs = documents.filter(d => (d.category || 'Outros') === category);
+        // Level 1: CATEGORIES
+        if (currentPath.length === 1) {
+            const categories = Array.from(new Set(docs.map(d => d.category || 'Outros')));
+            return categories.map(cat => ({
+                type: 'folder',
+                name: cat,
+                count: docs.filter(d => (d.category || 'Outros') === cat).length
+            }));
+        }
 
-        // Special Case: Laudos have subcategories
+        const category = currentPath[1];
+        docs = docs.filter(d => (d.category || 'Outros') === category);
+
+        // Level 2: SUBCATEGORY (if Laudo) OR MONTH (if others)
         if (category === 'Laudo') {
-            // Level 1 (Laudo): Subcategories
-            if (currentPath.length === 1) {
-                const subcategories = Array.from(new Set(docs.map(d => d.subcategory || 'Geral')));
-                return subcategories.map(sub => ({ type: 'folder', name: sub, count: docs.filter(d => (d.subcategory || 'Geral') === sub).length }));
-            }
-
-            // Filter docs by subcategory
-            const subcategory = currentPath[1];
-            docs = docs.filter(d => (d.subcategory || 'Geral') === subcategory);
-
-            // Level 2 (Laudo): Years
             if (currentPath.length === 2) {
-                const currentYear = new Date().getFullYear();
-                const allowedYears = [currentYear.toString(), (currentYear + 1).toString()];
-
-                const years = Array.from(new Set(docs.map(d => d.reference_date ? d.reference_date.substring(0, 4) : 'Sem Data')))
-                    .filter(year => allowedYears.includes(year));
-
-                return years.sort().reverse().map(year => ({ type: 'folder', name: year, count: docs.filter(d => (d.reference_date ? d.reference_date.substring(0, 4) : 'Sem Data') === year).length }));
+                const subcategories = Array.from(new Set(docs.map(d => d.subcategory || 'Geral')));
+                return subcategories.map(sub => ({
+                    type: 'folder',
+                    name: sub,
+                    count: docs.filter(d => (d.subcategory || 'Geral') === sub).length
+                }));
             }
 
-            // Level 3 (Laudo): Files by Month (or just files if we want simpler)
-            // Let's list files directly inside Year for simplicity, or add Month folder?
-            // User asked for "Pastas coloridas de acordo com ano e meses". So let's add Month folder.
-            const year = currentPath[2];
-            docs = docs.filter(d => (d.reference_date ? d.reference_date.substring(0, 4) : 'Sem Data') === year);
+            const subcategory = currentPath[2];
+            docs = docs.filter(d => (d.subcategory || 'Geral') === subcategory);
 
             if (currentPath.length === 3) {
                 const months = Array.from(new Set(docs.map(d => d.reference_date ? d.reference_date.substring(5, 7) : '00')));
                 return months.sort().reverse().map(month => ({ type: 'folder', name: getMonthName(month), id: month, count: docs.filter(d => (d.reference_date ? d.reference_date.substring(5, 7) : '00') === month).length }));
             }
 
-            // Level 4 (Final): Files
             const monthName = currentPath[3];
-            // We need to match back the month number or name logic. 
-            // Since we passed the name to the folder, we have to filter by name? 
-            // Better to just filter by docs remaining. 
-            // Actually, if we are at Level 4, we just show docs filtered by month.
-            // But wait, the previous level map returned objects.
-            // Let's simplify: if we are at level 3, we clicked a Month. 
-            // We need the ID (01, 02) to filter.
-            // Since specific implementation might be tricky with just names in path, let's look at last path item.
-            // Ideally we store IDs in path, but here names are easier for breadcrumb.
-            // I'll assume standard month names.
             return docs.filter(d => getMonthName(d.reference_date ? d.reference_date.substring(5, 7) : '00') === monthName).map(d => ({ type: 'file', ...d }));
         }
 
-        // Generic Categories (ART, NF, etc) -> Year -> Month -> Files
-        // Level 1: Years
-        if (currentPath.length === 1) {
-            const currentYear = new Date().getFullYear();
-            const allowedYears = [currentYear.toString(), (currentYear + 1).toString()];
-
-            const years = Array.from(new Set(docs.map(d => d.reference_date ? d.reference_date.substring(0, 4) : 'Sem Data')))
-                .filter(year => allowedYears.includes(year));
-
-            return years.sort().reverse().map(year => ({ type: 'folder', name: year, count: docs.filter(d => (d.reference_date ? d.reference_date.substring(0, 4) : 'Sem Data') === year).length }));
-        }
-
-        const year = currentPath[1];
-        docs = docs.filter(d => (d.reference_date ? d.reference_date.substring(0, 4) : 'Sem Data') === year);
-
-        // Level 2: Months
+        // Generic Category (ART, NF...) -> Month -> Files
         if (currentPath.length === 2) {
             const months = Array.from(new Set(docs.map(d => d.reference_date ? d.reference_date.substring(5, 7) : '00')));
             return months.sort().reverse().map(month => ({ type: 'folder', name: getMonthName(month), id: month, count: docs.filter(d => (d.reference_date ? d.reference_date.substring(5, 7) : '00') === month).length }));
         }
 
-        // Level 3: Files
         const monthName = currentPath[2];
         return docs.filter(d => getMonthName(d.reference_date ? d.reference_date.substring(5, 7) : '00') === monthName).map(d => ({ type: 'file', ...d }));
     };
@@ -235,13 +215,13 @@ export default function DocumentsPage() {
                                 key={idx}
                                 onClick={() => navigateTo(item.name)}
                                 className={`
-                                    cursor-pointer p-5 rounded-2xl border border-gray-100 shadow-sm 
+                                    cursor-pointer p-5 rounded-2xl border border-gray-100 shadow-sm
                                     hover:shadow-md hover:scale-105 transition-all
                                     flex flex-col items-center justify-center text-center gap-3
                                     bg-white
                                 `}
                             >
-                                <div className={`p-3 rounded-full ${CATEGORY_COLORS[currentPath[0] || item.name] || 'bg-indigo-50 text-indigo-600'}`}>
+                                <div className={`p-3 rounded-full ${CATEGORY_COLORS[currentPath[1] || item.name] || 'bg-indigo-50 text-indigo-600'}`}>
                                     <Folder size={32} />
                                 </div>
                                 <div>
