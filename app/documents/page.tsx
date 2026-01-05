@@ -156,10 +156,13 @@ export default function DocumentsPage() {
         // Simple search that filters current visible items
     }, [searchTerm]);
 
-    const items = getCurrentItems().filter(item =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.type === 'file' && (item as any).title?.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const items = getCurrentItems().filter(item => {
+        if (item.type === 'folder') {
+            return item.name.toLowerCase().includes(searchTerm.toLowerCase());
+        }
+        // It's a file
+        return (item as any).title?.toLowerCase().includes(searchTerm.toLowerCase());
+    });
 
     function navigateTo(name: string) {
         setCurrentPath([...currentPath, name]);
@@ -180,12 +183,17 @@ export default function DocumentsPage() {
             {/* Header with Search */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        <Folder className="text-indigo-600" />
-                        Seus Documentos
-                    </h1>
+                    <div className="flex items-center gap-3 mb-2">
+                        <a href="/dashboard" className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-600 transition-colors" title="Voltar ao Início">
+                            <Home size={20} />
+                        </a>
+                        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                            <Folder className="text-indigo-600" />
+                            Seus Documentos
+                        </h1>
+                    </div>
                     <p className="text-gray-500">
-                        Navegue por Ano > Categoria para encontrar seus arquivos.
+                        Navegue por Ano &gt; Categoria para encontrar seus arquivos.
                     </p>
                 </div>
 
@@ -207,7 +215,7 @@ export default function DocumentsPage() {
                     onClick={() => setCurrentPath([])}
                     className={`flex items-center gap-1 hover:text-indigo-600 transition-colors ${currentPath.length === 0 ? 'text-indigo-600 font-bold' : ''}`}
                 >
-                    <Home size={16} /> Início
+                    <Folder size={16} /> Raiz
                 </button>
                 {currentPath.map((item, index) => (
                     <div key={index} className="flex items-center gap-2 whitespace-nowrap">
