@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { File, Download, Search, Folder, Calendar, HardDrive, ChevronRight, Home, ArrowLeft, FileCheck, ClipboardList, Receipt, Wrench, FileBox, CalendarRange } from 'lucide-react';
+import { File, Download, Search, Folder, Calendar, HardDrive, ChevronRight, Home, ArrowLeft, FileCheck, ClipboardList, Receipt, Wrench, FileBox, CalendarRange, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 type DocFile = {
@@ -30,6 +30,7 @@ const CATEGORY_COLORS: any = {
     'Laudo': 'text-orange-600 bg-orange-50',
     'Ordem de Serviço': 'text-gray-600 bg-gray-50',
     'Nota Fiscal': 'text-green-600 bg-green-50',
+    'Orçamento': 'text-emerald-600 bg-emerald-50',
     'Outros': 'text-purple-600 bg-purple-50',
 };
 
@@ -38,6 +39,7 @@ const CATEGORY_ICONS: any = {
     'Laudo': ClipboardList,
     'Ordem de Serviço': Wrench,
     'Nota Fiscal': Receipt,
+    'Orçamento': FileBox,
     'Outros': FileBox,
 };
 
