@@ -125,146 +125,204 @@ export default function Sidebar({
               {/* Logo */}
               <div className="flex justify-center mb-4 cursor-pointer" onClick={() => router.push('/dashboard')}>
                 {clientData?.client_logo_url || clientData?.logo_url ? (
-                  <img
-                    src={clientData.client_logo_url || clientData.logo_url}
-                    alt={clientData.name}
-                    className="h-12 object-contain"
-                  />
-                ) : (
-                  <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-indigo-200">
-                    <Building2 size={24} />
+                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                    <span className="text-white text-sm font-bold">
+                      {userData?.full_name?.charAt(0)?.toUpperCase() || '?'}
+                    </span>
                   </div>
                 )}
               </div>
+            </div>
+          ) : (
+          // Versão expandida
+          <div className="text-center">
+            {/* Logo e Nome da Empresa */}
+            <h1 className="font-bold text-gray-800 text-sm leading-tight mb-1 truncate">
+              {clientData?.name || 'Portal do Cliente'}
+            </h1>
+            <p className="text-xs text-gray-500 mb-2 truncate">
+              {clientData?.phone || 'Painel de Gestão'}
+            </p>
 
-              <h2 className="font-bold text-gray-800 leading-tight">
-                {clientData?.name || 'Portal do Cliente'}
-              </h2>
-              <p className="text-xs text-gray-600 mt-1">
-                {clientData?.phone || 'Painel de Gestão'}
+            {/* Separador */}
+            <div className="h-px bg-gradient-to-r from-transparent via-indigo-200 to-transparent my-3"></div>
+
+            {/* Avatar e Info do Usuário */}
+            <div
+              className="flex flex-col items-center cursor-pointer group p-1 rounded-xl hover:bg-white/50 transition-all"
+              onClick={() => router.push('/profile')}
+            >
+              <div className="relative mb-2 group-hover:scale-105 transition-transform">
+                {userData?.avatar_url ? (
+                  <img
+                    src={userData.avatar_url}
+                    alt={userData.full_name || 'Avatar'}
+                    className="w-16 h-16 rounded-full object-cover border-3 border-indigo-300 shadow-lg"
+                  />
+                ) : (
+                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                    <span className="text-white text-2xl font-bold">
+                      {userData?.full_name?.charAt(0)?.toUpperCase() || '?'}
+                    </span>
+                  </div>
+                )}
+                {/* Badge de status online */}
+                <div className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div>
+              </div>
+
+              <p className="font-semibold text-gray-800 text-sm truncate max-w-[180px] group-hover:text-indigo-600 transition-colors">
+                {userData?.full_name || 'Usuário'}
               </p>
 
-              <div className="h-px bg-gradient-to-r from-transparent via-indigo-200 to-transparent my-4"></div>
-
-              {/* User Avatar - CLICKABLE */}
-              <div
-                className="flex flex-col items-center cursor-pointer group p-2 rounded-xl hover:bg-indigo-50/50 transition-colors"
-                onClick={() => router.push('/profile')}
-              >
-                <div className="relative mb-2 group-hover:scale-105 transition-transform">
-                  {userData?.avatar_url ? (
-                    <img
-                      src={userData.avatar_url}
-                      alt={userData.full_name}
-                      className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-md"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold border-4 border-white shadow-md">
-                      {userData?.full_name?.charAt(0) || 'U'}
-                    </div>
-                  )}
-                  <div className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
-                </div>
-                <p className="font-semibold text-gray-900 text-sm group-hover:text-indigo-600 transition-colors">{userData?.full_name}</p>
-                <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full mt-1 border border-indigo-100 group-hover:bg-indigo-100">
-                  Editar Perfil
-                </span>
-              </div>
+              <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full mt-1 border border-indigo-100 group-hover:bg-indigo-100 transition-colors">
+                Editar Perfil
+              </span>
             </div>
-          )}
+          </div>
+        )}
         </div>
 
-        {/* Navigation Items */}
-        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-hide">
+        {/* Busca Rápida (Placeholder visual) */}
+        <div className={`px-3 pt-2 pb-1 ${collapsed ? 'flex justify-center' : ''}`}>
+          <button
+            onClick={onScanOpen}
+            className={`group flex items-center gap-3 w-full p-2.5 rounded-xl border border-indigo-100 bg-indigo-50/30 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-all shadow-sm ${collapsed ? 'justify-center w-10 h-10 p-0' : ''}`}
+            title="Abrir Scanner QR Code"
+          >
+            <Camera size={20} className="shrink-0 group-hover:scale-110 transition-transform" />
+            {!collapsed && (
+              <div className="flex flex-1 items-center justify-between">
+                <span className="text-sm font-medium">Scanner QR</span>
+              </div>
+            )}
+          </button>
+        </div>
+
+        {/* Menu Navigation */}
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-hide">
           {!collapsed && (
-            <p className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            <p className="px-3 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-2">
               Menu Principal
             </p>
           )}
 
           {menuItems.map((item) => {
+            const isActive = pathname === item.path || pathname.startsWith(item.path + '/');
             const Icon = item.icon;
-            const active = isActive(item.path);
 
             return (
-              <button
-                key={item.label}
-                onClick={() => {
-                  if (item.action && onScanOpen && item.path === 'scanner') {
-                    onScanOpen();
-                  } else {
-                    router.push(item.path);
-                  }
-                  setMobileOpen(false);
-                }}
+              <Link
+                key={item.path}
+                href={item.path}
+                onClick={() => setMobileOpen(false)}
                 className={`
-                  w-full flex items-center group relative
-                  ${collapsed ? 'justify-center px-0 py-3' : 'justify-start px-4 py-3'}
-                  rounded-xl transition-all duration-200
-                  ${active
-                    ? 'bg-indigo-50 text-indigo-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600'
+                flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative
+                ${isActive
+                    ? 'bg-gradient-to-r from-indigo-50 to-white text-indigo-600 shadow-sm border border-indigo-100'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-indigo-600 hover:translate-x-1'
                   }
-                `}
+                ${collapsed ? 'justify-center px-2' : ''}
+              `}
                 title={collapsed ? item.label : undefined}
               >
-                {/* Active Indicator Strip */}
-                {active && !collapsed && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-indigo-600 rounded-r-full"></div>
+                {isActive && !collapsed && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" />
                 )}
 
                 <Icon
-                  size={collapsed ? 24 : 20}
-                  className={`
-                    transition-all duration-200
-                    ${active ? 'text-indigo-600' : 'text-gray-500 group-hover:text-indigo-500'}
-                  `}
+                  size={20}
+                  className={`transition-colors duration-200 ${isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-indigo-500'}`}
                 />
 
                 {!collapsed && (
-                  <span className="ml-3 truncate">{item.label}</span>
+                  <div className="flex-1 flex justify-between items-center">
+                    <span className={`text-sm font-medium ${isActive ? 'text-indigo-900' : ''}`}>
+                      {item.label}
+                    </span>
+                    {item.badge && (
+                      <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm animate-pulse-subtle">
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
                 )}
 
-                {/* Badges */}
-                {item.badge && (
-                  collapsed ? (
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-                  ) : (
-                    <span className="ml-auto bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-200">
-                      {item.badge > 99 ? '99+' : item.badge}
-                    </span>
-                  )
+                {/* Badge for Collapsed State */}
+                {collapsed && item.badge && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm border border-white">
+                    {item.badge}
+                  </span>
                 )}
-              </button>
+              </Link>
             );
           })}
-        </div>
+        </nav>
 
-        {/* Footer actions */}
-        <div className="p-4 border-t border-indigo-100 bg-gray-50/50">
+        {/* Footer / Logout */}
+        <div className="p-3 border-t border-gray-100 bg-gray-50/50">
           <button
             onClick={handleLogout}
-            className={`
-              w-full flex items-center 
-              ${collapsed ? 'justify-center' : 'justify-start gap-3'}
-              text-gray-500 hover:text-red-600 hover:bg-red-50 
-              p-2 rounded-lg transition-all duration-200
-            `}
-            title="Sair"
+            className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group ${collapsed ? 'justify-center px-2' : ''}`}
+            title={collapsed ? 'Sair' : undefined}
           >
-            <LogOut size={20} />
-            {!collapsed && <span className="font-medium text-sm">Sair</span>}
+            <LogOut size={20} className="group-hover:scale-110 transition-transform" />
+            {!collapsed && <span className="text-sm font-medium">Sair do Sistema</span>}
           </button>
         </div>
+      </>
+      );
 
-        {/* Collapse Button (Desktop Only) */}
+      return (
+      <>
+        {/* Mobile Menu Button - Left aligned like Admin */}
         <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="hidden lg:flex absolute -right-3 top-20 bg-white border border-indigo-100 rounded-full p-1 shadow-md text-indigo-600 hover:scale-110 transition-transform z-50"
+          onClick={() => setMobileOpen(true)}
+          className="lg:hidden fixed top-3 left-3 z-50 p-2.5 bg-indigo-600 text-white rounded-lg shadow-lg hover:bg-indigo-700 active:scale-95 transition-all"
         >
-          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+          <Menu size={22} />
         </button>
-      </aside>
-    </>
-  );
+
+        {/* Mobile Sidebar Overlay */}
+        {mobileOpen && (
+          <div className="lg:hidden fixed inset-0 z-50">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setMobileOpen(false)} />
+            <div className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-2xl flex flex-col animate-slideIn">
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
+              >
+                <X size={20} />
+              </button>
+              <SidebarContent />
+            </div>
+          </div>
+        )}
+
+        {/* Desktop Sidebar - Premium Layout */}
+        <aside
+          className={`
+          hidden lg:flex flex-col bg-white border-r border-gray-200
+          transition-all duration-300 ease-in-out relative shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)]
+          ${collapsed ? 'w-20' : 'w-72'}
+        `}
+        >
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <SidebarContent />
+          </div>
+
+          {/* Floating Collapse Button */}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="absolute top-10 -right-3.5 w-7 h-7 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-md hover:bg-indigo-50 hover:text-indigo-600 text-gray-400 transition-all z-20 group scale-0 lg:scale-100"
+            title={collapsed ? 'Expandir menu' : 'Recolher menu'}
+          >
+            {collapsed ? (
+              <ChevronRight size={14} className="group-hover:scale-110 transition-transform" />
+            ) : (
+              <ChevronLeft size={14} className="group-hover:scale-110 transition-transform" />
+            )}
+          </button>
+        </aside>
+      </>
+      );
 }
