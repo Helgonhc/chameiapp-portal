@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { File, Download, Search, Folder, Calendar, HardDrive, ChevronRight, Home, ArrowLeft } from 'lucide-react';
+import { File, Download, Search, Folder, Calendar, HardDrive, ChevronRight, Home, ArrowLeft, FileCheck, ClipboardList, Receipt, Wrench, FileBox, CalendarRange } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 type DocFile = {
@@ -15,6 +16,7 @@ type DocFile = {
     subcategory: string | null;
     reference_date: string;
     created_at: string;
+    client_id: string;
 };
 
 type FolderStructure = {
@@ -31,11 +33,19 @@ const CATEGORY_COLORS: any = {
     'Outros': 'text-purple-600 bg-purple-50',
 };
 
+const CATEGORY_ICONS: any = {
+    'ART': FileCheck,
+    'Laudo': ClipboardList,
+    'Ordem de Serviço': Wrench,
+    'Nota Fiscal': Receipt,
+    'Outros': FileBox,
+};
+
 export default function DocumentsPage() {
     const [documents, setDocuments] = useState<DocFile[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentPath, setCurrentPath] = useState<string[]>([]);
-    const [searchTerm, setSearchTerm] = useState(''); // Navigation path e.g. ['Laudo', 'SPDA', '2024']
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         loadDocuments();
@@ -46,20 +56,28 @@ export default function DocumentsPage() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single();
-            if (!profile?.client_id) { setLoading(false); return; }
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('client_id')
+                .eq('id', user.id)
+                .single();
+
+            if (!profile?.client_id) {
+                setLoading(false);
+                return;
+            }
 
             const { data, error } = await supabase
                 .from('client_documents')
                 .select('*')
                 .eq('client_id', profile.client_id)
-                .order('reference_date', { ascending: false });
+                .order('created_at', { ascending: false });
 
             if (error) throw error;
             setDocuments(data || []);
         } catch (error) {
-            console.error('Erro:', error);
-            toast.error('Erro ao carregar documentos');
+            console.error('Erro ao carregar documentos:', error);
+            toast.error('Não foi possível carregar seus documentos');
         } finally {
             setLoading(false);
         }
@@ -178,6 +196,17 @@ export default function DocumentsPage() {
         setCurrentPath(currentPath.slice(0, index + 1));
     }
 
+    // Helper to get Icon
+    function getFolderIcon(item: any) {
+        if (currentPath.length === 0) return CalendarRange; // Years
+        if (currentPath.length === 2 && CATEGORY_ICONS[currentPath[1]]) return Calendar; // Months inside Category (generic) or Subcat (Laudo)
+        // Adjust for Laudo
+        if (currentPath[1] === 'Laudo' && currentPath.length === 3) return Calendar;
+
+        // Categories
+        return CATEGORY_ICONS[item.name] || Folder;
+    }
+
     return (
         <div className="space-y-6 animate-fadeIn pb-20">
             {/* Header with Search */}
@@ -246,6 +275,7 @@ export default function DocumentsPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {items.map((item: any, idx) => {
                         if (item.type === 'folder') {
+                            const Icon = getFolderIcon(item);
                             return (
                                 <div
                                     key={idx}
@@ -258,7 +288,7 @@ export default function DocumentsPage() {
                                     `}
                                 >
                                     <div className={`p-3 rounded-full ${CATEGORY_COLORS[currentPath[1] || item.name] || 'bg-indigo-50 text-indigo-600'}`}>
-                                        <Folder size={32} />
+                                        <Icon size={32} />
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-gray-800 text-sm">{item.name}</h3>
