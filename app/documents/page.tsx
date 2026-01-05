@@ -293,24 +293,29 @@ export default function DocumentsPage() {
                                     key={idx}
                                     onClick={() => navigateTo(item.name)}
                                     className={`
-                                        cursor-pointer p-4 rounded-xl border border-gray-100 bg-white
-                                        hover:border-indigo-200 hover:shadow-sm transition-all duration-200
-                                        flex items-center gap-4 group
+                                        cursor-pointer p-6 rounded-2xl border border-white/60 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]
+                                        hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300
+                                        flex flex-col items-center justify-center text-center gap-4
+                                        bg-gradient-to-b from-white to-slate-50/50 backdrop-blur-xl
+                                        group relative overflow-hidden
                                     `}
                                 >
                                     <div className={`
-                                        p-3 rounded-lg ${CATEGORY_COLORS[currentPath[1] || item.name] || 'bg-gray-50 text-gray-500'}
-                                        group-hover:scale-105 transition-transform duration-200
+                                        absolute inset-0 bg-gradient-to-tr from-transparent via-transparent to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500
+                                    `} />
+
+                                    <div className={`
+                                        p-4 rounded-2xl ${CATEGORY_COLORS[currentPath[1] || item.name] || 'bg-indigo-50 text-indigo-600'}
+                                        transform group-hover:scale-110 transition-transform duration-300 shadow-inner
                                     `}>
-                                        <Icon size={24} strokeWidth={2} />
+                                        <Icon size={32} strokeWidth={1.5} />
                                     </div>
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold text-gray-800 text-sm group-hover:text-indigo-600 transition-colors">{item.name}</h3>
-                                        <p className="text-[11px] text-gray-400 font-medium">
+                                    <div className="relative z-10">
+                                        <h3 className="font-bold text-slate-700 text-sm mb-1 group-hover:text-indigo-600 transition-colors">{item.name}</h3>
+                                        <p className="text-[11px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full inline-block">
                                             {item.count} itens
                                         </p>
                                     </div>
-                                    <ChevronRight size={16} className="text-gray-300 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
                                 </div>
                             );
                         } else {
@@ -322,45 +327,41 @@ export default function DocumentsPage() {
                             return (
                                 <div
                                     key={doc.id}
-                                    className="group relative bg-white p-4 rounded-xl border border-gray-100 hover:border-indigo-200 hover:shadow-sm transition-all duration-200 flex flex-col justify-between"
+                                    className="group relative bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full"
                                 >
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className={`p-2 rounded-lg ${isPdf ? 'bg-red-50 text-red-500' : isImage ? 'bg-blue-50 text-blue-500' : 'bg-gray-50 text-gray-500'}`}>
-                                            {isImage ? <HardDrive size={20} strokeWidth={2} /> : <File size={20} strokeWidth={2} />}
+                                    <div className="mb-4">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className={`p-2.5 rounded-xl ${isPdf ? 'bg-red-50 text-red-500' : isImage ? 'bg-blue-50 text-blue-500' : 'bg-slate-50 text-slate-500'}`}>
+                                                {isImage ? <HardDrive size={24} strokeWidth={1.5} /> : <File size={24} strokeWidth={1.5} />}
+                                            </div>
+                                            <span className="text-[9px] font-bold tracking-wider text-slate-400 bg-slate-50 px-2 py-1 rounded-[6px] border border-slate-100">
+                                                {doc.file_type?.toUpperCase().substring(0, 4) || 'FILE'}
+                                            </span>
                                         </div>
-                                        <span className="text-[10px] uppercase font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded border border-gray-100">
-                                            {doc.file_type?.substring(0, 3)}
-                                        </span>
+                                        <h4 className="font-semibold text-slate-700 text-sm leading-snug line-clamp-2 mb-2 group-hover:text-indigo-600 transition-colors" title={doc.title}>
+                                            {doc.title}
+                                        </h4>
+                                        <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+                                            <Calendar size={12} />
+                                            <span>{new Date(doc.created_at).toLocaleDateString('pt-BR')}</span>
+                                        </div>
                                     </div>
 
-                                    <h4 className="font-semibold text-gray-700 text-sm leading-snug line-clamp-2 mb-1 group-hover:text-indigo-600 transition-colors" title={doc.title}>
-                                        {doc.title}
-                                    </h4>
-
-                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
-                                        <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                                            <Calendar size={10} /> {new Date(doc.created_at).toLocaleDateString('pt-BR')}
-                                        </span>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); handleDownload(doc); }}
-                                            className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
-                                            title="Baixar"
-                                        >
-                                            <Download size={16} />
-                                        </button>
-                                    </div>
+                                    <button
+                                        onClick={() => handleDownload(doc)}
+                                        className="w-full py-2.5 flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl font-semibold text-xs transition-all active:scale-[0.98]"
+                                    >
+                                        <Download size={14} /> Baixar
+                                    </button>
                                 </div>
                             );
                         }
                     })}
 
                     {items.length === 0 && (
-                        <div className="col-span-full py-16 text-center">
-                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <Folder className="w-8 h-8 text-gray-300" />
-                            </div>
-                            <h3 className="text-gray-800 font-medium">Pasta vazia</h3>
-                            <p className="text-sm text-gray-400 mt-1">Nenhum arquivo encontrado aqui.</p>
+                        <div className="col-span-full py-12 text-center text-gray-400">
+                            <Folder className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                            <p>Esta pasta está vazia {searchTerm && 'ou nenhum item corresponde à busca'}.</p>
                         </div>
                     )}
                 </div>
