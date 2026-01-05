@@ -281,47 +281,63 @@ export default function DocumentsPage() {
                                     key={idx}
                                     onClick={() => navigateTo(item.name)}
                                     className={`
-                                        cursor-pointer p-5 rounded-2xl border border-gray-100 shadow-sm 
-                                        hover:shadow-md hover:scale-105 transition-all
-                                        flex flex-col items-center justify-center text-center gap-3
-                                        bg-white
+                                        cursor-pointer p-6 rounded-2xl border border-white/60 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]
+                                        hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300
+                                        flex flex-col items-center justify-center text-center gap-4
+                                        bg-gradient-to-b from-white to-slate-50/50 backdrop-blur-xl
+                                        group relative overflow-hidden
                                     `}
                                 >
-                                    <div className={`p-3 rounded-full ${CATEGORY_COLORS[currentPath[1] || item.name] || 'bg-indigo-50 text-indigo-600'}`}>
-                                        <Icon size={32} />
+                                    <div className={`
+                                        absolute inset-0 bg-gradient-to-tr from-transparent via-transparent to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500
+                                    `} />
+
+                                    <div className={`
+                                        p-4 rounded-2xl ${CATEGORY_COLORS[currentPath[1] || item.name] || 'bg-indigo-50 text-indigo-600'}
+                                        transform group-hover:scale-110 transition-transform duration-300 shadow-inner
+                                    `}>
+                                        <Icon size={32} strokeWidth={1.5} />
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-gray-800 text-sm">{item.name}</h3>
-                                        <p className="text-xs text-gray-400">{item.count} arquivos</p>
+                                    <div className="relative z-10">
+                                        <h3 className="font-bold text-slate-700 text-sm mb-1 group-hover:text-indigo-600 transition-colors">{item.name}</h3>
+                                        <p className="text-[11px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full inline-block">
+                                            {item.count} itens
+                                        </p>
                                     </div>
                                 </div>
                             );
                         } else {
-                            // File logic remains ...
+                            // File
                             const doc = item as any;
+                            const isPdf = doc.file_type?.toLowerCase().includes('pdf');
+                            const isImage = doc.file_type?.toLowerCase().includes('image') || doc.file_type?.toLowerCase().includes('png') || doc.file_type?.toLowerCase().includes('jpg');
+
                             return (
                                 <div
                                     key={doc.id}
-                                    className="group relative bg-white p-4 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all flex flex-col justify-between"
+                                    className="group relative bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full"
                                 >
-                                    <div>
+                                    <div className="mb-4">
                                         <div className="flex justify-between items-start mb-3">
-                                            <div className="p-2 bg-gray-50 text-indigo-600 rounded-lg">
-                                                <File size={24} />
+                                            <div className={`p-2.5 rounded-xl ${isPdf ? 'bg-red-50 text-red-500' : isImage ? 'bg-blue-50 text-blue-500' : 'bg-slate-50 text-slate-500'}`}>
+                                                {isImage ? <HardDrive size={24} strokeWidth={1.5} /> : <File size={24} strokeWidth={1.5} />}
                                             </div>
-                                            <span className="text-[10px] uppercase font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">
-                                                {doc.file_type}
+                                            <span className="text-[9px] font-bold tracking-wider text-slate-400 bg-slate-50 px-2 py-1 rounded-[6px] border border-slate-100">
+                                                {doc.file_type?.toUpperCase().substring(0, 4) || 'FILE'}
                                             </span>
                                         </div>
-                                        <h4 className="font-semibold text-gray-800 text-sm line-clamp-2 mb-1" title={doc.title}>{doc.title}</h4>
-                                        <div className="text-xs text-gray-500 flex items-center gap-1 mb-4">
-                                            <Calendar size={10} /> {new Date(doc.created_at).toLocaleDateString()}
+                                        <h4 className="font-semibold text-slate-700 text-sm leading-snug line-clamp-2 mb-2 group-hover:text-indigo-600 transition-colors" title={doc.title}>
+                                            {doc.title}
+                                        </h4>
+                                        <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+                                            <Calendar size={12} />
+                                            <span>{new Date(doc.created_at).toLocaleDateString('pt-BR')}</span>
                                         </div>
                                     </div>
 
                                     <button
                                         onClick={() => handleDownload(doc)}
-                                        className="w-full py-2 flex items-center justify-center gap-2 bg-indigo-50 text-indigo-600 rounded-xl font-medium text-xs hover:bg-indigo-100 transition-colors"
+                                        className="w-full py-2.5 flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl font-semibold text-xs transition-all active:scale-[0.98]"
                                     >
                                         <Download size={14} /> Baixar
                                     </button>
