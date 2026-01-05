@@ -198,171 +198,163 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="animate-fadeIn">
-        {/* Header Section */}
-        <div className="mb-8">
+      <div className="space-y-6 animate-fadeIn">
+        {/* Header Section - Admin Style */}
+        <div>
           <h1 className="text-2xl font-bold text-gray-800">Dashboard de Controle</h1>
-          <p className="text-gray-600">Visão geral da sua operação em tempo real</p>
+          <p className="text-gray-500">Visão geral da sua operação em tempo real</p>
         </div>
 
-        {/* Maintenance Alerts */}
+        {/* Maintenance Alerts - Admin Style Cards */}
         {maintenanceAlerts.length > 0 && (
-          <div className="mb-8 card bg-white border-l-4 border-l-amber-500">
-            <div className="flex items-center gap-2 mb-4">
-              <AlertTriangle className="text-amber-500" />
-              <h2 className="text-lg font-bold text-gray-800">Atenção Necessária</h2>
-            </div>
-
-            <div className="space-y-3">
-              {maintenanceAlerts.map((alert) => {
-                const style = getUrgencyStyle(alert.urgency);
-                return (
-                  <div key={alert.id} className={`p-4 rounded-lg border ${style.bg} ${style.border} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all hover:shadow-sm`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg bg-white shadow-sm`}>
-                        <Wrench className={`w-5 h-5 ${style.text}`} />
-                      </div>
-                      <div>
-                        <h3 className={`font-bold ${style.text} flex items-center gap-2`}>
-                          {alert.maintenance_type_name}
-                          {alert.urgency === 'vencido' && <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full uppercase tracking-wider">Vencido</span>}
-                        </h3>
-                        <p className="text-sm text-gray-700">{alert.title}</p>
-                        {alert.equipment_name && <p className="text-xs text-gray-600 mt-1">Equipamento: {alert.equipment_name}</p>}
-                      </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {maintenanceAlerts.map((alert) => {
+              const style = getUrgencyStyle(alert.urgency);
+              return (
+                <div key={alert.id} className={`card ${style.border} border-l-4 ${style.bg} relative overflow-hidden group`}>
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <p className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${style.text}`}>
+                        <Wrench size={10} /> {alert.maintenance_type_name}
+                      </p>
+                      <h4 className="font-bold text-gray-800 text-sm truncate max-w-[200px]">{alert.title}</h4>
+                      {alert.equipment_name && <p className="text-xs text-gray-500">{alert.equipment_name}</p>}
                     </div>
-
-                    <div className="text-right w-full sm:w-auto flex flex-row sm:flex-col justify-between sm:justify-center items-center sm:items-end">
-                      <div className="text-sm font-bold text-gray-700">
-                        {alert.days_until < 0 ? `${Math.abs(alert.days_until)} dias atrasado` : alert.days_until === 0 ? 'Hoje' : `Em ${alert.days_until} dias`}
-                      </div>
-                      <div className="text-xs text-gray-500 flex items-center gap-1">
-                        <Calendar size={12} />
-                        {new Date(alert.next_maintenance_date).toLocaleDateString('pt-BR')}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                      <button onClick={() => router.push('/tickets')} className="flex-1 sm:flex-none btn btn-secondary text-xs py-1.5 h-auto">Abrir Chamado</button>
-                    </div>
+                    <button
+                      onClick={() => router.push('/tickets')}
+                      className={`p-1.5 rounded-lg shadow-sm border transition-colors bg-white hover:bg-white/80 ${style.text} border-gray-100`}
+                    >
+                      <ArrowRight size={16} />
+                    </button>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="mt-3 flex justify-between items-center">
+                    <span className="text-[10px] text-gray-500 font-bold">
+                      {new Date(alert.next_maintenance_date).toLocaleDateString('pt-BR')}
+                    </span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase ${alert.urgency === 'vencido' ? 'bg-red-100 text-red-700' :
+                        alert.urgency === 'urgente' ? 'bg-amber-100 text-amber-700' :
+                          alert.urgency === 'proximo' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'
+                      }`}>
+                      {alert.urgency === 'vencido' ? 'Vencida' : alert.urgency === 'urgente' ? 'Urgente' : 'Próxima'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 mb-8">
+        {/* Stats Grid - Admin Style */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {statCards.map((card, index) => {
             const Icon = card.icon;
             return (
-              <div key={index} className="card card-hover flex flex-col justify-between">
-                <div className="flex items-start justify-between mb-4">
+              <div key={index} className="card card-hover">
+                <div className="flex items-center gap-3">
                   <div className={`p-2 rounded-lg ${card.bg}`}>
                     <Icon className={`w-5 h-5 ${card.text}`} />
                   </div>
-                  {index < 3 && <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full cursor-default">OK</span>}
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-800">{card.value}</h3>
-                  <p className="text-xs text-gray-600 font-medium uppercase tracking-wide mt-1">{card.title}</p>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-800">{card.value}</p>
+                    <p className="text-xs text-gray-500">{card.title}</p>
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Chart 1: Distribution */}
-          <div className="card lg:col-span-1 min-h-[350px]">
-            <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-gray-400" /> Ordens de Serviço
+        {/* Charts Section - Admin Style */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Chart 1 */}
+          <div className="card">
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <BarChart3 size={18} className="text-indigo-600" />
+              Status de Ordens
             </h3>
-            <div className="h-64 flex items-center justify-center relative">
+            <div className="h-[250px] w-full flex items-center justify-center">
               {stats.totalOrders > 0 ? (
                 <Doughnut
                   data={{
                     labels: ['Pendentes', 'Andamento', 'Concluídas'],
                     datasets: [{ data: [stats.pendingOrders, stats.inProgressOrders, stats.completedOrders], backgroundColor: ['#F59E0B', '#6366F1', '#10B981'], borderWidth: 0 }]
                   }}
-                  options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, cutout: '70%' }}
+                  options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true } } }, cutout: '75%' }}
                 />
               ) : (
-                <p className="text-sm text-gray-400">Sem dados registrados</p>
+                <div className="text-center text-gray-400">
+                  <p>Sem dados suficientes</p>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Chart 2: Activity */}
-          <div className="card lg:col-span-2 min-h-[350px]">
-            <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-gray-400" /> Volume Recente
+          {/* Chart 2 */}
+          <div className="card">
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <TrendingUp size={18} className="text-indigo-600" />
+              Volume Recente
             </h3>
-            <div className="h-64 relative w-full">
+            <div className="h-[250px] w-full">
               <Bar
-                data={{ labels: ['Semana', 'Mês', 'Total'], datasets: [{ label: 'Ordens', data: [stats.ordersThisWeek, stats.ordersThisMonth, stats.totalOrders], backgroundColor: ['#6366F1', '#F59E0B', '#10B981'], borderRadius: 6 }] }}
-                options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(0,0,0,0.05)' } }, x: { grid: { display: false } } } }}
+                data={{ labels: ['Semana', 'Mês', 'Total'], datasets: [{ label: 'Ordens', data: [stats.ordersThisWeek, stats.ordersThisMonth, stats.totalOrders], backgroundColor: ['#6366F1', '#F59E0B', '#10B981'], borderRadius: 4, barThickness: 40 }] }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: {
+                    y: { grid: { color: 'rgba(0,0,0,0.03)', drawBorder: false }, ticks: { display: false } },
+                    x: { grid: { display: false }, ticks: { font: { size: 12 } } }
+                  }
+                }}
               />
             </div>
           </div>
         </div>
 
-        {/* Recent Orders List (Restored) */}
-        <div className="mb-8">
+        {/* Recent Orders - Admin Style */}
+        <div className="card">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-gray-500" /> Últimas Atualizações
-            </h2>
-            <button onClick={() => router.push('/service-orders')} className="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-              Ver tudo
+            <h2 className="font-semibold text-gray-800">Ordens Recentes</h2>
+            <button onClick={() => router.push('/service-orders')} className="text-sm text-indigo-600 hover:text-indigo-700 font-medium hover:underline">
+              Ver todas
             </button>
           </div>
 
-          <div className="card overflow-hidden !p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-center">
-                <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-100">
-                  <tr>
-                    <th className="px-4 py-3 text-left">Ordem</th>
-                    <th className="px-4 py-3 text-left">Status</th>
-                    <th className="px-4 py-3 text-left hidden sm:table-cell">Atualizado em</th>
-                    <th className="px-4 py-3 text-right">Valor</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {recentOrders.length > 0 ? (
-                    recentOrders.map((order) => (
-                      <tr key={order.id} onClick={() => router.push(`/service-orders/${order.id}`)} className="hover:bg-gray-50 cursor-pointer transition-colors">
-                        <td className="px-4 py-3 text-left">
-                          <div className="font-bold text-gray-800">{order.title}</div>
-                          <div className="text-xs text-gray-600">#{order.order_number}</div>
-                        </td>
-                        <td className="px-4 py-3 text-left">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${order.status === 'completed' ? 'bg-green-100 text-green-700' :
-                            order.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
-                            }`}>
-                            {order.status === 'completed' ? 'Concluído' : order.status === 'in_progress' ? 'Em Andamento' : 'Pendente'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-left hidden sm:table-cell text-gray-500">
-                          {new Date(order.created_at).toLocaleDateString('pt-BR')}
-                        </td>
-                        <td className="px-4 py-3 text-right font-medium text-gray-700">
-                          {order.final_cost ? `R$ ${order.final_cost.toFixed(2)}` : '-'}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
-                        Nenhuma ordem recente encontrada.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+          <div className="space-y-2">
+            {recentOrders.length === 0 ? (
+              <p className="text-gray-500 text-sm text-center py-8 bg-gray-50 rounded-lg">Nenhuma ordem encontrada</p>
+            ) : (
+              recentOrders.map((order) => (
+                <div
+                  key={order.id}
+                  onClick={() => router.push(`/service-orders/${order.id}`)}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded-lg border border-gray-100 shadow-sm group-hover:border-indigo-100 group-hover:shadow-md transition-all">
+                      <FileText className="w-4 h-4 text-indigo-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800 text-sm group-hover:text-indigo-600 transition-colors">{order.title}</p>
+                      <p className="text-xs text-gray-500">#{order.order_number}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <span className="hidden sm:block text-xs font-medium text-gray-500">
+                      {new Date(order.created_at).toLocaleDateString('pt-BR')}
+                    </span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${order.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        order.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+                      }`}>
+                      {order.status === 'completed' ? 'Concluído' : order.status === 'in_progress' ? 'Andamento' : 'Pendente'}
+                    </span>
+                    <ChevronRight size={16} className="text-gray-300 group-hover:text-indigo-600 transition-colors" />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
