@@ -23,7 +23,17 @@ export default function LoginPage() {
   async function checkUser() {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-      router.push('/dashboard');
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profile?.role === 'client') {
+        router.push('/dashboard');
+      } else {
+        await supabase.auth.signOut();
+      }
     }
   }
 

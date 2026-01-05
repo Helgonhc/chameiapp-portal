@@ -158,7 +158,7 @@ export default function DocumentsPage() {
 
     const items = getCurrentItems().filter(item => {
         if (item.type === 'folder') {
-            return item.name.toLowerCase().includes(searchTerm.toLowerCase());
+            return (item as any).name.toLowerCase().includes(searchTerm.toLowerCase());
         }
         // It's a file
         return (item as any).title?.toLowerCase().includes(searchTerm.toLowerCase());
