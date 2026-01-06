@@ -2,7 +2,7 @@ node_modules
 .next
 .env.local
 .env*.local
-.vercel
+.vscode/
 *.log
 .DS_Store
 node_modules

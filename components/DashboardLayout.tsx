@@ -106,7 +106,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Content Area */}
-        <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 pt-20 lg:pt-8 pb-24 lg:pb-8">
+        <div className="w-full max-w-7xl mx-auto p-3 sm:p-4 lg:p-4 pt-16 lg:pt-4 pb-20 lg:pb-4">
           {children}
         </div>
 
