@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, ArrowLeft, Shield, KeyRound } from 'lucide-react';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const { logout } = useAuthStore();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -62,7 +64,7 @@ export default function ResetPasswordPage() {
       if (error) throw error;
 
       setSuccess(true);
-      await supabase.auth.signOut();
+      await logout();
 
       setTimeout(() => {
         router.push('/login');

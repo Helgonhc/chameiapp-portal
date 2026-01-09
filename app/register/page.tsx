@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import { UserPlus, ArrowLeft, AlertCircle, CheckCircle, Search, Loader2, Building2, User, Camera, Upload, X } from 'lucide-react'
 import Image from 'next/image'
 
 export default function RegisterPage() {
   const router = useRouter()
+  const { logout } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -23,15 +25,15 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [phone, setPhone] = useState('')
   const [companyName, setCompanyName] = useState('')
-  
+
   // Logo/Foto
   const [logoUrl, setLogoUrl] = useState('')
   const [logoPreview, setLogoPreview] = useState('')
-  
+
   // Documento
   const [cnpjCpf, setCnpjCpf] = useState('')
   const [ieRg, setIeRg] = useState('')
-  
+
   // Endereço completo
   const [cep, setCep] = useState('')
   const [street, setStreet] = useState('')
@@ -72,7 +74,7 @@ export default function RegisterPage() {
       // Upload para Supabase Storage
       const fileExt = file.name.split('.').pop()
       const fileName = `clients/${Date.now()}.${fileExt}`
-      
+
       const { error: uploadError } = await supabase.storage
         .from('os-photos')
         .upload(fileName, file, {
@@ -106,7 +108,7 @@ export default function RegisterPage() {
   // Buscar dados do CNPJ
   async function handleCnpjBlur() {
     if (type === 'PF') return
-    
+
     const cleanCnpj = cnpjCpf.replace(/\D/g, '')
     if (cleanCnpj.length !== 14) return
 
@@ -119,7 +121,7 @@ export default function RegisterPage() {
         setCompanyName(data.razao_social || data.nome_fantasia)
         if (data.ddd_telefone_1) setPhone(`(${data.ddd_telefone_1}) ${data.telefone_1}`)
         if (data.email) setEmail(data.email)
-        
+
         // Endereço
         if (data.cep) setCep(data.cep.replace(/\D/g, ''))
         if (data.logradouro) setStreet(data.logradouro)
@@ -145,7 +147,7 @@ export default function RegisterPage() {
     try {
       const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`)
       const data = await response.json()
-      
+
       if (!data.erro) {
         setStreet(data.logradouro || '')
         setNeighborhood(data.bairro || '')
@@ -192,7 +194,7 @@ export default function RegisterPage() {
       const userId = authData.user.id
 
       // 2. Criar cliente na carteira PRIMEIRO
-      const fullAddress = street && city 
+      const fullAddress = street && city
         ? `${street}, ${number} - ${neighborhood}, ${city}/${state}${cep ? ` - CEP ${cep}` : ''}`
         : ''
 
@@ -262,10 +264,10 @@ export default function RegisterPage() {
       }
 
       // 6. FAZER LOGOUT AGORA (depois de criar tudo)
-      await supabase.auth.signOut()
+      await logout()
 
       setSuccess(true)
-      
+
       // Redirecionar após 3 segundos
       setTimeout(() => {
         router.push('/login')
@@ -337,11 +339,10 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setType('PF')}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
-                    type === 'PF'
-                      ? 'border-blue-600 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                  }`}
+                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${type === 'PF'
+                    ? 'border-blue-600 bg-blue-50 text-blue-700'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    }`}
                 >
                   <User className="w-5 h-5" />
                   <span className="font-medium">Pessoa Física</span>
@@ -349,11 +350,10 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setType('PJ')}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
-                    type === 'PJ'
-                      ? 'border-blue-600 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                  }`}
+                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${type === 'PJ'
+                    ? 'border-blue-600 bg-blue-50 text-blue-700'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    }`}
                 >
                   <Building2 className="w-5 h-5" />
                   <span className="font-medium">Pessoa Jurídica</span>
@@ -396,9 +396,8 @@ export default function RegisterPage() {
                 <div className="flex-1">
                   <label
                     htmlFor="logo-upload"
-                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-gray-300 bg-white text-gray-700 hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer ${
-                      uploading ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
+                    className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-gray-300 bg-white text-gray-700 hover:border-blue-500 hover:bg-blue-50 transition-all cursor-pointer ${uploading ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                   >
                     {uploading ? (
                       <>
@@ -542,7 +541,7 @@ export default function RegisterPage() {
             {/* Seção de Endereço */}
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Endereço</h3>
-              
+
               {/* CEP e Cidade */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>

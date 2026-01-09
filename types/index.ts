@@ -1,131 +1,121 @@
-// =====================================================
-// TIPOS DO PORTAL DO CLIENTE
-// =====================================================
+export type Profile = {
+  id: string;
+  email: string;
+  full_name: string;
+  role: 'super_admin' | 'admin' | 'technician' | 'client';
+  phone?: string;
+  avatar_url?: string;
+  client_id?: string;
+  is_active: boolean;
+  cpf?: string;
+  cargo?: string;
+  permissions?: Record<string, boolean>;
+  created_at: string;
+};
 
-export interface ServiceOrder {
-  id: string
-  title: string
-  description: string
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  client_id: string
-  technician_id?: string
-  equipment_id?: string
-  scheduled_date?: string
-  started_at?: string
-  completed_at?: string
-  created_at: string
-  updated_at: string
-  
-  // Relacionamentos
-  client?: Client
-  technician?: Profile
-  equipment?: Equipment
-}
+export type Client = {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  cnpj?: string;
+  contact_name?: string;
+  is_active: boolean;
+  created_at: string;
+};
 
-export interface Client {
-  id: string
-  name: string
-  email: string
-  phone?: string
-  address?: string
-  cnpj_cpf?: string
-  ie_rg?: string
-  responsible_name?: string
-  type?: 'PF' | 'PJ'
-  created_at: string
-  updated_at: string
-}
+export type ServiceOrder = {
+  id: string;
+  client_id: string;
+  equipment_id?: string;
+  technician_id?: string;
+  title: string;
+  description?: string;
+  status: 'pendente' | 'em_andamento' | 'concluido' | 'cancelado' | 'aguardando_peca';
+  priority: 'baixa' | 'media' | 'alta' | 'urgente';
+  scheduled_date?: string;
+  completed_at?: string;
+  signature?: string;
+  photos?: string[];
+  created_at: string;
+  clients?: Client;
+  profiles?: Profile;
+  equipments?: Equipment;
+  order_number?: number;
+};
 
-export interface Profile {
-  id: string
-  email: string
-  full_name: string
-  role: 'admin' | 'technician' | 'client'
-  client_id?: string
-  phone?: string
-  avatar_url?: string
-  is_active: boolean
-  created_at: string
-  updated_at: string
-}
+export type Equipment = {
+  id: string;
+  client_id: string;
+  name: string;
+  model?: string;
+  serial_number?: string;
+  brand?: string;
+  location?: string;
+  qr_code?: string;
+  status: 'active' | 'inactive' | 'maintenance';
+  last_maintenance?: string;
+  next_maintenance?: string;
+  created_at: string;
+  clients?: Client;
+};
 
-export interface Equipment {
-  id: string
-  client_id: string
-  name: string
-  brand?: string
-  model?: string
-  serial_number?: string
-  description?: string
-  location?: string
-  status: 'active' | 'inactive' | 'maintenance'
-  created_at: string
-  updated_at: string
-}
+export type Ticket = {
+  id: string;
+  client_id: string;
+  equipment_id?: string;
+  title: string;
+  description?: string;
+  status: 'aberto' | 'em_andamento' | 'resolvido' | 'fechado';
+  priority: 'baixa' | 'media' | 'alta' | 'urgente';
+  created_by?: string;
+  assigned_to?: string;
+  photos?: string[];
+  created_at: string;
+  clients?: Client;
+  profiles?: Profile;
+};
 
-export interface Ticket {
-  id: string
-  client_id: string
-  title: string
-  description: string
-  status: 'open' | 'in_progress' | 'resolved' | 'closed'
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  category?: string
-  created_at: string
-  updated_at: string
-  
-  // Relacionamentos
-  client?: Client
-}
+export type Quote = {
+  id: string;
+  client_id: string;
+  title: string;
+  description?: string;
+  items: any[];
+  total: number;
+  status: 'draft' | 'sent' | 'approved' | 'rejected' | 'converted' | 'pending' | 'completed';
+  valid_until?: string;
+  created_at: string;
+  clients?: Client;
+};
 
-export interface Quote {
-  id: string
-  client_id: string
-  title: string
-  description?: string
-  status: 'draft' | 'sent' | 'approved' | 'rejected' | 'expired'
-  total_amount: number
-  valid_until?: string
-  created_at: string
-  updated_at: string
-  
-  // Relacionamentos
-  client?: Client
-  quote_items?: QuoteItem[]
-}
+export type Notification = {
+  id: string;
+  user_id: string;
+  title: string;
+  body: string;
+  message?: string;
+  type?: string;
+  is_read: boolean;
+  created_at: string;
+};
 
-export interface QuoteItem {
-  id: string
-  quote_id: string
-  description: string
-  quantity: number
-  unit_price: number
-  total_price: number
-}
-
-export interface Notification {
-  id: string
-  user_id: string
-  title: string
-  message: string
-  type: 'info' | 'success' | 'warning' | 'error'
-  read: boolean
-  created_at: string
-}
-
-export interface Appointment {
-  id: string
-  client_id: string
-  technician_id?: string
-  title: string
-  description?: string
-  scheduled_date: string
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed'
-  created_at: string
-  updated_at: string
-  
-  // Relacionamentos
-  client?: Client
-  technician?: Profile
-}
+export type OvertimeEntry = {
+  id: string;
+  user_id: string;
+  entry_date: string;
+  start_time: string;
+  end_time: string;
+  total_hours: number;
+  entry_type: 'overtime' | 'compensation' | 'absence';
+  reason?: string;
+  status: 'pendente' | 'aprovado' | 'rejeitado';
+  rejection_reason?: string;
+  approved_by?: string;
+  approved_at?: string;
+  employee_signature?: string;
+  admin_signature?: string;
+  created_at: string;
+  profiles?: Profile;
+};

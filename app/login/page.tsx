@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import { Eye, EyeOff, Mail, Lock, LogIn, Loader2, AlertCircle, Sparkles, Zap, Shield, Clock, FileText, Wrench, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, logout } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -32,7 +34,7 @@ export default function LoginPage() {
       if (profile?.role === 'client') {
         router.push('/dashboard');
       } else {
-        await supabase.auth.signOut();
+        await logout();
       }
     }
   }
@@ -46,40 +48,11 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, client_id, is_active')
-        .eq('id', data.user.id)
-        .single();
-
-      if (profile?.role !== 'client') {
-        await supabase.auth.signOut();
-        throw new Error('Acesso negado. Este portal é apenas para clientes.');
-      }
-
-      if (profile.is_active === false) {
-        await supabase.auth.signOut();
-        throw new Error('Sua conta está desativada.');
-      }
-
-      if (profile.client_id) {
-        const { data: client } = await supabase
-          .from('clients')
-          .select('portal_blocked, portal_blocked_reason')
-          .eq('id', profile.client_id)
-          .single();
-
-        if (client?.portal_blocked) {
-          await supabase.auth.signOut();
-          throw new Error(client.portal_blocked_reason || 'Acesso bloqueado.');
-        }
-      }
+      const { error } = await login(email, password);
+      if (error) throw new Error(error);
 
       toast.success('Login realizado com sucesso!');
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
     } catch (error: any) {
       toast.error(error.message);
     } finally {

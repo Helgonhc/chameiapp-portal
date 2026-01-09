@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import {
   LayoutDashboard,
   FileText,
@@ -14,19 +15,17 @@ import {
   LogOut,
   Menu,
   X,
-  Building2,
   Ticket,
   MessageCircle,
   ChevronLeft,
   ChevronRight,
-  Zap,
   Wrench,
   Camera,
   Server,
   History,
   ClipboardList,
   FolderOpen,
-  Search
+  Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -38,6 +37,7 @@ interface SidebarProps {
   onScanOpen?: () => void;
   collapsed: boolean;
   setCollapsed: (v: boolean) => void;
+  onOpenTour?: () => void;
 }
 
 export default function Sidebar({
@@ -47,7 +47,8 @@ export default function Sidebar({
   pendingQuotes = 0,
   onScanOpen,
   collapsed,
-  setCollapsed
+  setCollapsed,
+  onOpenTour
 }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -55,169 +56,140 @@ export default function Sidebar({
 
   // Mapeamento de itens do menu
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', badge: null },
-    { icon: Camera, label: 'Escanear QR', path: 'scanner', badge: null, action: true },
-    { icon: FileText, label: 'Ordens de Serviço', path: '/service-orders', badge: null },
-    { icon: ClipboardList, label: 'Solicitações', path: '/quote-requests', badge: null },
-    { icon: DollarSign, label: 'Orçamentos', path: '/quotes', badge: pendingQuotes > 0 ? pendingQuotes : null },
-    { icon: FolderOpen, label: 'Documentos', path: '/documents', badge: null },
-    { icon: Server, label: 'Equipamentos', path: '/equipments', badge: null },
-    { icon: Wrench, label: 'Manutenções', path: '/maintenance', badge: null },
-    { icon: History, label: 'Histórico', path: '/history', badge: null },
-    { icon: CalendarDays, label: 'Calendário', path: '/calendar', badge: null },
-    { icon: Calendar, label: 'Agendamentos', path: '/appointments', badge: null },
-    { icon: Ticket, label: 'Meus Chamados', path: '/tickets', badge: null },
-    { icon: MessageCircle, label: 'Chat Suporte', path: '/chat', badge: null },
-    { icon: FileText, label: 'Relatórios', path: '/reports', badge: null },
-    { icon: Bell, label: 'Notificações', path: '/notifications', badge: unreadNotifications > 0 ? unreadNotifications : null },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', badge: null, permission: 'view_dashboard' },
+    { icon: CalendarDays, label: 'Calendário', path: '/calendar', badge: null, permission: 'view_calendar' },
+    { icon: Ticket, label: 'Chamados', path: '/tickets', badge: null, permission: 'view_tickets' },
+    { icon: MessageCircle, label: 'Chat', path: '/chat', badge: null, permission: 'view_chat' },
+    { icon: FolderOpen, label: 'Documentos', path: '/documents', badge: null, permission: 'view_documents' },
+    { icon: Server, label: 'Equipamentos', path: '/equipments', badge: null, permission: 'view_equipments' },
+    { icon: Camera, label: 'Escanear QR', path: 'scanner', badge: null, action: true, permission: 'view_equipments' },
+    { icon: History, label: 'Histórico', path: '/history', badge: null, permission: 'view_history' },
+    { icon: Wrench, label: 'Manutenções', path: '/maintenance', badge: null, permission: 'view_calendar' }, // Linked to calendar/maintenance
+    { icon: Bell, label: 'Notificações', path: '/notifications', badge: unreadNotifications > 0 ? unreadNotifications : null, permission: 'view_dashboard' }, // Always visible if dashboard is
+    { icon: DollarSign, label: 'Orçamentos', path: '/quotes', badge: pendingQuotes > 0 ? pendingQuotes : null, permission: 'view_quotes' },
+    { icon: FileText, label: 'Ordens de Serviço', path: '/service-orders', badge: null, permission: 'view_service_orders' },
+    { icon: ClipboardList, label: 'Solicitações', path: '/quote-requests', badge: null, permission: 'view_quotes' },
+    { icon: Sparkles, label: 'Tour Interativo', path: 'tour', badge: null, action: true },
   ];
+
+  const { logout } = useAuthStore();
 
   /* Logout logic */
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await logout();
     router.push('/login');
   };
 
   const SidebarContent = () => (
-    <>
-      {/* Header (Gradient) */}
-      <div className={`${collapsed ? 'p-2' : 'p-6'} bg-gradient-to-br from-indigo-50 via-white to-purple-50 border-b border-indigo-100 transition-all duration-300`}>
-        {collapsed ? (
-          // Collapsed: Show Logo Icon or Avatar
-          <div className="flex justify-center cursor-pointer" onClick={() => router.push('/profile')}>
-            {clientData?.client_logo_url || clientData?.logo_url ? (
-              <img
-                src={clientData.client_logo_url || clientData.logo_url}
-                alt="Logo"
-                className="w-10 h-10 object-contain hover:scale-110 transition-transform"
-              />
-            ) : (
-              <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold hover:bg-indigo-700 transition-colors">
-                {clientData?.name?.charAt(0) || 'C'}
-              </div>
-            )}
-          </div>
-        ) : (
-          // Expanded: Full Info
-          <div className="text-center animate-fadeIn">
-            {/* Logo */}
-            <div className="flex justify-center mb-4 cursor-pointer" onClick={() => router.push('/dashboard')}>
-              {clientData?.client_logo_url || clientData?.logo_url ? (
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg border-4 border-indigo-50 overflow-hidden group-hover:scale-105 transition-transform">
-                  <img
-                    src={clientData.client_logo_url || clientData.logo_url}
-                    alt="Logo"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg text-white font-bold text-2xl">
-                  {clientData?.name?.charAt(0) || 'C'}
-                </div>
-              )}
-            </div>
-
-            {/* Logo e Nome da Empresa */}
-            <h1 className="font-bold text-gray-800 text-sm leading-tight mb-1 truncate">
-              {clientData?.name || 'Portal do Cliente'}
-            </h1>
-            <p className="text-xs text-gray-500 mb-2 truncate">
-              {clientData?.phone || 'Painel de Gestão'}
-            </p>
-
-            {/* Separador */}
-            <div className="h-px bg-gradient-to-r from-transparent via-indigo-200 to-transparent my-3"></div>
-
-            {/* Avatar e Info do Usuário */}
-            <div
-              className="flex flex-col items-center cursor-pointer group p-1 rounded-xl hover:bg-white/50 transition-all"
-              onClick={() => router.push('/profile')}
-            >
-              <div className="relative mb-2 group-hover:scale-105 transition-transform">
-                {userData?.avatar_url ? (
-                  <img
-                    src={userData.avatar_url}
-                    alt={userData.full_name || 'Avatar'}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-indigo-300 shadow-md"
-                  />
-                ) : (
-                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center shadow-md">
-                    <span className="text-white text-lg font-bold">
-                      {userData?.full_name?.charAt(0)?.toUpperCase() || '?'}
-                    </span>
-                  </div>
-                )}
-                {/* Badge de status online */}
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-              </div>
-
-              <p className="font-semibold text-gray-800 text-sm truncate max-w-[180px] group-hover:text-indigo-600 transition-colors">
-                {userData?.full_name || 'Usuário'}
-              </p>
-
-              <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full mt-1 border border-indigo-100 group-hover:bg-indigo-100 transition-colors">
-                Editar Perfil
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Busca Rápida (Placeholder visual) */}
-      <div className={`px-3 pt-2 pb-1 ${collapsed ? 'flex justify-center' : ''}`}>
-        <button
-          onClick={onScanOpen}
-          className={`group flex items-center gap-3 w-full p-2.5 rounded-xl border border-indigo-100 bg-indigo-50/30 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-all shadow-sm ${collapsed ? 'justify-center w-10 h-10 p-0' : ''}`}
-          title="Abrir Scanner QR Code"
+    <div className="flex flex-col h-full bg-white text-slate-800">
+      {/* Header Branding */}
+      <div className={`flex flex-col items-center justify-center p-6 border-b border-slate-100 transition-all duration-300 ${collapsed ? 'px-2' : ''}`}>
+        <div
+          onClick={() => router.push('/dashboard')}
+          className={`relative cursor-pointer transition-transform hover:scale-105 duration-300 ${collapsed ? 'w-10 h-10' : 'w-16 h-16'}`}
         >
-          <Camera size={20} className="shrink-0 group-hover:scale-110 transition-transform" />
-          {!collapsed && (
-            <div className="flex flex-1 items-center justify-between">
-              <span className="text-sm font-medium">Scanner QR</span>
+          {clientData?.client_logo_url || clientData?.logo_url ? (
+            <img
+              src={clientData.client_logo_url || clientData.logo_url}
+              alt="Logo"
+              className="w-full h-full object-contain drop-shadow-sm"
+            />
+          ) : (
+            <div className={`w-full h-full bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold shadow-indigo-200 shadow-lg ${collapsed ? 'text-sm' : 'text-2xl'}`}>
+              {clientData?.name?.charAt(0) || 'C'}
             </div>
           )}
-        </button>
+        </div>
+
+        {!collapsed && (
+          <div className="mt-4 text-center animate-fadeIn">
+            <h1 className="font-bold text-slate-800 text-sm leading-tight truncate px-2">
+              {clientData?.name || 'Portal do Cliente'}
+            </h1>
+            <span className="inline-block mt-1 px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] uppercase font-bold tracking-wider rounded-md">
+              Área do Cliente
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Menu Navigation */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto scrollbar-hide">
-        {!collapsed && (
-          <p className="px-3 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-2">
-            Menu Principal
-          </p>
-        )}
+      {/* User Profile (Moved to Top) */}
+      <div className={`mx-3 mb-2 p-3 rounded-2xl bg-slate-50 border border-slate-100 ${collapsed ? 'mx-1 p-1 flex justify-center' : ''}`}>
+        {!collapsed ? (
+          <div className="flex items-center gap-3">
+            <div
+              className="relative cursor-pointer group"
+              onClick={() => router.push('/profile')}
+            >
+              {userData?.avatar_url ? (
+                <img
+                  src={`${userData.avatar_url}?t=${Date.now()}`}
+                  alt="Profile"
+                  className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm group-hover:border-indigo-200 transition-colors"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-indigo-50 rounded-full flex items-center justify-center shadow-sm text-indigo-600 font-bold border-2 border-white">
+                  {userData?.full_name?.charAt(0) || 'U'}
+                </div>
+              )}
+              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></div>
+            </div>
 
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-slate-800 truncate cursor-pointer hover:text-indigo-600 transition-colors" onClick={() => router.push('/profile')}>
+                {userData?.full_name?.split(' ')[0] || 'Usuário'}
+              </p>
+              <button
+                onClick={handleLogout}
+                className="text-[10px] uppercase font-bold text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors mt-0.5"
+              >
+                <LogOut size={10} />
+                SAIR
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <div onClick={() => router.push('/profile')} className="cursor-pointer relative">
+              <div className="w-8 h-8 bg-indigo-50 rounded-full flex items-center justify-center text-xs font-bold text-indigo-600 border border-indigo-100">
+                {userData?.full_name?.charAt(0) || 'U'}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1 scrollbar-hide">
         {menuItems.map((item) => {
-          // Handle 'action' items like Scanner separately if needed, but for now they link or trigger via path
-          if (item.action && item.path === 'scanner') {
-            // For scanner, using Link logic in map, but we want onClick. 
-            // We can customize the render for this item if needed, 
-            // OR just let the user click the dedicated button above.
-            // For now, I'll exclude Scanner from the list if it's already above, OR keep it as a backup link.
-            // Given it's explicitly in the menuItems array, let's render it but handle click.
+          // Permission Check - Clients see everything for now to avoid hidden items
+          const isClient = userData?.role?.toLowerCase() === 'client';
+          if (!isClient && item.permission) {
+            const userPerms = userData?.permissions || {};
+            if (!userPerms[item.permission]) return null;
+          }
+
+          // Handle 'action' items like Scanner AND Tour
+          if (item.action) {
             return (
               <button
                 key={item.label}
                 onClick={() => {
                   if (item.path === 'scanner' && onScanOpen) onScanOpen();
+                  if (item.path === 'tour' && onOpenTour) onOpenTour();
                   setMobileOpen(false);
                 }}
                 className={`
-                 w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative
-                 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 hover:translate-x-1
-                 ${collapsed ? 'justify-center px-2' : ''}
-               `}
+                  w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative
+                  ${item.path === 'tour' ? 'text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100' : 'text-slate-600 hover:bg-slate-50 hover:text-indigo-600'}
+                  ${collapsed ? 'justify-center px-2' : ''}
+                `}
                 title={collapsed ? item.label : undefined}
               >
-                <item.icon
-                  size={20}
-                  className="text-gray-400 group-hover:text-indigo-500 transition-colors duration-200"
-                />
-                {!collapsed && (
-                  <span className="text-sm font-medium">
-                    {item.label}
-                  </span>
-                )}
+                <div className={`p-1.5 rounded-lg transition-colors group-hover:bg-white group-hover:text-indigo-600 ${item.path === 'tour' ? 'text-indigo-600' : 'text-slate-400'}`}>
+                  <item.icon size={20} />
+                </div>
+                {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
               </button>
             )
           }
@@ -233,78 +205,66 @@ export default function Sidebar({
               className={`
                 flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative
                 ${isActive
-                  ? 'bg-gradient-to-r from-indigo-50 to-white text-indigo-600 shadow-sm border border-indigo-100'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-indigo-600 hover:translate-x-1'
+                  ? 'bg-indigo-50/80 text-indigo-700 shadow-sm ring-1 ring-indigo-100' // Active state
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' // Inactive state
                 }
                 ${collapsed ? 'justify-center px-2' : ''}
               `}
               title={collapsed ? item.label : undefined}
             >
-              {isActive && !collapsed && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-600 rounded-r-full" />
-              )}
-
-              <Icon
-                size={20}
-                className={`transition-colors duration-200 ${isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-indigo-500'}`}
-              />
+              <div className={`
+                p-1.5 rounded-lg transition-colors
+                ${isActive ? 'text-indigo-600 bg-white shadow-sm' : 'text-slate-400 group-hover:text-slate-600'}
+              `}>
+                <Icon size={20} />
+              </div>
 
               {!collapsed && (
-                <div className="flex-1 flex justify-between items-center">
-                  <span className={`text-sm font-medium ${isActive ? 'text-indigo-900' : ''}`}>
+                <div className="flex-1 flex justify-between items-center overflow-hidden">
+                  <span className={`text-sm font-medium truncate ${isActive ? 'text-indigo-700' : ''}`}>
                     {item.label}
                   </span>
                   {item.badge && (
-                    <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm animate-pulse-subtle">
+                    <span className="flex items-center justify-center bg-red-500 text-white text-[10px] font-bold h-5 min-w-[20px] px-1 rounded-full shadow-sm ml-2">
                       {item.badge}
                     </span>
                   )}
                 </div>
               )}
 
-              {/* Badge for Collapsed State */}
               {collapsed && item.badge && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm border border-white">
-                  {item.badge}
-                </span>
+                <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
               )}
             </Link>
           );
         })}
       </nav>
 
-      {/* Footer / Logout */}
-      <div className="p-3 border-t border-gray-100 bg-gray-50/50">
-        <button
-          onClick={handleLogout}
-          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group ${collapsed ? 'justify-center px-2' : ''}`}
-          title={collapsed ? 'Sair' : undefined}
-        >
-          <LogOut size={20} className="group-hover:scale-110 transition-transform" />
-          {!collapsed && <span className="text-sm font-medium">Sair do Sistema</span>}
-        </button>
+      {/* Footer Branding/Version */}
+      <div className="p-4 border-t border-slate-100 bg-slate-50/50 text-center">
+        <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">v2.5.0 Elite</p>
       </div>
-    </>
+    </div>
   );
 
   return (
     <>
-      {/* Mobile Menu Button - Left aligned like Admin */}
+      {/* Mobile Toggle */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-3 left-3 z-50 p-2.5 bg-indigo-600 text-white rounded-lg shadow-lg hover:bg-indigo-700 active:scale-95 transition-all"
+        className="lg:hidden fixed top-3 left-4 z-50 p-2.5 bg-white text-slate-600 rounded-xl shadow-md border border-slate-100 hover:bg-slate-50 transition-all active:scale-95"
       >
         <Menu size={22} />
       </button>
 
-      {/* Mobile Sidebar Overlay */}
+      {/* Mobile Overlay */}
       {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setMobileOpen(false)} />
+        <div className="lg:hidden fixed inset-0 z-[60]">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setMobileOpen(false)} />
           <div className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-2xl flex flex-col animate-slideIn">
             <button
               onClick={() => setMobileOpen(false)}
-              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
+              className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
             >
               <X size={20} />
             </button>
@@ -313,29 +273,23 @@ export default function Sidebar({
         </div>
       )}
 
-      {/* Desktop Sidebar - Premium Layout */}
+      {/* Desktop Sidebar */}
       <aside
         className={`
-          hidden lg:flex flex-col bg-white border-r border-gray-200
-          transition-all duration-300 ease-in-out relative shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)]
-          ${collapsed ? 'w-20' : 'w-72'}
+          hidden lg:flex flex-col bg-white border-r border-slate-200/60
+          transition-all duration-300 ease-in-out relative z-30
+          ${collapsed ? 'w-20' : 'w-64'}
         `}
       >
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <SidebarContent />
-        </div>
+        <SidebarContent />
 
-        {/* Floating Collapse Button */}
+        {/* Toggle Button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute top-10 -right-3.5 w-7 h-7 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-md hover:bg-indigo-50 hover:text-indigo-600 text-gray-400 transition-all z-20 group scale-0 lg:scale-100"
-          title={collapsed ? 'Expandir menu' : 'Recolher menu'}
+          className="absolute top-8 -right-3 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-sm hover:text-indigo-600 text-slate-400 transition-all z-40 group"
+          title={collapsed ? 'Expandir' : 'Recolher'}
         >
-          {collapsed ? (
-            <ChevronRight size={14} className="group-hover:scale-110 transition-transform" />
-          ) : (
-            <ChevronLeft size={14} className="group-hover:scale-110 transition-transform" />
-          )}
+          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       </aside>
     </>

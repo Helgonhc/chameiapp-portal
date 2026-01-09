@@ -1,444 +1,433 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import { Ticket, Plus, Clock, CheckCircle, XCircle, AlertCircle, User, Calendar, Edit2, Trash2, Camera, X as XIcon, Image as ImageIcon, Zap } from 'lucide-react'
-import DashboardLayout from '@/components/DashboardLayout'
-import AdvancedSearch, { SearchFilters } from '@/components/AdvancedSearch'
-import { compressImages, formatFileSize, calculateReduction } from '@/utils/imageCompression'
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { Ticket, Plus, Clock, CheckCircle, XCircle, AlertCircle, User, Calendar, Edit2, Trash2, Camera, X as XIcon, Image as ImageIcon, Zap, ChevronRight, Search, Filter } from 'lucide-react';
+import DashboardLayout from '@/components/DashboardLayout';
+import { compressImages, formatFileSize, calculateReduction } from '@/utils/imageCompression';
+import toast from 'react-hot-toast';
 
 interface TicketData {
-  id: string
-  ticket_number: string
-  title: string
-  description: string
-  priority: string
-  status: string
-  equipment_id: string | null
-  created_at: string
-  updated_at: string
-  created_by: string
-  rejection_reason: string | null
-  converted_to_order_id: string | null
-  photos_url?: string[]
+  id: string;
+  ticket_number: string;
+  title: string;
+  description: string;
+  priority: string;
+  status: string;
+  equipment_id: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  rejection_reason: string | null;
+  converted_to_order_id: string | null;
+  photos_url?: string[];
   creator?: {
-    full_name: string
-  }
+    full_name: string;
+  };
 }
 
 export default function TicketsPage() {
-  const router = useRouter()
-  const [loading, setLoading] = useState(true)
-  const [tickets, setTickets] = useState<TicketData[]>([])
-  const [filteredTickets, setFilteredTickets] = useState<TicketData[]>([])
-  const [filter, setFilter] = useState<'all' | 'aberto' | 'em_analise' | 'aprovado' | 'rejeitado'>('all')
-  const [searchFilters, setSearchFilters] = useState<SearchFilters | null>(null)
-  const [showModal, setShowModal] = useState(false)
-  const [creating, setCreating] = useState(false)
-  const [editingTicket, setEditingTicket] = useState<TicketData | null>(null)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [priority, setPriority] = useState<'baixa' | 'media' | 'alta'>('media')
-  const [equipmentId, setEquipmentId] = useState<string | null>(null)
-  const [error, setError] = useState('')
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
-  const [previewUrls, setPreviewUrls] = useState<string[]>([])
-  const [uploading, setUploading] = useState(false)
-  const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [compressing, setCompressing] = useState(false)
-  const [compressionStats, setCompressionStats] = useState<{ original: number; compressed: number } | null>(null)
+  const [loading, setLoading] = useState(true);
+  const [tickets, setTickets] = useState<TicketData[]>([]);
+  const [filteredTickets, setFilteredTickets] = useState<TicketData[]>([]);
+  const [filter, setFilter] = useState<'all' | 'aberto' | 'em_analise' | 'aprovado' | 'rejeitado'>('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const searchParams = useSearchParams()
+  // Modal & Form States
+  const [showModal, setShowModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [editingTicket, setEditingTicket] = useState<TicketData | null>(null);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState<'baixa' | 'media' | 'alta'>('media');
+  const [equipmentId, setEquipmentId] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [compressing, setCompressing] = useState(false);
+  const [compressionStats, setCompressionStats] = useState<{ original: number; compressed: number } | null>(null);
+
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    checkAuth()
-    loadTickets()
+    loadTickets();
 
-    // Handle equipment_id from scanner
-    const eqId = searchParams.get('equipment_id')
+    // Auto-open modal if equipment_id is present
+    const eqId = searchParams.get('equipment_id');
     if (eqId) {
-      setEquipmentId(eqId)
-      setShowModal(true)
-      // Limpar o parâmetro da URL sem recarregar
-      router.replace('/tickets')
+      setEquipmentId(eqId);
+      setShowModal(true);
     }
-  }, [searchParams])
+  }, [searchParams]);
 
   useEffect(() => {
-    applyFilters()
-  }, [tickets, filter, searchFilters])
+    applyFilters();
+  }, [tickets, filter, searchTerm]);
 
-  async function checkAuth() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) router.push('/login')
-  }
+
 
   async function loadTickets() {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('client_id')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile?.client_id) return
+      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single();
+      if (!profile?.client_id) return;
 
       const { data, error } = await supabase
         .from('tickets')
         .select(`*, creator:profiles!tickets_created_by_fkey(full_name)`)
-        .eq('client_id', profile.client_id)
-        .order('created_at', { ascending: false })
+        .eq('client_id', profile!.client_id)
+        .order('created_at', { ascending: false });
 
-      if (error) throw error
-      setTickets(data || [])
-      setFilteredTickets(data || [])
+      if (error) throw error;
+      setTickets(data || []);
+      setFilteredTickets(data || []);
     } catch (error) {
-      console.error('Erro ao carregar chamados:', error)
+      console.error('Erro ao carregar chamados:', error);
+      toast.error('Erro ao carregar chamados');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   function applyFilters() {
-    let filtered = [...tickets]
-    if (filter !== 'all') filtered = filtered.filter(t => t.status === filter)
-    if (searchFilters) {
-      if (searchFilters.searchTerm) {
-        const term = searchFilters.searchTerm.toLowerCase()
-        filtered = filtered.filter(t =>
-          t.title.toLowerCase().includes(term) ||
-          t.ticket_number.toLowerCase().includes(term) ||
-          t.description.toLowerCase().includes(term)
-        )
-      }
-      if (searchFilters.status) filtered = filtered.filter(t => t.status === searchFilters.status)
-      if (searchFilters.priority) filtered = filtered.filter(t => t.priority === searchFilters.priority)
-      if (searchFilters.dateFrom) filtered = filtered.filter(t => new Date(t.created_at) >= new Date(searchFilters.dateFrom!))
-      if (searchFilters.dateTo) filtered = filtered.filter(t => new Date(t.created_at) <= new Date(searchFilters.dateTo!))
+    let result = [...tickets];
+
+    if (filter !== 'all') {
+      result = result.filter(t => t.status === filter);
     }
-    setFilteredTickets(filtered)
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(t =>
+        t.title.toLowerCase().includes(term) ||
+        t.ticket_number.toLowerCase().includes(term) ||
+        t.description.toLowerCase().includes(term)
+      );
+    }
+
+    setFilteredTickets(result);
   }
 
-  function handleSearch(filters: SearchFilters) { setSearchFilters(filters); setFilter('all') }
-  function handleClearSearch() { setSearchFilters(null); setFilter('all') }
-
+  // File Upload Handlers (simplified from original)
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files || [])
-    if (files.length === 0) return
-    const maxFiles = 5
-    if (selectedFiles.length + files.length > maxFiles) { setError(`Máximo de ${maxFiles} fotos permitidas`); return }
-    setCompressing(true); setError('')
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setCompressing(true);
     try {
-      const originalSize = files.reduce((sum, file) => sum + file.size, 0)
-      const compressedFiles = await compressImages(files, { maxWidth: 1920, maxHeight: 1920, quality: 0.8, maxSizeMB: 2 })
-      const compressedSize = compressedFiles.reduce((sum, file) => sum + file.size, 0)
-      setCompressionStats({ original: originalSize, compressed: compressedSize })
-      setSelectedFiles(prev => [...prev, ...compressedFiles])
-      compressedFiles.forEach(file => {
-        const reader = new FileReader()
-        reader.onloadend = () => setPreviewUrls(prev => [...prev, reader.result as string])
-        reader.readAsDataURL(file)
-      })
-    } catch (error) { setError('Erro ao processar imagens. Tente novamente.') }
-    finally { setCompressing(false) }
+      const compressed = await compressImages(files, { maxWidth: 1920, quality: 0.8 });
+      setSelectedFiles(prev => [...prev, ...compressed]);
+      compressed.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => setPreviewUrls(prev => [...prev, reader.result as string]);
+        reader.readAsDataURL(file);
+      });
+    } catch (error) { toast.error('Erro ao processar imagens'); }
+    finally { setCompressing(false); }
   }
 
   function removePhoto(index: number) {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
-    setPreviewUrls(prev => prev.filter((_, i) => i !== index))
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
   }
 
   async function uploadPhotos(): Promise<string[]> {
-    if (selectedFiles.length === 0) return []
-    setUploading(true)
-    const uploadedUrls: string[] = []
+    if (selectedFiles.length === 0) return [];
+    setUploading(true);
+    const urls: string[] = [];
     try {
       for (const file of selectedFiles) {
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-        const filePath = `tickets/${fileName}`
-        const { error: uploadError } = await supabase.storage.from('os-photos').upload(filePath, file, { cacheControl: '3600', upsert: false })
-        if (uploadError) throw uploadError
-        const { data } = supabase.storage.from('os-photos').getPublicUrl(filePath)
-        uploadedUrls.push(data.publicUrl)
+        const path = `tickets/${Date.now()}_${Math.random().toString(36).substring(7)}.${file.name.split('.').pop()}`;
+        const { error } = await supabase.storage.from('os-photos').upload(path, file);
+        if (error) throw error;
+        const { data } = supabase.storage.from('os-photos').getPublicUrl(path);
+        urls.push(data.publicUrl);
       }
-      return uploadedUrls
-    } catch (error) { throw new Error('Erro ao fazer upload das fotos') }
-    finally { setUploading(false) }
+      return urls;
+    } catch (e) { throw new Error('Erro no upload'); }
+    finally { setUploading(false); }
   }
 
   async function handleCreateTicket(e: React.FormEvent) {
-    e.preventDefault(); setError(''); setCreating(true)
+    e.preventDefault();
+    setCreating(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Usuário não autenticado')
-      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single()
-      if (!profile?.client_id) throw new Error('Cliente não encontrado')
-      let photoUrls: string[] = []
-      if (selectedFiles.length > 0) photoUrls = await uploadPhotos()
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário inválido');
+
+      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single();
+      if (!profile) throw new Error('Perfil não encontrado');
+      const photoUrls = await uploadPhotos();
+
       if (editingTicket) {
-        const updateData: any = { title: title.trim(), description: description.trim(), priority }
-        if (photoUrls.length > 0) updateData.photos_url = [...(editingTicket.photos_url || []), ...photoUrls]
-        const { error: updateError } = await supabase.from('tickets').update(updateData).eq('id', editingTicket.id)
-        if (updateError) throw updateError
+        const updateData: any = { title, description, priority };
+        if (photoUrls.length > 0) updateData.photos_url = [...(editingTicket.photos_url || []), ...photoUrls];
+        const { error } = await supabase.from('tickets').update(updateData).eq('id', editingTicket.id);
+        if (error) throw error;
+        toast.success('Chamado atualizado!');
       } else {
-        const { data: newTicket, error: insertError } = await supabase.from('tickets').insert({
-          client_id: profile.client_id, title: title.trim(), description: description.trim(),
-          priority, status: 'aberto', created_by: user.id, photos_url: photoUrls,
-          equipment_id: equipmentId
-        }).select('id, ticket_number').single()
-        if (insertError) throw insertError
-        // Notificações são criadas automaticamente pelo trigger do banco
+        const { error } = await supabase.from('tickets').insert({
+          client_id: profile.client_id, title, description, priority, status: 'aberto',
+          created_by: user.id, photos_url: photoUrls, equipment_id: equipmentId
+        });
+        if (error) throw error;
+        toast.success('Chamado criado com sucesso!');
       }
-      setShowModal(false); setEditingTicket(null); setTitle(''); setDescription(''); setPriority('media'); setSelectedFiles([]); setPreviewUrls([]); loadTickets()
-    } catch (error: any) { setError(error.message || 'Erro ao salvar chamado') }
-    finally { setCreating(false) }
-  }
-
-  function handleEditTicket(ticket: TicketData) {
-    if (ticket.status !== 'aberto') { alert('Apenas chamados abertos podem ser editados'); return }
-    setEditingTicket(ticket); setTitle(ticket.title); setDescription(ticket.description)
-    setPriority(ticket.priority as 'baixa' | 'media' | 'alta'); setSelectedFiles([]); setPreviewUrls([]); setShowModal(true)
-  }
-
-  async function handleDeleteTicket(ticket: TicketData) {
-    if (ticket.status === 'convertido') { alert('Chamados convertidos em OS não podem ser excluídos'); return }
-    if (!confirm(`Deseja realmente excluir o chamado ${ticket.ticket_number}?`)) return
-    try {
-      const { error } = await supabase.from('tickets').delete().eq('id', ticket.id)
-      if (error) throw error
-      loadTickets()
-    } catch (error: any) { alert('Erro ao excluir chamado: ' + error.message) }
-  }
-
-  function getStatusColor(status: string) {
-    const colors: Record<string, string> = {
-      aberto: 'bg-primary-500/20 text-primary-400 border-primary-500/30',
-      em_analise: 'bg-warning-500/20 text-warning-400 border-warning-500/30',
-      aprovado: 'bg-success-500/20 text-success-400 border-success-500/30',
-      rejeitado: 'bg-danger-500/20 text-danger-400 border-danger-500/30',
-      convertido: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+      setShowModal(false); resetForm(); loadTickets();
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setCreating(false);
     }
-    return colors[status] || 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30'
+  }
+
+  function resetForm() {
+    setEditingTicket(null); setTitle(''); setDescription(''); setPriority('media'); setSelectedFiles([]); setPreviewUrls([]);
+  }
+
+  function handleEdit(ticket: TicketData) {
+    if (ticket.status !== 'aberto') return toast.error('Apenas chamados abertos podem ser editados');
+    setEditingTicket(ticket); setTitle(ticket.title); setDescription(ticket.description);
+    setPriority(ticket.priority as any); setShowModal(true);
+  }
+
+  async function handleDelete(ticket: TicketData) {
+    if (!confirm('Excluir este chamado?')) return;
+    try {
+      await supabase.from('tickets').delete().eq('id', ticket.id);
+      toast.success('Chamado excluído');
+      loadTickets();
+    } catch (e) { toast.error('Erro ao excluir'); }
+  }
+
+  function getStatusStyle(status: string) {
+    const s = {
+      aberto: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+      em_analise: 'bg-amber-50 text-amber-700 border-amber-100',
+      aprovado: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+      rejeitado: 'bg-red-50 text-red-700 border-red-100',
+      convertido: 'bg-purple-50 text-purple-700 border-purple-100'
+    };
+    return s[status as keyof typeof s] || 'bg-slate-50 text-slate-600 border-slate-200';
   }
 
   function getStatusLabel(status: string) {
-    const labels: Record<string, string> = { aberto: 'Aberto', em_analise: 'Em Análise', aprovado: 'Aprovado', rejeitado: 'Rejeitado', convertido: 'Convertido em OS' }
-    return labels[status] || status
+    const l: any = { aberto: 'Aberto', em_analise: 'Em Análise', aprovado: 'Aprovado', rejeitado: 'Rejeitado', convertido: 'Convertido em OS' };
+    return l[status] || status;
   }
-
-  function getStatusIcon(status: string) {
-    const icons: Record<string, JSX.Element> = {
-      aberto: <Clock className="w-4 h-4" />, em_analise: <AlertCircle className="w-4 h-4" />,
-      aprovado: <CheckCircle className="w-4 h-4" />, rejeitado: <XCircle className="w-4 h-4" />, convertido: <CheckCircle className="w-4 h-4" />
-    }
-    return icons[status] || <Clock className="w-4 h-4" />
-  }
-
-  function getPriorityLabel(priority: string) {
-    const labels: Record<string, string> = { baixa: '🟢 Baixa', media: '🟡 Média', alta: '🔴 Alta' }
-    return labels[priority] || priority
-  }
-
-  const openCount = tickets.filter(t => t.status === 'aberto').length
 
   if (loading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-zinc-400 font-medium">Carregando chamados...</p>
+          <div className="flex flex-col items-center">
+            <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-slate-500 font-medium">Carregando chamados...</p>
           </div>
         </div>
       </DashboardLayout>
-    )
+    );
   }
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-background">
+      <div className="space-y-6 animate-fadeIn pb-20">
         {/* Header */}
-        <div className="page-header">
-          <div className="max-w-7xl mx-auto relative">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 rounded-lg bg-primary-500/20 border border-primary-500/30">
-                    <Ticket className="w-5 h-5 text-primary-400" />
-                  </div>
-                  <span className="text-primary-400 text-sm font-medium">Suporte</span>
-                </div>
-                <h1 className="text-3xl lg:text-4xl font-bold text-white mb-1">Chamados</h1>
-                <p className="text-zinc-400">{openCount > 0 ? `${openCount} chamado${openCount > 1 ? 's' : ''} aberto${openCount > 1 ? 's' : ''}` : 'Todos os seus chamados'}</p>
-              </div>
-              <button onClick={() => { setEditingTicket(null); setTitle(''); setDescription(''); setPriority('media'); setShowModal(true) }} className="btn-primary flex items-center gap-2">
-                <Plus className="w-5 h-5" /><span>Novo Chamado</span>
-              </button>
-            </div>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Meus Chamados</h1>
+            <p className="text-slate-500 text-sm">Acompanhe suas solicitações de suporte em tempo real.</p>
           </div>
+          <button onClick={() => { resetForm(); setShowModal(true); }} className="btn btn-primary shadow-lg shadow-indigo-100 flex items-center gap-2 px-5 py-3 rounded-xl">
+            <Plus size={20} />
+            <span>Novo Chamado</span>
+          </button>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="mb-6"><AdvancedSearch type="tickets" onSearch={handleSearch} onClear={handleClearSearch} /></div>
-
-          <div className="flex flex-wrap justify-center gap-3 mb-6">
-            {[
-              { key: 'all', label: 'Todos', count: tickets.length },
-              { key: 'aberto', label: 'Abertos', count: tickets.filter(t => t.status === 'aberto').length },
-              { key: 'em_analise', label: 'Em Análise', count: tickets.filter(t => t.status === 'em_analise').length },
-              { key: 'aprovado', label: 'Aprovados', count: tickets.filter(t => t.status === 'aprovado').length },
-              { key: 'rejeitado', label: 'Rejeitados', count: tickets.filter(t => t.status === 'rejeitado').length },
-            ].map((btn) => (
-              <button key={btn.key} onClick={() => setFilter(btn.key as any)} className={`filter-btn ${filter === btn.key ? 'filter-btn-active' : 'filter-btn-inactive'}`}>
-                {btn.label} ({btn.count})
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1 group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={20} />
+            <input
+              type="text"
+              placeholder="Buscar chamados..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all text-slate-600 shadow-sm placeholder:text-slate-400"
+            />
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {['all', 'aberto', 'em_analise', 'aprovado'].map((st) => (
+              <button
+                key={st}
+                onClick={() => setFilter(st as any)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all border ${filter === st ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+              >
+                {st === 'all' ? 'Todos' : getStatusLabel(st)}
               </button>
             ))}
           </div>
+        </div>
 
-          <div className="space-y-4">
-            {filteredTickets.length === 0 ? (
-              <div className="empty-state">
-                <div className="inline-flex p-4 rounded-2xl bg-primary-500/10 border border-primary-500/20 mb-6"><Ticket className="w-12 h-12 text-primary-400" /></div>
-                <p className="text-xl font-bold text-white mb-2">Nenhum chamado encontrado</p>
-                <p className="text-zinc-500 mb-6">{filter === 'all' ? 'Crie seu primeiro chamado' : 'Nenhum chamado com este status'}</p>
-                <button onClick={() => setShowModal(true)} className="btn-primary inline-flex items-center gap-2"><Plus className="w-5 h-5" />Novo Chamado</button>
+        {/* List */}
+        <div className="space-y-4">
+          {filteredTickets.length === 0 ? (
+            <div className="py-20 text-center bg-white rounded-[2rem] border border-dashed border-slate-200">
+              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Ticket className="w-8 h-8 text-slate-300" />
               </div>
-            ) : (
-              filteredTickets.map((ticket) => (
-                <div key={ticket.id} className="list-item">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <span className="font-mono text-xs text-zinc-500">{ticket.ticket_number}</span>
-                        <span className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusColor(ticket.status)}`}>{getStatusIcon(ticket.status)}{getStatusLabel(ticket.status)}</span>
-                        <span className="text-xs font-medium text-zinc-400">{getPriorityLabel(ticket.priority)}</span>
-                      </div>
-                      <h3 className="text-lg font-bold text-white mb-1">{ticket.title}</h3>
-                      <p className="text-zinc-400 text-sm line-clamp-2">{ticket.description}</p>
+              <h3 className="text-lg font-bold text-slate-700">Nenhum chamado encontrado</h3>
+              <p className="text-slate-400 text-sm">Tente ajustar os filtros ou crie um novo chamado.</p>
+            </div>
+          ) : (
+            filteredTickets.map((ticket) => (
+              <div key={ticket.id} className="bg-white rounded-[1.5rem] p-5 border border-slate-100 shadow-sm hover:shadow-xl hover:translate-y-[-2px] hover:border-indigo-100 transition-all group relative overflow-hidden">
+                <div className="flex flex-col md:flex-row gap-4 md:items-center justify-between">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg border ${getStatusStyle(ticket.status)}`}>
+                        {getStatusLabel(ticket.status)}
+                      </span>
+                      <span className="text-xs font-mono text-slate-400">#{ticket.ticket_number}</span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ticket.priority === 'alta' ? 'bg-red-50 text-red-600' : ticket.priority === 'media' ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'}`}>
+                        {ticket.priority === 'alta' ? 'Alta Prioridade' : ticket.priority === 'media' ? 'Média' : 'Baixa'}
+                      </span>
                     </div>
+                    <h3 className="text-lg font-bold text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">{ticket.title}</h3>
+                    <p className="text-slate-500 text-sm line-clamp-2">{ticket.description}</p>
                   </div>
-                  <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-white/5">
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-500">
-                      {ticket.creator && <span className="flex items-center gap-1"><User className="w-3 h-3" />{ticket.creator.full_name}</span>}
-                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(ticket.created_at).toLocaleDateString('pt-BR')}</span>
+
+                  <div className="flex items-center gap-4 text-xs text-slate-400 pt-4 md:pt-0 border-t md:border-t-0 border-slate-50 mt-2 md:mt-0">
+                    <div className="flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-lg">
+                      <Calendar size={14} />
+                      {new Date(ticket.created_at).toLocaleDateString('pt-BR')}
                     </div>
                     {ticket.status === 'aberto' && (
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => handleEditTicket(ticket)} className="action-btn action-btn-edit" title="Editar"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => handleDeleteTicket(ticket)} className="action-btn action-btn-delete" title="Excluir"><Trash2 className="w-4 h-4" /></button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={(e) => { e.stopPropagation(); handleEdit(ticket); }} className="p-2 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-lg transition-colors">
+                          <Edit2 size={16} />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(ticket); }} className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-lg transition-colors">
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     )}
                   </div>
-                  {ticket.rejection_reason && <div className="mt-3 info-box info-box-red"><p className="text-xs font-semibold mb-1">Motivo da Rejeição:</p><p className="text-xs opacity-80">{ticket.rejection_reason}</p></div>}
-                  {ticket.converted_to_order_id && <div className="mt-3 info-box info-box-purple"><p className="text-xs font-semibold">✓ Convertido em Ordem de Serviço</p></div>}
-                  {ticket.photos_url && ticket.photos_url.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-xs font-semibold text-zinc-400 mb-2 flex items-center gap-1.5"><ImageIcon className="w-3.5 h-3.5" />Fotos ({ticket.photos_url.length})</p>
-                      <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-                        {ticket.photos_url.map((url, index) => (
-                          <button key={index} onClick={() => setSelectedImage(url)} className="relative group overflow-hidden rounded-lg border border-white/10 hover:border-primary-500/50 transition-colors aspect-square">
-                            <img src={url} alt={`Foto ${index + 1}`} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center"><ImageIcon className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" /></div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
-              ))
-            )}
-          </div>
+
+                {/* Footer Info Area */}
+                {(ticket.rejection_reason || ticket.photos_url?.length) && (
+                  <div className="mt-4 pt-4 border-t border-slate-50 flex gap-4 overflow-x-auto">
+                    {ticket.photos_url && ticket.photos_url.length > 0 && (
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 bg-slate-50 px-2 py-1 rounded-md">
+                        <ImageIcon size={14} />
+                        {ticket.photos_url.length} fotos anexadas
+                      </div>
+                    )}
+                    {ticket.rejection_reason && (
+                      <div className="flex-1 bg-red-50 p-2 rounded-lg text-xs text-red-600 border border-red-100">
+                        <span className="font-bold">Motivo da recusa:</span> {ticket.rejection_reason}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
 
-      {/* Image Modal */}
-      {selectedImage && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setSelectedImage(null)}>
-          <div className="relative w-full h-full flex items-center justify-center">
-            <button onClick={() => setSelectedImage(null)} className="absolute top-4 right-4 bg-white/10 text-white rounded-full p-2 hover:bg-white/20 transition-colors z-10"><XIcon className="w-6 h-6" /></button>
-            <img src={selectedImage} alt="Visualização" className="max-w-full max-h-full object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
-          </div>
-        </div>
-      )}
-
-      {/* Create/Edit Modal */}
+      {/* Modern Modal using Fixed Positioning and Backdrop Blur */}
       {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-primary-500/20 border border-primary-500/30 flex items-center justify-center">
-                {editingTicket ? <Edit2 className="w-6 h-6 text-primary-400" /> : <Ticket className="w-6 h-6 text-primary-400" />}
-              </div>
-              <h2 className="text-xl font-bold text-white">{editingTicket ? 'Editar Chamado' : 'Novo Chamado'}</h2>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowModal(false)} />
+          <div className="relative w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl p-6 sm:p-8 animate-scaleIn max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <button onClick={() => setShowModal(false)} className="absolute top-6 right-6 p-2 bg-slate-50 text-slate-400 rounded-full hover:bg-slate-100 hover:text-slate-600 transition-colors">
+              <XIcon size={20} />
+            </button>
+
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-slate-800 mb-1">{editingTicket ? 'Editar Chamado' : 'Novo Chamado'}</h2>
+              <p className="text-slate-500 text-sm">Preencha os detalhes para solicitar suporte.</p>
             </div>
 
-            <form onSubmit={handleCreateTicket} className="space-y-4">
+            <form onSubmit={handleCreateTicket} className="space-y-6">
               <div>
-                <label className="form-label">Título *</label>
-                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Descreva brevemente o problema" className="form-input" required />
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Título do Problema</label>
+                <input
+                  value={title} onChange={e => setTitle(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:bg-white transition-all text-slate-700 placeholder:text-slate-400 font-medium"
+                  placeholder="Ex: Ar condicionado vazando..."
+                  required
+                />
               </div>
-              <div>
-                <label className="form-label">Descrição *</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Descreva o problema em detalhes..." rows={3} className="form-textarea" required />
-              </div>
-              <div>
-                <label className="form-label">Prioridade</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {[{ key: 'baixa', label: 'Baixa', emoji: '🟢' }, { key: 'media', label: 'Média', emoji: '🟡' }, { key: 'alta', label: 'Alta', emoji: '🔴' }].map((p) => (
-                    <button key={p.key} type="button" onClick={() => setPriority(p.key as any)} className={`priority-btn ${priority === p.key ? 'priority-btn-active' : 'priority-btn-inactive'}`}>
-                      <div className="text-xl mb-1">{p.emoji}</div><div className="text-xs font-bold text-zinc-300">{p.label}</div>
-                    </button>
-                  ))}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Prioridade</label>
+                  <select
+                    value={priority} onChange={e => setPriority(e.target.value as any)}
+                    className="w-full px-4 py-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:bg-white transition-all text-slate-700 font-medium cursor-pointer"
+                  >
+                    <option value="baixa">🟢 Baixa</option>
+                    <option value="media">🟡 Média</option>
+                    <option value="alta">🔴 Alta</option>
+                  </select>
                 </div>
               </div>
 
-              {/* Photo Upload */}
               <div>
-                <label className="form-label flex items-center gap-2">Fotos (Opcional)<span className="flex items-center gap-1 text-xs text-success-400 font-normal"><Zap className="w-3 h-3" />Compressão automática</span></label>
-                <div className="border-2 border-dashed border-white/10 rounded-xl p-4 hover:border-primary-500/30 transition-colors">
-                  <input type="file" accept="image/*" multiple onChange={handleFileSelect} className="hidden" id="photo-upload" disabled={uploading || creating || compressing} />
-                  <label htmlFor="photo-upload" className={`flex flex-col items-center justify-center py-2 ${compressing ? 'cursor-wait' : 'cursor-pointer'}`}>
-                    {compressing ? (
-                      <><div className="animate-spin rounded-full h-10 w-10 border-4 border-primary-500/20 border-t-primary-500 mb-2"></div><p className="text-sm font-medium text-primary-400">Comprimindo...</p></>
-                    ) : (
-                      <><Camera className="w-10 h-10 text-zinc-500 mb-2" /><p className="text-sm font-medium text-zinc-400">Clique para adicionar fotos</p><p className="text-xs text-zinc-600 mt-1">Máximo 5 fotos</p></>
-                    )}
-                  </label>
-                </div>
-                {compressionStats && (
-                  <div className="mt-2 p-3 info-box info-box-green">
-                    <div className="flex items-center gap-2 text-xs"><Zap className="w-4 h-4" /><span className="font-semibold">Economia de {calculateReduction(compressionStats.original, compressionStats.compressed)}%</span><span className="opacity-70">({formatFileSize(compressionStats.original)} → {formatFileSize(compressionStats.compressed)})</span></div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Descrição Detalhada</label>
+                <textarea
+                  value={description} onChange={e => setDescription(e.target.value)}
+                  rows={4}
+                  className="w-full px-4 py-3 bg-slate-50 border-0 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:bg-white transition-all text-slate-700 placeholder:text-slate-400 resize-none font-medium"
+                  placeholder="Descreva o que aconteceu, onde e quando..."
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Fotos (Opcional)</label>
+                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:border-indigo-300 hover:bg-indigo-50/30 transition-all cursor-pointer relative group">
+                  <input type="file" multiple accept="image/*" onChange={handleFileSelect} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                  <div className="bg-indigo-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-indigo-500 group-hover:scale-110 transition-transform">
+                    <Camera size={24} />
                   </div>
-                )}
+                  <p className="text-sm font-semibold text-slate-600">Clique para enviar fotos</p>
+                  <p className="text-xs text-slate-400 mt-1">Nós comprimimos automaticamente para você</p>
+                </div>
+                {/* Previews */}
                 {previewUrls.length > 0 && (
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    {previewUrls.map((url, index) => (
-                      <div key={index} className="relative group">
-                        <img src={url} alt={`Preview ${index + 1}`} className="w-full h-20 object-cover rounded-lg border border-white/10" />
-                        <button type="button" onClick={() => removePhoto(index)} className="absolute -top-1 -right-1 bg-danger-500 text-white rounded-full p-1 shadow-lg"><XIcon className="w-3 h-3" /></button>
+                  <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
+                    {previewUrls.map((url, idx) => (
+                      <div key={idx} className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden border border-slate-200">
+                        <img src={url} className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => removePhoto(idx)} className="absolute top-1 right-1 bg-red-500 text-white p-0.5 rounded-full"><XIcon size={12} /></button>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              {error && <div className="info-box info-box-red"><p className="text-sm font-medium">{error}</p></div>}
-
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => { setShowModal(false); setEditingTicket(null); setTitle(''); setDescription(''); setPriority('media'); setSelectedFiles([]); setPreviewUrls([]); setError('') }} disabled={creating} className="flex-1 btn-secondary">Cancelar</button>
-                <button type="submit" disabled={creating || uploading} className="flex-1 btn-primary flex items-center justify-center gap-2">
-                  {creating ? <><div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div><span>Salvando...</span></> : <>{editingTicket ? <Edit2 className="w-5 h-5" /> : <Plus className="w-5 h-5" />}<span>{editingTicket ? 'Salvar' : 'Criar Chamado'}</span></>}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={creating || uploading || compressing}
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {creating ? (
+                  <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Salvando...</>
+                ) : (
+                  <>{editingTicket ? 'Salvar Alterações' : 'Criar Chamado'}</>
+                )}
+              </button>
             </form>
           </div>
         </div>
       )}
     </DashboardLayout>
-  )
+  );
 }
