@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import { Ticket, Plus, Clock, CheckCircle, XCircle, AlertCircle, User, Calendar, Edit2, Trash2, Camera, X as XIcon, Image as ImageIcon, Zap, ChevronRight, Search, Filter } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { compressImages, formatFileSize, calculateReduction } from '@/utils/imageCompression';
@@ -28,6 +29,7 @@ interface TicketData {
 }
 
 export default function TicketsPage() {
+  const { profile, user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [tickets, setTickets] = useState<TicketData[]>([]);
   const [filteredTickets, setFilteredTickets] = useState<TicketData[]>([]);
@@ -52,7 +54,11 @@ export default function TicketsPage() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    loadTickets();
+    if (profile?.client_id) {
+      loadTickets();
+    } else {
+      setLoading(false);
+    }
 
     // Auto-open modal if equipment_id is present
     const eqId = searchParams.get('equipment_id');
@@ -60,7 +66,7 @@ export default function TicketsPage() {
       setEquipmentId(eqId);
       setShowModal(true);
     }
-  }, [searchParams]);
+  }, [searchParams, profile]);
 
   useEffect(() => {
     applyFilters();
@@ -69,17 +75,12 @@ export default function TicketsPage() {
 
 
   async function loadTickets() {
+    if (!profile?.client_id) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single();
-      if (!profile?.client_id) return;
-
       const { data, error } = await supabase
         .from('tickets')
         .select(`*, creator:profiles!tickets_created_by_fkey(full_name)`)
-        .eq('client_id', profile!.client_id)
+        .eq('client_id', profile.client_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -153,13 +154,12 @@ export default function TicketsPage() {
 
   async function handleCreateTicket(e: React.FormEvent) {
     e.preventDefault();
+    if (!profile?.client_id || !user?.id) {
+      toast.error('Sessão inválida');
+      return;
+    }
     setCreating(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário inválido');
-
-      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single();
-      if (!profile) throw new Error('Perfil não encontrado');
       const photoUrls = await uploadPhotos();
 
       if (editingTicket) {

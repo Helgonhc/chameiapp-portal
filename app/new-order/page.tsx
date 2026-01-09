@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import { ArrowLeft, ArrowRight, X, CheckCircle2, Camera, Image as ImageIcon, Zap, Wrench, FileText, Sparkles, AlertTriangle, Clock } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import toast from 'react-hot-toast';
@@ -11,6 +12,7 @@ interface Equipment { id: string; name: string; type: string; model: string }
 
 export default function NewOrderPage() {
   const router = useRouter();
+  const { profile, user } = useAuthStore();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
@@ -23,36 +25,42 @@ export default function NewOrderPage() {
   const [equipmentId, setEquipmentId] = useState<string>('');
   const [photos, setPhotos] = useState<string[]>([]);
 
-  useEffect(() => { loadEquipments(); }, []);
+  useEffect(() => {
+    if (profile?.client_id) {
+      loadEquipments();
+    }
+  }, [profile]);
 
   async function loadEquipments() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single();
     if (!profile?.client_id) return;
     const { data } = await supabase.from('equipments').select('*').eq('client_id', profile.client_id).eq('status', 'ativo');
     setEquipments(data || []);
   }
 
   async function handleSubmit() {
+    if (!profile?.client_id || !user?.id) {
+      toast.error('Sessão inválida');
+      return;
+    }
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user!.id).single();
-
       await supabase.from('tickets').insert({
         client_id: profile.client_id,
         title, description, priority,
         status: 'aberto',
         equipment_id: equipmentId || null,
-        created_by: user!.id
+        created_by: user.id
         // Photos logic would go here
       });
 
       toast.success('Chamado aberto com sucesso!');
       router.push('/dashboard');
-    } catch (e) { toast.error('Erro ao abrir chamado'); }
-    finally { setLoading(false); }
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao abrir chamado');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

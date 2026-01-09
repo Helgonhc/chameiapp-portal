@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Calendar, Clock, AlertTriangle, CheckCircle, Bell, ChevronRight, Plus, User, Send, X, CalendarPlus, Edit, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function MaintenancePage() {
   const router = useRouter();
+  const { profile } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [contracts, setContracts] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
@@ -16,16 +18,17 @@ export default function MaintenancePage() {
   const [showModal, setShowModal] = useState(false);
 
   // Dummy data loader for structure - in real usage would connect to prop logic
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    if (profile?.client_id) {
+      loadData();
+    } else {
+      setLoading(false);
+    }
+  }, [profile]);
 
   async function loadData() {
-    // Reusing logic from previous file but ensuring we handle errors gracefully and styling
+    if (!profile?.client_id) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single();
-      if (!profile) return;
-
       const [cRes, rRes] = await Promise.all([
         supabase.from('active_maintenance_contracts').select('*').eq('client_id', profile.client_id),
         supabase.from('maintenance_requests_with_details').select('*').eq('client_id', profile.client_id)
@@ -33,8 +36,11 @@ export default function MaintenancePage() {
 
       setContracts(cRes.data || []);
       setRequests(rRes.data || []);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function getStatusBadge(status: string) {
