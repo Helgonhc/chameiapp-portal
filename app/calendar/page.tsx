@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import DashboardLayout from '@/components/DashboardLayout';
 import { ChevronLeft, ChevronRight, Plus, Loader2, Calendar, Clock, Wrench, AlertTriangle, Filter, X } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -34,6 +35,7 @@ interface MaintenanceContract {
 }
 
 export default function CalendarPage() {
+  const { profile } = useAuthStore();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [maintenances, setMaintenances] = useState<MaintenanceContract[]>([]);
@@ -56,17 +58,17 @@ export default function CalendarPage() {
   const [clientId, setClientId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
-  }, [currentMonth]);
+    if (profile?.client_id) {
+      setClientId(profile.client_id);
+      loadData();
+    } else if (!loading && !profile) {
+      setLoading(false);
+    }
+  }, [currentMonth, profile]);
 
   async function loadData() {
+    if (!profile?.client_id) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single();
-      if (!profile?.client_id) return;
-      setClientId(profile.client_id);
-
       const start = startOfMonth(currentMonth);
       const futureLimit = addMonths(start, 6);
 

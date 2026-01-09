@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import { File, Download, Search, Folder, Calendar, HardDrive, ChevronRight, Home, ArrowLeft, FileCheck, ClipboardList, Receipt, Wrench, FileBox, CalendarRange, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -44,31 +45,23 @@ const CATEGORY_ICONS: any = {
 };
 
 export default function DocumentsPage() {
+    const { profile } = useAuthStore();
     const [documents, setDocuments] = useState<DocFile[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentPath, setCurrentPath] = useState<string[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
-        loadDocuments();
-    }, []);
+        if (profile?.client_id) {
+            loadDocuments();
+        } else {
+            setLoading(false);
+        }
+    }, [profile]);
 
     async function loadDocuments() {
+        if (!profile?.client_id) return;
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('client_id')
-                .eq('id', user.id)
-                .single();
-
-            if (!profile?.client_id) {
-                setLoading(false);
-                return;
-            }
-
             const { data, error } = await supabase
                 .from('client_documents')
                 .select('*')

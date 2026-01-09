@@ -3,14 +3,16 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/store/authStore'
 import { ArrowLeft, Calendar, Clock, CheckCircle2, Sparkles } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 
 export default function NewAppointmentPage() {
   const router = useRouter()
+  const { profile, user: storeUser } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
-  
+
   const [requestedDate, setRequestedDate] = useState('')
   const [requestedTimeStart, setRequestedTimeStart] = useState('')
   const [requestedTimeEnd, setRequestedTimeEnd] = useState('')
@@ -20,13 +22,14 @@ export default function NewAppointmentPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    checkAuth()
-  }, [])
-
-  async function checkAuth() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) router.push('/login')
-  }
+    if (!profile && !storeUser) {
+      // Small delay to allow store to initialize
+      const timer = setTimeout(() => {
+        if (!useAuthStore.getState().user) router.push('/login')
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [profile, storeUser])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -38,16 +41,7 @@ export default function NewAppointmentPage() {
         throw new Error('Data e horário são obrigatórios')
       }
 
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Usuário não autenticado')
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('client_id')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile?.client_id) throw new Error('Cliente não encontrado')
+      if (!profile?.client_id) throw new Error('Cliente não encontrado ou sessão expirada')
 
       const { error: insertError } = await supabase
         .from('appointment_requests')
@@ -102,8 +96,8 @@ export default function NewAppointmentPage() {
         {/* Header */}
         <div className="page-header">
           <div className="max-w-4xl mx-auto relative">
-            <button 
-              onClick={() => router.back()} 
+            <button
+              onClick={() => router.back()}
               className="flex items-center gap-2 text-zinc-400 mb-4 hover:text-white transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />

@@ -57,7 +57,7 @@ const DEFAULT_PERMISSIONS = {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { logout } = useAuthStore();
+  const { profile: storeProfile, user: storeUser, logout } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const signatureInputRef = useRef<HTMLInputElement>(null);
   const clientLogoInputRef = useRef<HTMLInputElement>(null);
@@ -84,14 +84,18 @@ export default function ProfilePage() {
   const [createdUserCreds, setCreatedUserCreds] = useState<any>(null);
   const [editingUser, setEditingUser] = useState<PortalUser | null>(null);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    if (storeUser?.id) {
+      loadData();
+    } else {
+      setLoading(false);
+    }
+  }, [storeUser]);
 
   async function loadData() {
+    if (!storeUser?.id) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return router.push('/login');
-
-      const { data: profileBase } = await supabase.from('profiles').select('*, client:clients(*)').eq('id', user.id).single();
+      const { data: profileBase } = await supabase.from('profiles').select('*, client:clients(*)').eq('id', storeUser.id).single();
       setProfile(profileBase);
 
       if (profileBase) {
@@ -108,11 +112,15 @@ export default function ProfilePage() {
         setPortalUsers(users || []);
       }
 
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const handleUpdateProfile = async () => {
+    if (!profile?.id) return toast.error('Sessão inválida');
     if (!formData.full_name) return toast.error('Nome é obrigatório');
     setSaving(true);
     try {
@@ -132,6 +140,7 @@ export default function ProfilePage() {
   }
 
   const handleUpdateClient = async () => {
+    if (!profile?.client_id) return toast.error('Sessão inválida');
     if (profile.role !== 'client') return toast.error('Apenas administradores podem editar dados da empresa.');
     setSaving(true);
     try {
@@ -188,9 +197,18 @@ export default function ProfilePage() {
 
       // Define path based on type
       let filePath = '';
-      if (type === 'avatar') filePath = `avatars/${profile.id}-${Date.now()}.${fileExt}`;
-      else if (type === 'signature') filePath = `signatures/${profile.id}-${Date.now()}.${fileExt}`;
-      else if (type === 'client_logo') filePath = `logos/${profile.client_id}-${Date.now()}.${fileExt}`;
+      if (type === 'avatar') {
+        if (!profile?.id) throw new Error('ID do usuário não definido');
+        filePath = `avatars/${profile.id}-${Date.now()}.${fileExt}`;
+      }
+      else if (type === 'signature') {
+        if (!profile?.id) throw new Error('ID do usuário não definido');
+        filePath = `signatures/${profile.id}-${Date.now()}.${fileExt}`;
+      }
+      else if (type === 'client_logo') {
+        if (!profile?.client_id) throw new Error('ID do cliente não definido');
+        filePath = `logos/${profile.client_id}-${Date.now()}.${fileExt}`;
+      }
 
       const { error: uploadError } = await supabase.storage
         .from(bucket)

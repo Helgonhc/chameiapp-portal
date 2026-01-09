@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import { FileText, Clock, CheckCircle, XCircle, AlertCircle, Plus, Calendar, ChevronRight, Camera, Search } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import toast from 'react-hot-toast';
@@ -20,6 +21,7 @@ interface QuoteRequest {
 
 export default function QuoteRequestsPage() {
   const router = useRouter()
+  const { profile } = useAuthStore()
   const [loading, setLoading] = useState(true)
   const [requests, setRequests] = useState<QuoteRequest[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -29,15 +31,17 @@ export default function QuoteRequestsPage() {
   const [newRequest, setNewRequest] = useState({ title: '', description: '', urgency: 'normal' })
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => { loadRequests() }, [])
+  useEffect(() => {
+    if (profile?.client_id) {
+      loadRequests()
+    } else {
+      setLoading(false)
+    }
+  }, [profile])
 
   async function loadRequests() {
+    if (!profile?.client_id) return
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return router.push('/login')
-      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).maybeSingle()
-      if (!profile?.client_id) return
-
       const { data } = await supabase
         .from('quote_requests')
         .select('*')
@@ -45,17 +49,19 @@ export default function QuoteRequestsPage() {
         .order('created_at', { ascending: false })
 
       setRequests(data || [])
-    } catch (e) { console.error(e) }
-    finally { setLoading(false) }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleCreate = async () => {
     if (!newRequest.title) return toast.error('Título obrigatório');
+    if (!profile?.client_id) return toast.error('Sessão inválida');
+
     setSubmitting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user!.id).single();
-
       await supabase.from('quote_requests').insert({
         client_id: profile.client_id,
         ...newRequest,
@@ -65,8 +71,12 @@ export default function QuoteRequestsPage() {
       setShowModal(false);
       loadRequests();
       setNewRequest({ title: '', description: '', urgency: 'normal' });
-    } catch (e) { toast.error('Erro ao criar'); }
-    finally { setSubmitting(false); }
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao criar');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const getStatusBadge = (status: string) => {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import { DollarSign, FileText, Calendar, CheckCircle, XCircle, Clock, AlertCircle, Trash2, Sparkles, Plus, Edit3, Search, Filter } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import toast from 'react-hot-toast';
@@ -34,6 +35,7 @@ interface QuoteRequest {
 
 export default function QuotesPage() {
   const router = useRouter();
+  const { profile } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'quotes' | 'requests'>('quotes');
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -47,26 +49,31 @@ export default function QuotesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    if (profile?.client_id) {
+      loadData();
+    } else {
+      setLoading(false);
+    }
+  }, [profile]);
 
 
 
   async function loadData() {
+    if (!profile?.client_id) return;
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).maybeSingle();
-      if (!profile?.client_id) return;
-
       const [quotesRes, requestsRes] = await Promise.all([
-        supabase.from('quotes').select('*, quote_items(count)').eq('client_id', profile!.client_id).order('created_at', { ascending: false }),
-        supabase.from('quote_requests').select('*').eq('client_id', profile!.client_id).order('created_at', { ascending: false })
+        supabase.from('quotes').select('*, quote_items(count)').eq('client_id', profile.client_id).order('created_at', { ascending: false }),
+        supabase.from('quote_requests').select('*').eq('client_id', profile.client_id).order('created_at', { ascending: false })
       ]);
 
       setQuotes(quotesRes.data?.map(q => ({ ...q, items_count: q.quote_items?.[0]?.count || 0 })) || []);
       setRequests(requestsRes.data || []);
-    } catch (error) { console.error('Erro:', error); }
-    finally { setLoading(false); }
+    } catch (error) {
+      console.error('Erro:', error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   // Helper Functions
@@ -104,15 +111,10 @@ export default function QuotesPage() {
 
   async function handleCreateRequest() {
     if (!requestForm.title || !requestForm.description) return toast.error('Preencha os campos obrigatórios');
+    if (!profile?.client_id) return toast.error('Sessão inválida');
+
     setSubmitting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user!.id).single();
-      if (!profile) throw new Error('Perfil não encontrado');
-      let photoUrls: string[] = [];
-      // Photo upload logic (simplified for artifact size, assume standard)
-      // ...
-
       const { error } = await supabase.from('quote_requests').insert({
         client_id: profile.client_id,
         title: requestForm.title,
@@ -127,8 +129,12 @@ export default function QuotesPage() {
       setRequestForm({ title: '', description: '', urgency: 'normal' });
       loadData();
       setActiveTab('requests');
-    } catch (e) { toast.error('Erro ao enviar'); }
-    finally { setSubmitting(false); }
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao enviar');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (loading) return <DashboardLayout><div className="flex justify-center p-12"><div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full" /></div></DashboardLayout>;

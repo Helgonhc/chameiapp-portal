@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/store/authStore'
 import { ArrowLeft, UserPlus, Trash2, User, Mail, Calendar, AlertCircle, Users, Sparkles, Crown, CheckCircle, Shield } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 
@@ -21,6 +22,7 @@ interface PortalUser {
 
 export default function ManageUsersPage() {
   const router = useRouter()
+  const { profile, user: storeUser } = useAuthStore()
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState<PortalUser[]>([])
   const [currentUserId, setCurrentUserId] = useState<string>('')
@@ -38,28 +40,34 @@ export default function ManageUsersPage() {
 
   const [error, setError] = useState('')
 
-  useEffect(() => { checkAuth(); loadUsers() }, [])
-
-  async function checkAuth() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/login'); return }
-    setCurrentUserId(user.id)
-    const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single()
-    if (profile?.client_id) setClientId(profile.client_id)
-  }
+  useEffect(() => {
+    if (profile?.client_id && storeUser?.id) {
+      setCurrentUserId(storeUser.id)
+      setClientId(profile.client_id)
+      loadUsers()
+    } else if (!loading && !profile) {
+      setLoading(false)
+    }
+  }, [profile, storeUser])
 
   async function loadUsers() {
+    if (!profile?.client_id) return
     try {
       setLoading(true)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data: profile } = await supabase.from('profiles').select('client_id').eq('id', user.id).single()
-      if (!profile?.client_id) { setError('Cliente não encontrado'); return }
-      const { data: usersData, error: usersError } = await supabase.from('profiles').select('*').eq('client_id', profile.client_id).eq('role', 'client').order('created_at', { ascending: false })
+      const { data: usersData, error: usersError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('client_id', profile.client_id)
+        .eq('role', 'client')
+        .order('created_at', { ascending: false })
       if (usersError) throw usersError
       setUsers(usersData || [])
-    } catch (error: any) { setError('Erro ao carregar usuários') }
-    finally { setLoading(false) }
+    } catch (error: any) {
+      console.error(error)
+      setError('Erro ao carregar usuários')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleInviteUser(e: React.FormEvent) {

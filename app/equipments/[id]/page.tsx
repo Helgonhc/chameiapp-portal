@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/store/authStore'
 import {
     Wrench, Calendar, AlertTriangle, CheckCircle, Search, Filter, Server, Smartphone, Monitor,
     ArrowLeft, FileText, Download, Clock, MapPin, Tag, Shield, X, CalendarPlus, Send
@@ -62,6 +63,7 @@ interface ServiceOrder {
 export default function EquipmentDetailsPage() {
     const router = useRouter()
     const params = useParams()
+    const { profile, user: storeUser } = useAuthStore()
     const [loading, setLoading] = useState(true)
     const [equipment, setEquipment] = useState<Equipment | null>(null)
     const [history, setHistory] = useState<MaintenanceRecord[]>([])
@@ -84,30 +86,21 @@ export default function EquipmentDetailsPage() {
     })
 
     useEffect(() => {
-        if (params.id) {
-            checkAuthAndLoad()
+        if (params.id && profile?.client_id && storeUser?.id) {
+            setUserId(storeUser.id)
+            setClientId(profile.client_id)
+            loadData()
+        } else if (!loading && !profile) {
+            setLoading(false)
         }
-    }, [params.id])
-
-    async function checkAuthAndLoad() {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-            setUserId(user.id)
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('client_id')
-                .eq('id', user.id)
-                .single()
-            if (profile?.client_id) setClientId(profile.client_id)
-        }
-        loadData()
-    }
+    }, [params.id, profile, storeUser])
 
     async function loadData() {
+        if (!params.id) return
         try {
             setLoading(true)
 
-            // Load Equipment with its client_id if not already set
+            // Load Equipment with its client_id
             const { data: equip, error: equipError } = await supabase
                 .from('equipments')
                 .select('*')
@@ -116,9 +109,6 @@ export default function EquipmentDetailsPage() {
 
             if (equipError) throw equipError
             setEquipment(equip)
-
-            // Ensure clientId is set from equipment if profile search failed or was delayed
-            if (!clientId && equip.client_id) setClientId(equip.client_id)
 
             // Load History, Documents, Service Orders and Maintenance Types in parallel
             const [histRes, docsRes, ordersRes, typesRes] = await Promise.all([
